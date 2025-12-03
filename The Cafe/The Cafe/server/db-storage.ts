@@ -205,10 +205,21 @@ export class DatabaseStorage implements IStorage {
   // Shift Trades
   async createShiftTrade(trade: InsertShiftTrade): Promise<ShiftTrade> {
     const id = randomUUID();
+    if (!trade.fromUserId || !trade.shiftId) {
+      throw new Error('fromUserId and shiftId are required for shift trade');
+    }
+    
     await db.insert(shiftTrades).values({
       id,
-      ...trade,
-      requestedAt: new Date(),
+      shiftId: trade.shiftId,
+      fromUserId: trade.fromUserId,
+      toUserId: trade.toUserId || null,
+      reason: trade.reason,
+      status: (trade.status || 'pending') as 'pending' | 'approved' | 'rejected',
+      urgency: (trade.urgency || 'normal') as 'urgent' | 'normal' | 'low',
+      notes: trade.notes || null,
+      approvedAt: trade.approvedAt || null,
+      approvedBy: trade.approvedBy || null,
     });
     
     const created = await this.getShiftTrade(id);
@@ -227,7 +238,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAvailableShiftTrades(branchId: string): Promise<ShiftTrade[]> {
-    // Get all pending trades for shifts in this branch
+    // Get all pending trades for shifts in this branch that don't have a target user yet (open trades)
     const result = await db.select({
       trade: shiftTrades,
       shift: shifts,
@@ -241,21 +252,12 @@ export class DatabaseStorage implements IStorage {
       )
     );
     
-    return result.map(r => r.trade);
+    // Filter to only trades without a target user (truly available)
+    return result.map(r => r.trade).filter(t => !t.toUserId);
   }
 
   async getPendingShiftTrades(branchId: string): Promise<ShiftTrade[]> {
     // Get trades that are pending and have a target user (ready for approval)
-    // OR trades that are pending and don't have a target user (open trades) - Managers might want to see these too?
-    // Usually "Pending Approval" means someone accepted it.
-    // If it's an open trade, it's "Available".
-    // If someone took it, it has a toUserId.
-    
-    // Let's return trades where toUserId is NOT NULL and status is pending
-    // But wait, Drizzle doesn't have isNotNull easily in the import list above?
-    // I can check if toUserId is not null in the application logic or use sql operator.
-    // For now, let's just fetch all pending and filter in the route or here.
-    
     const result = await db.select({
       trade: shiftTrades,
       shift: shifts,
@@ -269,7 +271,8 @@ export class DatabaseStorage implements IStorage {
       )
     );
     
-    return result.map(r => r.trade).filter(t => t.toUserId !== null);
+    // Filter to only trades with a target user (pending approval)
+    return result.map(r => r.trade).filter(t => t.toUserId !== null && t.toUserId !== undefined);
   }
 
   async getShiftTradesByUser(userId: string): Promise<ShiftTrade[]> {
@@ -450,7 +453,7 @@ export class DatabaseStorage implements IStorage {
     return {
       ...result,
       data: result.data ? JSON.parse(result.data) : null,
-      createdAt: result.createdAt instanceof Date ? result.createdAt : new Date(result.createdAt),
+      createdAt: result.createdAt instanceof Date ? result.createdAt : (result.createdAt ? new Date(result.createdAt) : new Date()),
     } as Notification;
   }
 
@@ -461,7 +464,7 @@ export class DatabaseStorage implements IStorage {
     return {
       ...result[0],
       data: result[0].data ? JSON.parse(result[0].data) : null,
-      createdAt: result[0].createdAt instanceof Date ? result[0].createdAt : new Date(result[0].createdAt),
+      createdAt: result[0].createdAt instanceof Date ? result[0].createdAt : (result[0].createdAt ? new Date(result[0].createdAt) : new Date()),
     } as Notification;
   }
 
@@ -482,7 +485,7 @@ export class DatabaseStorage implements IStorage {
     return result.map(n => ({
       ...n,
       data: n.data ? JSON.parse(n.data) : null,
-      createdAt: n.createdAt instanceof Date ? n.createdAt : new Date(n.createdAt),
+      createdAt: n.createdAt instanceof Date ? n.createdAt : (n.createdAt ? new Date(n.createdAt) : new Date()),
     })) as Notification[];
   }
 
@@ -514,14 +517,22 @@ export class DatabaseStorage implements IStorage {
 
   async createDeductionSettings(insertSettings: InsertDeductionSettings): Promise<DeductionSettings> {
     const id = randomUUID();
-    const newSettings: DeductionSettings = {
-      ...insertSettings,
+    const now = new Date();
+    
+    // Prepare values, converting undefined to null for nullable fields
+    const values = {
       id,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      branchId: insertSettings.branchId,
+      deductSSS: insertSettings.deductSSS ?? null,
+      deductPhilHealth: insertSettings.deductPhilHealth ?? null,
+      deductPagibig: insertSettings.deductPagibig ?? null,
+      deductWithholdingTax: insertSettings.deductWithholdingTax ?? null,
+      createdAt: now,
+      updatedAt: now,
     };
-    await db.insert(deductionSettings).values(newSettings);
-    return newSettings;
+    
+    await db.insert(deductionSettings).values(values);
+    return values as unknown as DeductionSettings;
   }
 
   async updateDeductionSettings(
