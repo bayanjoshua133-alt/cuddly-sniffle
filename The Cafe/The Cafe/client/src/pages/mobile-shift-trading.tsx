@@ -141,6 +141,11 @@ export default function MobileShiftTrading() {
     const statusConfig = getStatusConfig(trade.status);
     const UrgencyIcon = urgencyConfig.icon;
     const StatusIcon = statusConfig.icon;
+    
+    // Safely parse dates with null checks
+    if (!trade.shift?.startTime || !trade.shift?.endTime) {
+      return null;
+    }
     const shiftDate = parseISO(trade.shift.startTime);
     const endTime = parseISO(trade.shift.endTime);
 

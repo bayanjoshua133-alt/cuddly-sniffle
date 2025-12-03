@@ -58,6 +58,24 @@ import {
   Business as BusinessIcon,
 } from "@mui/icons-material";
 
+// Safe date formatting helper
+const safeFormatDate = (dateValue: string | Date | null | undefined, formatStr: string): string => {
+  if (!dateValue) return 'N/A';
+  try {
+    // If it's already a Date object, format it directly
+    if (dateValue instanceof Date) {
+      return format(dateValue, formatStr);
+    }
+    // If it's a string, parse it first
+    if (typeof dateValue === 'string') {
+      return format(parseISO(dateValue), formatStr);
+    }
+    return 'N/A';
+  } catch {
+    return 'N/A';
+  }
+};
+
 interface Branch {
   id: string;
   name: string;
@@ -395,7 +413,7 @@ export default function MuiBranches() {
                     </Typography>
                   </Stack>
                   <Typography variant="caption" color="text.disabled">
-                    Since {format(parseISO(branch.createdAt), "MMM yyyy")}
+                    Since {safeFormatDate(branch.createdAt, "MMM yyyy")}
                   </Typography>
                 </Stack>
               </Paper>

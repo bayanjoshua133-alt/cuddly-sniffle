@@ -52,13 +52,16 @@ export default function MobileNotifications() {
     );
   }
 
-  // Fetch notifications
-  const { data: notificationsData, isLoading } = useQuery({
+  // Fetch notifications with real-time updates
+  const { data: notificationsData, isLoading, refetch } = useQuery({
     queryKey: ['mobile-notifications', currentUser?.id],
     queryFn: async () => {
       const response = await apiRequest('GET', '/api/notifications');
       return response.json();
     },
+    refetchInterval: 5000, // Poll every 5 seconds for real-time notifications
+    refetchOnWindowFocus: true,
+    refetchIntervalInBackground: true, // Keep polling even when tab is not focused
   });
 
   // Mark notification as read
@@ -201,7 +204,9 @@ export default function MobileNotifications() {
               {notifications.map((notification) => {
                 const config = getNotificationConfig(notification.type);
                 const Icon = config.icon;
-                const timeAgo = formatDistanceToNow(parseISO(notification.createdAt), { addSuffix: true });
+                const timeAgo = notification.createdAt 
+                  ? formatDistanceToNow(parseISO(notification.createdAt), { addSuffix: true })
+                  : 'Unknown';
                 
                 return (
                   <motion.div

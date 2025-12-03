@@ -2,7 +2,7 @@ import { db } from './db';
 import { branches, users, shifts, shiftTrades, payrollPeriods, payrollEntries, approvals, timeOffRequests, notifications, setupStatus, deductionSettings, deductionRates, holidays, archivedPayrollPeriods } from '@shared/schema';
 import type { IStorage } from './storage';
 import type { User, InsertUser, Branch, InsertBranch, Shift, InsertShift, ShiftTrade, InsertShiftTrade, PayrollPeriod, InsertPayrollPeriod, PayrollEntry, InsertPayrollEntry, Approval, InsertApproval, InsertTimeOffRequest, InsertNotification, DeductionSettings, InsertDeductionSettings, DeductionRate, InsertDeductionRate, Holiday, InsertHoliday, ArchivedPayrollPeriod, InsertArchivedPayrollPeriod } from '@shared/schema';
-import { eq, and, gte, lte } from 'drizzle-orm';
+import { eq, and, gte, lte, desc } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
 import bcrypt from 'bcrypt';
 
@@ -296,7 +296,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPayrollPeriodsByBranch(branchId: string): Promise<PayrollPeriod[]> {
-    return db.select().from(payrollPeriods).where(eq(payrollPeriods.branchId, branchId));
+    return db.select().from(payrollPeriods)
+      .where(eq(payrollPeriods.branchId, branchId))
+      .orderBy(desc(payrollPeriods.createdAt));
   }
 
   async updatePayrollPeriod(id: string, period: Partial<InsertPayrollPeriod>): Promise<PayrollPeriod | undefined> {
@@ -336,9 +338,11 @@ export class DatabaseStorage implements IStorage {
           eq(payrollEntries.userId, userId),
           eq(payrollEntries.payrollPeriodId, periodId)
         )
-      );
+      ).orderBy(desc(payrollEntries.createdAt));
     }
-    return db.select().from(payrollEntries).where(eq(payrollEntries.userId, userId));
+    return db.select().from(payrollEntries)
+      .where(eq(payrollEntries.userId, userId))
+      .orderBy(desc(payrollEntries.createdAt));
   }
 
   async getPayrollEntry(id: string): Promise<PayrollEntry | undefined> {
@@ -472,7 +476,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getNotificationsByUser(userId: string): Promise<Notification[]> {
-    const result = await db.select().from(notifications).where(eq(notifications.userId, userId));
+    const result = await db.select().from(notifications)
+      .where(eq(notifications.userId, userId))
+      .orderBy(desc(notifications.createdAt));
     return result.map(n => ({
       ...n,
       data: n.data ? JSON.parse(n.data) : null,

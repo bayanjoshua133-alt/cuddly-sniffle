@@ -132,6 +132,7 @@ export default function MobileSchedule() {
     let current = dateRange.start;
     while (current <= dateRange.end) {
       const dayShifts = shifts.filter(shift => {
+        if (!shift?.startTime) return false;
         const shiftDate = parseISO(shift.startTime);
         return format(shiftDate, 'yyyy-MM-dd') === format(current, 'yyyy-MM-dd');
       });

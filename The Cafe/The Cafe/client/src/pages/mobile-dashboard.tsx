@@ -6,11 +6,12 @@ import {
   CardContent,
   Typography,
   Chip,
-  Button,
+  Button as MuiButton,
   CircularProgress,
   alpha,
   Paper,
 } from "@mui/material";
+import { Button } from "@/components/ui/button";
 import {
   CalendarMonth as Calendar,
   AccessTime as Clock,
@@ -32,8 +33,10 @@ import { motion } from "framer-motion";
 import { apiRequest } from "@/lib/queryClient";
 import { getCurrentUser, getAuthState } from "@/lib/auth";
 import { useLocation } from "wouter";
-import MuiMuiMobileHeader from "@/components/mui/mui-mobile-header";
-import MuiMuiMobileBottomNav from "@/components/mui/mui-mobile-bottom-nav";
+import MuiMobileHeader from "@/components/mui/mui-mobile-header";
+import MuiMobileBottomNav from "@/components/mui/mui-mobile-bottom-nav";
+import { Badge } from "@/components/ui/badge";
+import { CardHeader, CardTitle } from "@/components/ui/card";
 
 interface Shift {
   id: string;
@@ -254,7 +257,8 @@ export default function MobileDashboard() {
       );
       return response.json();
     },
-    refetchInterval: 60000,
+    refetchInterval: 10000, // Poll every 10 seconds
+    refetchOnWindowFocus: true,
   });
 
   // Fetch recent payroll
@@ -264,6 +268,8 @@ export default function MobileDashboard() {
       const response = await apiRequest('GET', '/api/payroll');
       return response.json();
     },
+    refetchInterval: 5000, // Poll every 5 seconds for real-time payslip updates
+    refetchOnWindowFocus: true,
   });
 
   // Fetch hours summary
@@ -273,16 +279,20 @@ export default function MobileDashboard() {
       const response = await apiRequest('GET', '/api/hours/my-summary');
       return response.json();
     },
-    refetchInterval: 60000,
+    refetchInterval: 10000, // Poll every 10 seconds
+    refetchOnWindowFocus: true,
   });
 
-  // Fetch notifications
+  // Fetch notifications with real-time updates
   const { data: notificationsData } = useQuery({
     queryKey: ['mobile-notifications'],
     queryFn: async () => {
       const response = await apiRequest('GET', '/api/notifications');
       return response.json();
     },
+    refetchInterval: 5000, // Poll every 5 seconds for real-time notifications
+    refetchOnWindowFocus: true,
+    refetchIntervalInBackground: true,
   });
 
   const shifts: Shift[] = shiftsData?.shifts || [];
@@ -305,6 +315,7 @@ export default function MobileDashboard() {
   const earningsTrend = currentEarnings > previousEarnings ? 'up' : currentEarnings < previousEarnings ? 'down' : 'neutral';
 
   const getShiftTimeLabel = (shift: Shift) => {
+    if (!shift?.startTime) return "N/A";
     const start = parseISO(shift.startTime);
     if (isToday(start)) return "Today";
     if (isTomorrow(start)) return "Tomorrow";
@@ -314,6 +325,7 @@ export default function MobileDashboard() {
   const getNextShiftInfo = () => {
     if (upcomingShifts.length === 0) return null;
     const nextShift = upcomingShifts[0];
+    if (!nextShift?.startTime || !nextShift?.endTime) return null;
     const start = parseISO(nextShift.startTime);
     const end = parseISO(nextShift.endTime);
     const hoursUntil = differenceInHours(start, new Date());
@@ -546,6 +558,7 @@ export default function MobileDashboard() {
                   </div>
                 ) : (
                   upcomingShifts.map((shift, index) => {
+                    if (!shift?.startTime || !shift?.endTime) return null;
                     const start = parseISO(shift.startTime);
                     const end = parseISO(shift.endTime);
                     const isNow = isToday(start);
@@ -655,7 +668,7 @@ export default function MobileDashboard() {
                           {notification.message}
                         </p>
                         <p className="text-sm text-muted-foreground/70 mt-2">
-                          {format(parseISO(notification.createdAt), 'MMM d, h:mm a')}
+                          {notification.createdAt ? format(parseISO(notification.createdAt), 'MMM d, h:mm a') : 'N/A'}
                         </p>
                       </div>
                     </div>
@@ -679,7 +692,7 @@ export default function MobileDashboard() {
                   <div>
                     <p className="text-emerald-100 text-base mb-1">Latest Payroll</p>
                     <h3 className="text-2xl font-bold">
-                      {format(parseISO(latestPayroll.createdAt), 'MMMM d, yyyy')}
+                      {latestPayroll.createdAt ? format(parseISO(latestPayroll.createdAt), 'MMMM d, yyyy') : 'N/A'}
                     </h3>
                   </div>
                   <div className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center">

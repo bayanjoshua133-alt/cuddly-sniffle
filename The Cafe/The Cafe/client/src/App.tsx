@@ -337,7 +337,9 @@ function DesktopRouter({ authState }: { authState: { isAuthenticated: boolean; u
       {/* Branch Management - MUI */}
       <Route path="/branches">
         <DesktopLayout>
-          <MuiBranches />
+          <ErrorBoundary>
+            <MuiBranches />
+          </ErrorBoundary>
         </DesktopLayout>
       </Route>
 
@@ -444,74 +446,110 @@ function MobileRouter({ authState }: { authState: { isAuthenticated: boolean; us
     <Switch>
       {/* Mobile Dashboard */}
       <Route path="/">
-        <MobileDashboard />
+        <ErrorBoundary>
+          <MobileDashboard />
+        </ErrorBoundary>
       </Route>
       <Route path="/mobile-dashboard">
-        <MobileDashboard />
+        <ErrorBoundary>
+          <MobileDashboard />
+        </ErrorBoundary>
       </Route>
 
       {/* Mobile Clock */}
       <Route path="/clock">
-        <MobileClock />
+        <ErrorBoundary>
+          <MobileClock />
+        </ErrorBoundary>
       </Route>
       <Route path="/mobile-clock">
-        <MobileClock />
+        <ErrorBoundary>
+          <MobileClock />
+        </ErrorBoundary>
       </Route>
 
       {/* Mobile Schedule */}
       <Route path="/schedule">
-        <MobileSchedule />
+        <ErrorBoundary>
+          <MobileSchedule />
+        </ErrorBoundary>
       </Route>
       <Route path="/mobile-schedule">
-        <MobileSchedule />
+        <ErrorBoundary>
+          <MobileSchedule />
+        </ErrorBoundary>
       </Route>
 
       {/* Mobile Payroll */}
       <Route path="/payroll">
-        <MobilePayroll />
+        <ErrorBoundary>
+          <MobilePayroll />
+        </ErrorBoundary>
       </Route>
       <Route path="/mobile-payroll">
-        <MobilePayroll />
+        <ErrorBoundary>
+          <MobilePayroll />
+        </ErrorBoundary>
       </Route>
 
       {/* Mobile Notifications */}
       <Route path="/notifications">
-        <MobileNotifications />
+        <ErrorBoundary>
+          <MobileNotifications />
+        </ErrorBoundary>
       </Route>
       <Route path="/mobile-notifications">
-        <MobileNotifications />
+        <ErrorBoundary>
+          <MobileNotifications />
+        </ErrorBoundary>
       </Route>
 
       {/* Mobile Time Off */}
       <Route path="/time-off">
-        <MobileTimeOff />
+        <ErrorBoundary>
+          <MobileTimeOff />
+        </ErrorBoundary>
       </Route>
       <Route path="/mobile-time-off">
-        <MobileTimeOff />
+        <ErrorBoundary>
+          <MobileTimeOff />
+        </ErrorBoundary>
       </Route>
 
       {/* Mobile Shift Trading */}
       <Route path="/shift-trading">
-        <MobileShiftTrading />
+        <ErrorBoundary>
+          <MobileShiftTrading />
+        </ErrorBoundary>
       </Route>
       <Route path="/mobile-shift-trading">
-        <MobileShiftTrading />
+        <ErrorBoundary>
+          <MobileShiftTrading />
+        </ErrorBoundary>
       </Route>
 
       {/* Mobile Profile */}
       <Route path="/profile">
-        <MobileProfile />
+        <ErrorBoundary>
+          <MobileProfile />
+        </ErrorBoundary>
       </Route>
       <Route path="/mobile-profile">
-        <MobileProfile />
+        <ErrorBoundary>
+          <MobileProfile />
+        </ErrorBoundary>
       </Route>
 
       {/* Mobile More */}
       <Route path="/more">
-        <MobileMore />
+        <ErrorBoundary>
+          <MobileMore />
+        </ErrorBoundary>
       </Route>
       <Route path="/mobile-more">
-        <MobileMore />
+        <ErrorBoundary>
+          <MobileMore />
+        </ErrorBoundary>
       </Route>
 
       {/* Catch all - redirect to dashboard */}

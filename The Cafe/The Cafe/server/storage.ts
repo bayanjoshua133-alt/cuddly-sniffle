@@ -49,6 +49,7 @@ export interface IStorage {
   updatePayrollPeriod(id: string, period: Partial<InsertPayrollPeriod>): Promise<PayrollPeriod | undefined>;
   getCurrentPayrollPeriod(branchId: string): Promise<PayrollPeriod | undefined>;
   createPayrollEntry(entry: InsertPayrollEntry): Promise<PayrollEntry>;
+  getPayrollEntry(id: string): Promise<PayrollEntry | undefined>;
   getPayrollEntriesByUser(userId: string, periodId?: string): Promise<PayrollEntry[]>;
   updatePayrollEntry(id: string, entry: Partial<InsertPayrollEntry>): Promise<PayrollEntry | undefined>;
   deletePayrollEntry(id: string): Promise<void>;
@@ -392,6 +393,10 @@ export class MemStorage implements IStorage {
     };
     this.payrollEntries.set(id, entry);
     return entry;
+  }
+
+  async getPayrollEntry(id: string): Promise<PayrollEntry | undefined> {
+    return this.payrollEntries.get(id);
   }
 
   async getPayrollEntriesByUser(userId: string, periodId?: string): Promise<PayrollEntry[]> {

@@ -1,7 +1,8 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
-async function throwIfResNotOk(res: Response) {
+async function throwIfResNotOk(res: Response, skipBodyCheck: boolean = false) {
   if (!res.ok) {
+    // Only consume the body for error responses
     const contentType = res.headers.get('content-type');
     let errorData;
     
@@ -23,6 +24,7 @@ async function throwIfResNotOk(res: Response) {
     (error as any).data = errorData;
     throw error;
   }
+  // Don't consume the body for successful responses - let the caller handle it
 }
 
 export async function apiRequest(
@@ -46,10 +48,75 @@ export async function apiRequest(
       credentials: 'include',
     });
 
-    await throwIfResNotOk(res);
+    // For non-ok responses, throw an error
+    if (!res.ok) {
+      await throwIfResNotOk(res);
+    }
     return res;
   } catch (error) {
     console.error('API Request failed:', {
+      url,
+      method,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+    throw error;
+  }
+}
+
+/**
+ * API request for binary responses (PDF, images, etc.)
+ * Returns the blob directly without consuming the response body
+ */
+export async function apiBlobRequest(
+  method: string,
+  url: string,
+  data?: unknown | undefined,
+): Promise<Blob> {
+  const headers: Record<string, string> = {
+    'Accept': 'application/pdf, application/octet-stream, */*'
+  };
+
+  if (data) {
+    headers['Content-Type'] = 'application/json';
+  }
+
+  console.log('[apiBlobRequest] Making request:', { method, url, hasData: !!data });
+
+  try {
+    const res = await fetch(url, {
+      method,
+      headers,
+      body: data ? JSON.stringify(data) : undefined,
+      credentials: 'include',
+    });
+
+    console.log('[apiBlobRequest] Response status:', res.status, res.statusText);
+
+    if (!res.ok) {
+      // Try to get error message from response
+      const contentType = res.headers.get('content-type');
+      let errorMessage = 'Request failed';
+      
+      try {
+        if (contentType?.includes('application/json')) {
+          const errorData = await res.json();
+          errorMessage = errorData.error || errorData.message || errorMessage;
+        } else {
+          errorMessage = await res.text() || errorMessage;
+        }
+      } catch (e) {
+        errorMessage = res.statusText || errorMessage;
+      }
+      
+      console.error('[apiBlobRequest] Error:', errorMessage);
+      throw new Error(errorMessage);
+    }
+
+    const blob = await res.blob();
+    console.log('[apiBlobRequest] Success, blob size:', blob.size, 'type:', blob.type);
+    return blob;
+  } catch (error) {
+    console.error('Blob API Request failed:', {
       url,
       method,
       error: error instanceof Error ? error.message : 'Unknown error',

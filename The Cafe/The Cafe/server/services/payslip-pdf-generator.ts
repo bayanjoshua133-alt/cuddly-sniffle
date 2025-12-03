@@ -23,6 +23,22 @@ import {
 // Alias for PDF-safe currency formatting
 const formatPHP = formatPHPforPDF;
 
+/**
+ * Format a UUID or long ID to a short, readable format
+ * e.g., "f2d5f1e1-e6f9-40f4-a580-a266ac536c93" -> "EMP-F2D5F1"
+ */
+function formatShortId(id: string, prefix: string = ''): string {
+  if (!id) return prefix ? `${prefix}-000000` : '000000';
+  
+  // Remove any existing prefix like "PS-"
+  const cleanId = id.replace(/^(PS-|EMP-|ID-)/i, '');
+  
+  // Take first 6 characters of the UUID (after removing dashes)
+  const shortId = cleanId.replace(/-/g, '').substring(0, 6).toUpperCase();
+  
+  return prefix ? `${prefix}-${shortId}` : shortId;
+}
+
 // PDF Generation Options
 export interface PDFGeneratorOptions {
   includeQR?: boolean;
@@ -109,8 +125,7 @@ export async function generatePayslipPDF(
   // ===== EMPLOYER CONTRIBUTIONS =====
   y = drawEmployerContributions(page, fontRegular, fontBold, data, y);
 
-  // ===== PAYMENT METHOD =====
-  y = drawPaymentMethod(page, fontRegular, fontBold, data, y);
+  // Payment method section removed - bank details not shown in payslip
   
   // ===== QR CODE & VERIFICATION =====
   if (includeQR || includeVerification) {
@@ -218,9 +233,10 @@ function drawPayPeriod(
 ): number {
   const colWidth = CONTENT_WIDTH / 4;
   
-  // Payslip ID
+  // Payslip ID - format to clean readable ID
+  const formattedPayslipId = formatShortId(data.payslip_id, 'PS');
   page.drawText('Payslip ID:', { x: MARGIN, y, size: FONT_SIZES.small, font: fontRegular, color: COLORS.secondary });
-  page.drawText(data.payslip_id, { x: MARGIN + 55, y, size: FONT_SIZES.small, font: fontBold, color: COLORS.black });
+  page.drawText(formattedPayslipId, { x: MARGIN + 55, y, size: FONT_SIZES.small, font: fontBold, color: COLORS.black });
   
   // Pay Period
   page.drawText('Pay Period:', { x: MARGIN + colWidth, y, size: FONT_SIZES.small, font: fontRegular, color: COLORS.secondary });
@@ -298,7 +314,9 @@ function drawEmployeeInfo(
   const idRowY = y;
   const idColWidth = CONTENT_WIDTH / 4;
   
-  drawLabelValue(page, fontRegular, fontBold, 'Employee ID:', data.employee.id, MARGIN + 10, idRowY, FONT_SIZES.tiny);
+  // Format employee ID to clean readable format
+  const formattedEmployeeId = formatShortId(data.employee.id, 'EMP');
+  drawLabelValue(page, fontRegular, fontBold, 'Employee ID:', formattedEmployeeId, MARGIN + 10, idRowY, FONT_SIZES.tiny);
   drawLabelValue(page, fontRegular, fontBold, 'TIN:', maskId(data.employee.tin), MARGIN + idColWidth, idRowY, FONT_SIZES.tiny);
   drawLabelValue(page, fontRegular, fontBold, 'SSS:', maskId(data.employee.sss), MARGIN + idColWidth * 2, idRowY, FONT_SIZES.tiny);
   drawLabelValue(page, fontRegular, fontBold, 'Pag-IBIG:', maskId(data.employee.pagibig), MARGIN + idColWidth * 3, idRowY, FONT_SIZES.tiny);

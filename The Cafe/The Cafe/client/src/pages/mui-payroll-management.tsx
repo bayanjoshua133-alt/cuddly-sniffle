@@ -51,6 +51,9 @@ import {
   Speed,
   Groups,
 } from "@mui/icons-material";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { format, subDays, startOfMonth, endOfMonth } from "date-fns";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -111,8 +114,8 @@ export default function MuiPayrollManagement() {
   const queryClient = useQueryClient();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState<PayrollPeriod | null>(null);
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [startDate, setStartDate] = useState<Date | null>(null);
+  const [endDate, setEndDate] = useState<Date | null>(null);
   const [activeTab, setActiveTab] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -213,7 +216,10 @@ export default function MuiPayrollManagement() {
       toast({ title: "Missing Dates", description: "Please select both dates", variant: "destructive" });
       return;
     }
-    createPeriodMutation.mutate({ startDate, endDate });
+    createPeriodMutation.mutate({ 
+      startDate: format(startDate, "yyyy-MM-dd"), 
+      endDate: format(endDate, "yyyy-MM-dd") 
+    });
   };
 
   const applyTemplate = (template: "semi-monthly" | "weekly" | "monthly") => {
@@ -237,8 +243,8 @@ export default function MuiPayrollManagement() {
       end = endOfMonth(today);
     }
 
-    setStartDate(format(start, "yyyy-MM-dd"));
-    setEndDate(format(end, "yyyy-MM-dd"));
+    setStartDate(start);
+    setEndDate(end);
     setIsCreateDialogOpen(true);
   };
 
@@ -880,58 +886,192 @@ export default function MuiPayrollManagement() {
       <Dialog
         open={isCreateDialogOpen}
         onClose={() => setIsCreateDialogOpen(false)}
-        maxWidth="xs"
+        maxWidth="sm"
         fullWidth
-        PaperProps={{ sx: { borderRadius: 3 } }}
+        PaperProps={{ 
+          sx: { 
+            borderRadius: 4,
+            background: `linear-gradient(135deg, ${alpha(theme.palette.background.paper, 0.98)} 0%, ${theme.palette.background.paper} 100%)`,
+          } 
+        }}
       >
-        <DialogTitle>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-            <CalendarMonth color="primary" />
-            <Typography variant="h6" fontWeight={600}>
-              Create Payroll Period
-            </Typography>
+        <DialogTitle sx={{ pb: 1 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+            <Box
+              sx={{
+                width: 48,
+                height: 48,
+                borderRadius: 3,
+                background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                boxShadow: `0 4px 16px ${alpha(theme.palette.primary.main, 0.3)}`,
+              }}
+            >
+              <CalendarMonth sx={{ color: "white", fontSize: 24 }} />
+            </Box>
+            <Box>
+              <Typography variant="h5" fontWeight={700}>
+                Create Payroll Period
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Define the date range for this payroll cycle
+              </Typography>
+            </Box>
           </Box>
         </DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            Define the date range for this payroll cycle
-          </Typography>
-          <Stack spacing={3}>
-            <TextField
-              label="Start Date"
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              fullWidth
-              InputLabelProps={{ shrink: true }}
-              sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
-            />
-            <TextField
-              label="End Date"
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              fullWidth
-              InputLabelProps={{ shrink: true }}
-              sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
-            />
-          </Stack>
+        <Divider sx={{ mx: 3 }} />
+        <DialogContent sx={{ pt: 3 }}>
+          <LocalizationProvider dateAdapter={AdapterDateFns}>
+            <Stack spacing={3}>
+              <Box
+                sx={{
+                  p: 3,
+                  borderRadius: 3,
+                  bgcolor: alpha(theme.palette.primary.main, 0.04),
+                  border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
+                }}
+              >
+                <Typography variant="subtitle2" color="primary" fontWeight={600} sx={{ mb: 2 }}>
+                  📅 Period Start Date
+                </Typography>
+                <DatePicker
+                  value={startDate}
+                  onChange={(newValue) => setStartDate(newValue)}
+                  slotProps={{
+                    textField: {
+                      fullWidth: true,
+                      sx: {
+                        "& .MuiOutlinedInput-root": {
+                          borderRadius: 2,
+                          bgcolor: "background.paper",
+                          fontSize: "1.1rem",
+                          fontWeight: 500,
+                          "& input": {
+                            padding: "14px 16px",
+                          },
+                          "&:hover": {
+                            bgcolor: alpha(theme.palette.primary.main, 0.02),
+                          },
+                          "& .MuiOutlinedInput-notchedOutline": {
+                            borderColor: alpha(theme.palette.primary.main, 0.2),
+                          },
+                          "&:hover .MuiOutlinedInput-notchedOutline": {
+                            borderColor: theme.palette.primary.main,
+                          },
+                        },
+                      },
+                    },
+                    popper: {
+                      sx: {
+                        "& .MuiPaper-root": {
+                          borderRadius: 3,
+                          boxShadow: `0 8px 32px ${alpha(theme.palette.primary.main, 0.15)}`,
+                        },
+                      },
+                    },
+                  }}
+                />
+              </Box>
+              
+              <Box
+                sx={{
+                  p: 3,
+                  borderRadius: 3,
+                  bgcolor: alpha(theme.palette.secondary.main, 0.04),
+                  border: `1px solid ${alpha(theme.palette.secondary.main, 0.1)}`,
+                }}
+              >
+                <Typography variant="subtitle2" color="secondary" fontWeight={600} sx={{ mb: 2 }}>
+                  📅 Period End Date
+                </Typography>
+                <DatePicker
+                  value={endDate}
+                  onChange={(newValue) => setEndDate(newValue)}
+                  minDate={startDate || undefined}
+                  slotProps={{
+                    textField: {
+                      fullWidth: true,
+                      sx: {
+                        "& .MuiOutlinedInput-root": {
+                          borderRadius: 2,
+                          bgcolor: "background.paper",
+                          fontSize: "1.1rem",
+                          fontWeight: 500,
+                          "& input": {
+                            padding: "14px 16px",
+                          },
+                          "&:hover": {
+                            bgcolor: alpha(theme.palette.secondary.main, 0.02),
+                          },
+                          "& .MuiOutlinedInput-notchedOutline": {
+                            borderColor: alpha(theme.palette.secondary.main, 0.2),
+                          },
+                          "&:hover .MuiOutlinedInput-notchedOutline": {
+                            borderColor: theme.palette.secondary.main,
+                          },
+                        },
+                      },
+                    },
+                    popper: {
+                      sx: {
+                        "& .MuiPaper-root": {
+                          borderRadius: 3,
+                          boxShadow: `0 8px 32px ${alpha(theme.palette.secondary.main, 0.15)}`,
+                        },
+                      },
+                    },
+                  }}
+                />
+              </Box>
+
+              {startDate && endDate && (
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 2,
+                    borderRadius: 2,
+                    bgcolor: alpha(theme.palette.success.main, 0.08),
+                    border: `1px solid ${alpha(theme.palette.success.main, 0.2)}`,
+                  }}
+                >
+                  <Stack direction="row" alignItems="center" spacing={1}>
+                    <CheckCircle sx={{ color: "success.main", fontSize: 20 }} />
+                    <Typography variant="body2" color="success.main" fontWeight={500}>
+                      Period: {format(startDate, "MMM d, yyyy")} - {format(endDate, "MMM d, yyyy")}
+                    </Typography>
+                  </Stack>
+                </Paper>
+              )}
+            </Stack>
+          </LocalizationProvider>
         </DialogContent>
-        <DialogActions sx={{ p: 3, pt: 0 }}>
+        <DialogActions sx={{ p: 3, pt: 2, gap: 1 }}>
           <Button
             onClick={() => setIsCreateDialogOpen(false)}
-            sx={{ borderRadius: 2, textTransform: "none" }}
+            sx={{ 
+              borderRadius: 2, 
+              textTransform: "none",
+              px: 3,
+            }}
           >
             Cancel
           </Button>
           <Button
             variant="contained"
             onClick={handleCreatePeriod}
-            disabled={createPeriodMutation.isPending}
+            disabled={createPeriodMutation.isPending || !startDate || !endDate}
             startIcon={
-              createPeriodMutation.isPending ? <CircularProgress size={16} color="inherit" /> : null
+              createPeriodMutation.isPending ? <CircularProgress size={16} color="inherit" /> : <AddIcon />
             }
-            sx={{ borderRadius: 2, textTransform: "none", fontWeight: 600 }}
+            sx={{ 
+              borderRadius: 2, 
+              textTransform: "none", 
+              fontWeight: 600,
+              px: 3,
+              boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.3)}`,
+            }}
           >
             Create Period
           </Button>

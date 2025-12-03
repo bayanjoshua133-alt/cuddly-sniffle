@@ -29,7 +29,6 @@ import {
   FileText,
   Clock,
   TrendingUp,
-  CreditCard,
   Info
 } from 'lucide-react';
 import {
@@ -389,50 +388,22 @@ export const PayslipViewer: React.FC<PayslipViewerProps> = ({
             </div>
           </div>
 
-          {/* Employer Contributions & Payment Method */}
-          <div className="grid lg:grid-cols-2 gap-6 mb-6">
-            {/* Employer Contributions */}
-            <div className="border rounded-xl p-4 print:border print:rounded-none">
-              <h4 className="text-[14px] font-semibold text-muted-foreground mb-3 print:text-[10pt]">
-                Employer Contributions (For Your Info)
-              </h4>
-              <div className="space-y-2">
-                {data.employer_contributions.map((contrib, index) => (
-                  <div key={contrib.code + index} className="flex justify-between text-[14px] print:text-[10pt]">
-                    <span className="text-muted-foreground">{contrib.label}</span>
-                    <span className="font-medium">{formatPHP(contrib.amount)}</span>
-                  </div>
-                ))}
-                <Separator className="my-2" />
-                <div className="flex justify-between text-[14px] font-semibold print:text-[10pt]">
-                  <span>Total</span>
-                  <span>{formatPHP(employerContributionsTotal)}</span>
+          {/* Employer Contributions */}
+          <div className="border rounded-xl p-4 mb-6 print:border print:rounded-none">
+            <h4 className="text-[14px] font-semibold text-muted-foreground mb-3 print:text-[10pt]">
+              Employer Contributions (For Your Info)
+            </h4>
+            <div className="space-y-2">
+              {data.employer_contributions.map((contrib, index) => (
+                <div key={contrib.code + index} className="flex justify-between text-[14px] print:text-[10pt]">
+                  <span className="text-muted-foreground">{contrib.label}</span>
+                  <span className="font-medium">{formatPHP(contrib.amount)}</span>
                 </div>
-              </div>
-            </div>
-
-            {/* Payment Method */}
-            <div className="border rounded-xl p-4 print:border print:rounded-none">
-              <h4 className="text-[14px] font-semibold text-muted-foreground mb-3 print:text-[10pt]">
-                Payment Details
-              </h4>
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
-                  <CreditCard className="w-5 h-5 text-blue-600" />
-                </div>
-                <div className="flex-1">
-                  <p className="font-semibold text-[15px] print:text-[11pt]">{data.payment_method.type}</p>
-                  {data.payment_method.bank && (
-                    <p className="text-[14px] text-muted-foreground print:text-[10pt]">
-                      {data.payment_method.bank} ****{data.payment_method.account_last4}
-                    </p>
-                  )}
-                  {data.payment_method.transaction_id && (
-                    <p className="text-[12px] text-muted-foreground mt-1 print:text-[8pt]">
-                      Ref: {data.payment_method.transaction_id}
-                    </p>
-                  )}
-                </div>
+              ))}
+              <Separator className="my-2" />
+              <div className="flex justify-between text-[14px] font-semibold print:text-[10pt]">
+                <span>Total</span>
+                <span>{formatPHP(employerContributionsTotal)}</span>
               </div>
             </div>
           </div>

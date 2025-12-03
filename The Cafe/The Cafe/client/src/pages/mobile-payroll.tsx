@@ -4,10 +4,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { DollarSign, Clock, Download, Eye, FileText, TrendingUp, X, Loader2 } from "lucide-react";
+import { DollarSign, Clock, Download, Eye, FileText, TrendingUp, Loader2 } from "lucide-react";
 import { format, parseISO, subDays } from "date-fns";
 import { motion } from "framer-motion";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, apiBlobRequest } from "@/lib/queryClient";
 import { getCurrentUser, getAuthState } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
@@ -99,15 +99,32 @@ export default function MobilePayroll() {
 
   // This component is only accessible on mobile server, so all users are employees
 
+  // Fetch notifications to show unread count in nav
+  const { data: notificationsData } = useQuery({
+    queryKey: ['mobile-notifications', currentUser?.id],
+    queryFn: async () => {
+      const response = await apiRequest('GET', '/api/notifications');
+      return response.json();
+    },
+    refetchInterval: 5000, // Poll every 5 seconds for real-time notifications
+    refetchOnWindowFocus: true,
+    refetchIntervalInBackground: true,
+  });
+
+  const unreadNotificationCount = (notificationsData?.notifications || []).filter(
+    (n: { isRead: boolean }) => !n.isRead
+  ).length;
+
   // Fetch payroll entries with real-time updates
-  const { data: payrollData, isLoading } = useQuery({
+  const { data: payrollData, isLoading, refetch } = useQuery({
     queryKey: ['mobile-payroll', currentUser?.id],
     queryFn: async () => {
       const response = await apiRequest('GET', '/api/payroll');
       return response.json();
     },
-    refetchInterval: 30000, // Refresh every 30 seconds for real-time sync
+    refetchInterval: 5000, // Poll every 5 seconds for real-time sync
     refetchOnWindowFocus: true,
+    refetchIntervalInBackground: true, // Keep polling even when tab is not focused
   });
 
   const payrollEntries: PayrollEntry[] = payrollData?.entries || [];
@@ -250,9 +267,11 @@ export default function MobilePayroll() {
       },
       earnings,
       deductions,
-      gross: earningsTotal || grossPay,
-      total_deductions: deductionsTotal || totalDeductions,
-      net_pay: netPay,
+      // Use actual totals from earnings/deductions arrays for validation consistency
+      gross: earningsTotal > 0 ? earningsTotal : grossPay,
+      total_deductions: deductionsTotal > 0 ? deductionsTotal : totalDeductions,
+      // Recalculate net_pay to ensure it matches: gross - total_deductions
+      net_pay: (earningsTotal > 0 ? earningsTotal : grossPay) - (deductionsTotal > 0 ? deductionsTotal : totalDeductions),
       ytd: {
         gross: 0,
         deductions: 0,
@@ -280,10 +299,22 @@ export default function MobilePayroll() {
     
     try {
       const response = await apiRequest('GET', `/api/payroll/payslip/${entry.id}`);
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to load payslip' }));
+        throw new Error(errorData.message || 'Failed to load payslip');
+      }
+      
       const data: PayslipResponse = await response.json();
+      
+      if (!data.payslip) {
+        throw new Error('Invalid payslip data received');
+      }
+      
       const transformedData = transformToPayslipData(data, entry);
       setPayslipData(transformedData);
     } catch (error: any) {
+      console.error('Error loading payslip:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to load payslip",
@@ -299,17 +330,13 @@ export default function MobilePayroll() {
     
     setIsDownloadingPDF(true);
     try {
-      const response = await apiRequest('POST', '/api/payslips/generate-pdf', {
+      // Use apiBlobRequest for binary PDF download
+      const blob = await apiBlobRequest('POST', '/api/payslips/generate-pdf', {
         payslip_data: payslipData,
         format: 'pdf',
         include_qr: true
       });
       
-      if (!response.ok) {
-        throw new Error('Failed to generate PDF');
-      }
-      
-      const blob = await response.blob();
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -324,6 +351,7 @@ export default function MobilePayroll() {
         description: "Your payslip has been downloaded successfully",
       });
     } catch (error: any) {
+      console.error('PDF download error:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to download PDF",
@@ -335,24 +363,27 @@ export default function MobilePayroll() {
   };
 
   const handleQuickDownload = async (entry: PayrollEntry) => {
+    setIsDownloadingPDF(true);
     try {
+      console.log('[PDF Download] Starting download for entry:', entry.id);
+      
       // First fetch the payslip data
       const response = await apiRequest('GET', `/api/payroll/payslip/${entry.id}`);
       const data: PayslipResponse = await response.json();
-      const transformedData = transformToPayslipData(data, entry);
+      console.log('[PDF Download] Got payslip data:', data);
       
-      // Then generate PDF
-      const pdfResponse = await apiRequest('POST', '/api/payslips/generate-pdf', {
+      const transformedData = transformToPayslipData(data, entry);
+      console.log('[PDF Download] Transformed data:', transformedData);
+      
+      // Then generate PDF using apiBlobRequest
+      console.log('[PDF Download] Requesting PDF generation...');
+      const blob = await apiBlobRequest('POST', '/api/payslips/generate-pdf', {
         payslip_data: transformedData,
         format: 'pdf',
         include_qr: true
       });
+      console.log('[PDF Download] Got blob, size:', blob.size);
       
-      if (!pdfResponse.ok) {
-        throw new Error('Failed to generate PDF');
-      }
-      
-      const blob = await pdfResponse.blob();
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -367,11 +398,14 @@ export default function MobilePayroll() {
         description: "Your payslip has been downloaded successfully",
       });
     } catch (error: any) {
+      console.error('[PDF Download] Error:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to download PDF",
         variant: "destructive",
       });
+    } finally {
+      setIsDownloadingPDF(false);
     }
   };
 
@@ -493,8 +527,13 @@ export default function MobilePayroll() {
                         className="h-12 w-12 rounded-xl"
                         variant="outline"
                         onClick={() => handleQuickDownload(entry)}
+                        disabled={isDownloadingPDF}
                       >
-                        <Download className="h-5 w-5" />
+                        {isDownloadingPDF ? (
+                          <Loader2 className="h-5 w-5 animate-spin" />
+                        ) : (
+                          <Download className="h-5 w-5" />
+                        )}
                       </Button>
                     </div>
                   </div>
@@ -514,21 +553,13 @@ export default function MobilePayroll() {
         }
       }}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-0">
-          <DialogHeader className="p-6 pb-0 flex flex-row items-center justify-between">
+          <DialogHeader className="p-6 pb-0">
             <DialogTitle className="text-2xl font-bold flex items-center gap-3">
               <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center">
                 <FileText className="h-6 w-6 text-primary" />
               </div>
               Digital Payslip
             </DialogTitle>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="rounded-xl"
-              onClick={() => setPayslipDialogOpen(false)}
-            >
-              <X className="h-5 w-5" />
-            </Button>
           </DialogHeader>
           <div className="p-6">
             {isLoadingPayslip ? (
@@ -557,7 +588,7 @@ export default function MobilePayroll() {
         </DialogContent>
       </Dialog>
 
-      <MuiMobileBottomNav />
+      <MuiMobileBottomNav notificationCount={unreadNotificationCount} />
     </div>
   );
 }

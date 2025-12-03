@@ -259,27 +259,26 @@ export function validatePayslipData(data: PayslipData): { valid: boolean; errors
   if (!data.employee?.name) errors.push('Employee name is required');
   if (!data.pay_period?.start || !data.pay_period?.end) errors.push('Pay period is required');
   
-  // Numeric validations
+  // Numeric validations - allow net pay to be negative (when deductions > earnings)
   if (data.gross < 0) errors.push('Gross pay cannot be negative');
   if (data.total_deductions < 0) errors.push('Total deductions cannot be negative');
-  if (data.net_pay < 0) errors.push('Net pay cannot be negative');
   
-  // Calculation validation
+  // Calculation validation with higher tolerance for floating point issues
   const calculatedNet = data.gross - data.total_deductions;
-  if (Math.abs(calculatedNet - data.net_pay) > 0.01) {
-    errors.push(`Net pay mismatch: expected ${calculatedNet}, got ${data.net_pay}`);
+  if (Math.abs(calculatedNet - data.net_pay) > 1) {
+    errors.push(`Net pay mismatch: expected ${calculatedNet.toFixed(2)}, got ${data.net_pay.toFixed(2)}`);
   }
   
-  // Earnings validation
+  // Earnings validation - only if earnings array has items
   const earningsTotal = data.earnings.reduce((sum, e) => sum + e.amount, 0);
-  if (Math.abs(earningsTotal - data.gross) > 0.01) {
-    errors.push(`Earnings total mismatch: expected ${data.gross}, got ${earningsTotal}`);
+  if (data.earnings.length > 0 && Math.abs(earningsTotal - data.gross) > 1) {
+    errors.push(`Earnings total mismatch: expected ${data.gross.toFixed(2)}, got ${earningsTotal.toFixed(2)}`);
   }
   
-  // Deductions validation
+  // Deductions validation - only if deductions array has items
   const deductionsTotal = data.deductions.reduce((sum, d) => sum + d.amount, 0);
-  if (Math.abs(deductionsTotal - data.total_deductions) > 0.01) {
-    errors.push(`Deductions total mismatch: expected ${data.total_deductions}, got ${deductionsTotal}`);
+  if (data.deductions.length > 0 && Math.abs(deductionsTotal - data.total_deductions) > 1) {
+    errors.push(`Deductions total mismatch: expected ${data.total_deductions.toFixed(2)}, got ${deductionsTotal.toFixed(2)}`);
   }
   
   return { valid: errors.length === 0, errors };

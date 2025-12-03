@@ -724,7 +724,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Payroll routes
   app.get("/api/payroll", requireAuth, async (req, res) => {
     const userId = req.user!.id;
+    console.log(`[Payroll] Fetching entries for user ${userId}`);
     const entries = await storage.getPayrollEntriesByUser(userId);
+    console.log(`[Payroll] Found ${entries.length} entries:`, entries.map(e => ({ id: e.id, userId: e.userId })));
     res.json({ entries });
   });
 
@@ -976,7 +978,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const allEmployees = await storage.getUsersByBranch(branchId);
       const employees = allEmployees.filter(emp => emp.isActive);
 
-      let allEntries = [];
+      let allEntries: any[] = [];
       for (const employee of employees) {
         const entries = await storage.getPayrollEntriesByUser(
           employee.id,
@@ -997,6 +999,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         allEntries.push(...entriesWithUser);
       }
+
+      // Sort all entries by createdAt descending (most recent first)
+      allEntries.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
       res.json({ entries: allEntries });
     } catch (error: any) {
@@ -1052,12 +1057,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const { entryId } = req.params;
     const userId = req.user!.id;
 
-    // Get payroll entry
-    const entries = await storage.getPayrollEntriesByUser(userId);
-    const entry = entries.find(e => e.id === entryId);
+    console.log(`[Payslip] Looking for entry ${entryId} for user ${userId}`);
 
+    // Get payroll entry directly by ID
+    const entry = await storage.getPayrollEntry(entryId);
+    
     if (!entry) {
+      console.log(`[Payslip] Entry ${entryId} not found in database`);
       return res.status(404).json({ message: "Payroll entry not found" });
+    }
+    
+    // Verify the entry belongs to the current user
+    if (entry.userId !== userId) {
+      console.log(`[Payslip] Entry ${entryId} belongs to ${entry.userId}, not ${userId}`);
+      return res.status(403).json({ message: "Unauthorized access to payroll entry" });
     }
 
     // Get user details
