@@ -8,8 +8,8 @@ import { format } from "date-fns";
 import { apiRequest } from "@/lib/queryClient";
 import { getCurrentUser } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
-import MobileHeader from "@/components/layout/mobile-header";
-import MobileBottomNav from "@/components/layout/mobile-bottom-nav";
+import MuiMobileHeader from "@/components/mui/mui-mobile-header";
+import MuiMobileBottomNav from "@/components/mui/mui-mobile-bottom-nav";
 
 interface ClockStatus {
   isClocked: boolean;
@@ -121,7 +121,7 @@ export default function MobileClock() {
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      <MobileHeader
+      <MuiMobileHeader
         title="Clock In/Out"
         subtitle={format(currentTime, "EEEE, MMMM d, yyyy")}
         showBack={false}
@@ -264,7 +264,7 @@ export default function MobileClock() {
         </Card>
       </div>
 
-      <MobileBottomNav />
+      <MuiMobileBottomNav />
     </div>
   );
 }

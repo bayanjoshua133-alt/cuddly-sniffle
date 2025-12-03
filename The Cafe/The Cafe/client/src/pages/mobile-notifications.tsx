@@ -18,8 +18,8 @@ import { format, parseISO, formatDistanceToNow } from "date-fns";
 import { apiRequest } from "@/lib/queryClient";
 import { getCurrentUser, getAuthState } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
-import MobileHeader from "@/components/layout/mobile-header";
-import MobileBottomNav from "@/components/layout/mobile-bottom-nav";
+import MuiMobileHeader from "@/components/mui/mui-mobile-header";
+import MuiMobileBottomNav from "@/components/mui/mui-mobile-bottom-nav";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface Notification {
@@ -151,7 +151,7 @@ export default function MobileNotifications() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/30 pb-28">
-      <MobileHeader
+      <MuiMobileHeader
         title="Notifications"
         subtitle={unreadCount > 0 ? `${unreadCount} unread` : 'All caught up!'}
         showBack={true}
@@ -252,7 +252,7 @@ export default function MobileNotifications() {
         )}
       </div>
 
-      <MobileBottomNav notificationCount={unreadCount} />
+      <MuiMobileBottomNav notificationCount={unreadCount} />
     </div>
   );
 }

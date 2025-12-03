@@ -17,8 +17,8 @@ import {
 } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { useLocation } from "wouter";
-import MobileHeader from "@/components/layout/mobile-header";
-import MobileBottomNav from "@/components/layout/mobile-bottom-nav";
+import MuiMobileHeader from "@/components/mui/mui-mobile-header";
+import MuiMobileBottomNav from "@/components/mui/mui-mobile-bottom-nav";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -184,7 +184,7 @@ export default function MobileMore() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/30 pb-28">
-      <MobileHeader
+      <MuiMobileHeader
         title="More"
         subtitle="Settings & options"
         showBack={false}
@@ -324,7 +324,7 @@ export default function MobileMore() {
         </motion.div>
       </motion.div>
 
-      <MobileBottomNav />
+      <MuiMobileBottomNav />
     </div>
   );
 }

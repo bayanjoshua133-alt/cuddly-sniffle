@@ -20,8 +20,8 @@ import {
 import { getCurrentUser } from "@/lib/auth";
 import { apiRequest } from "@/lib/queryClient";
 import { format } from "date-fns";
-import MobileHeader from "@/components/layout/mobile-header";
-import MobileBottomNav from "@/components/layout/mobile-bottom-nav";
+import MuiMobileHeader from "@/components/mui/mui-mobile-header";
+import MuiMobileBottomNav from "@/components/mui/mui-mobile-bottom-nav";
 import { motion } from "framer-motion";
 
 export default function MobileProfile() {
@@ -58,7 +58,7 @@ export default function MobileProfile() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/30 pb-28">
-      <MobileHeader
+      <MuiMobileHeader
         title="My Profile"
         subtitle="Your account information"
         showBack={false}
@@ -246,7 +246,7 @@ export default function MobileProfile() {
         </motion.div>
       </motion.div>
 
-      <MobileBottomNav />
+      <MuiMobileBottomNav />
     </div>
   );
 }

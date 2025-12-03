@@ -11,8 +11,8 @@ import { apiRequest } from "@/lib/queryClient";
 import { getCurrentUser, getAuthState } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
-import MobileHeader from "@/components/layout/mobile-header";
-import MobileBottomNav from "@/components/layout/mobile-bottom-nav";
+import MuiMobileHeader from "@/components/mui/mui-mobile-header";
+import MuiMobileBottomNav from "@/components/mui/mui-mobile-bottom-nav";
 import { PayslipViewer } from "@/components/payroll/payslip-viewer";
 import { PayslipData, PayslipEarning, PayslipDeduction } from "@shared/payslip-types";
 
@@ -377,7 +377,7 @@ export default function MobilePayroll() {
 
   return (
     <div className="min-h-screen bg-background pb-24 mobile-app">
-      <MobileHeader
+      <MuiMobileHeader
         title="Payroll"
         subtitle="Payment history"
         showBack={true}
@@ -557,7 +557,7 @@ export default function MobilePayroll() {
         </DialogContent>
       </Dialog>
 
-      <MobileBottomNav />
+      <MuiMobileBottomNav />
     </div>
   );
 }

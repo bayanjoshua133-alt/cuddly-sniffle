@@ -1,32 +1,20 @@
 import { Route, Switch, Redirect, useLocation } from "wouter";
-import { queryClient } from "./lib/queryClient";
+import { queryClient, apiRequest } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { Toaster } from "@/components/ui/toaster";
-import { TooltipProvider } from "@/components/ui/tooltip";
 import { useEffect, useState, useCallback } from "react";
 import { getAuthState, setAuthState, subscribeToAuth } from "./lib/auth";
-import { apiRequest } from "./lib/queryClient";
-import { Coffee } from "lucide-react";
 
 // Theme Providers
 import { ThemeProvider } from "@/components/theme-provider";
 import { MuiThemeProvider } from "@/components/mui/mui-theme-provider";
 
-// Desktop Pages (Manager/Admin) - Legacy
-import Login from "@/pages/login";
-import Setup from "@/pages/setup";
-import Dashboard from "@/pages/dashboard";
-import Schedule from "@/pages/schedule";
-import ShiftTrading from "@/pages/shift-trading";
-import Payroll from "@/pages/payroll";
-import Notifications from "@/pages/notifications";
-import Employees from "@/pages/employees";
-import Branches from "@/pages/branches";
-import Reports from "@/pages/reports";
-import PayrollManagement from "@/pages/payroll-management";
-// Hours Report removed from admin
-import DeductionSettings from "@/pages/deduction-settings";
-import AdminDeductionRates from "@/pages/admin-deduction-rates";
+// MUI Components
+import { Box, CircularProgress, Typography, Button, alpha } from "@mui/material";
+import { LocalCafe as CoffeeIcon } from "@mui/icons-material";
+
+// MUI Layout Components
+import MuiSidebar from "@/components/mui/mui-sidebar";
+import MuiHeader from "@/components/mui/mui-header";
 
 // MUI-based Pages (Modern UI)
 import MuiDashboard from "@/pages/mui-dashboard";
@@ -41,6 +29,8 @@ import MuiLogin from "@/pages/mui-login";
 import MuiDeductionSettings from "@/pages/mui-deduction-settings";
 import MuiPayrollManagement from "@/pages/mui-payroll-management";
 import MuiAdminDeductionRates from "@/pages/mui-admin-deduction-rates";
+import Setup from "@/pages/setup";
+import NotFound from "@/pages/not-found";
 
 // Mobile Pages (Employee only)
 import MobileDashboard from "@/pages/mobile-dashboard";
@@ -52,66 +42,115 @@ import MobileShiftTrading from "@/pages/mobile-shift-trading";
 import MobileProfile from "@/pages/mobile-profile";
 import MobileMore from "@/pages/mobile-more";
 
-// Layout Components
-import Sidebar from "@/components/layout/sidebar";
-import Header from "@/components/layout/header";
-import NotFound from "@/pages/not-found";
-
 // Detect if running on mobile server (port 5001)
-// Handles both local development (localhost:5001) and GitHub Codespaces URLs (xxx-5001.app.github.dev)
 const isMobileServer = () => {
   const port = window.location.port;
   const hostname = window.location.hostname;
-  
-  // Check for port directly (local development)
-  if (port === '5001') return true;
-  
-  // Check for GitHub Codespaces URL pattern with port in hostname
-  if (hostname.includes('-5001.') || hostname.includes('-5001-')) return true;
-  
+  if (port === "5001") return true;
+  if (hostname.includes("-5001.") || hostname.includes("-5001-")) return true;
   return false;
 };
 
-// Loading Spinner Component
+// Loading Screen Component (MUI)
 function LoadingScreen() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="text-center">
-        <div className="w-16 h-16 bg-primary rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-          <Coffee className="h-8 w-8 text-primary-foreground animate-pulse" />
-        </div>
-        <p className="text-muted-foreground">Loading...</p>
-      </div>
-    </div>
+    <Box
+      sx={{
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        bgcolor: "background.default",
+      }}
+    >
+      <Box sx={{ textAlign: "center" }}>
+        <Box
+          sx={{
+            width: 64,
+            height: 64,
+            borderRadius: 3,
+            background: (theme) =>
+              `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            mx: "auto",
+            mb: 2,
+            boxShadow: (theme) => `0 8px 24px ${alpha(theme.palette.primary.main, 0.3)}`,
+          }}
+        >
+          <CoffeeIcon sx={{ fontSize: 32, color: "white" }} />
+        </Box>
+        <CircularProgress size={24} sx={{ mb: 2 }} />
+        <Typography color="text.secondary">Loading...</Typography>
+      </Box>
+    </Box>
   );
 }
 
-// Desktop Layout (for Manager/Admin)
+// Desktop Layout with MUI Components
 function DesktopLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex h-screen bg-background relative overflow-hidden">
-      {/* Premium Background Effects - 2025 Style */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        {/* Gradient orbs */}
-        <div className="absolute -top-40 -right-40 w-[600px] h-[600px] bg-gradient-to-br from-primary/8 to-emerald-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '8s' }} />
-        <div className="absolute top-1/3 -left-60 w-[500px] h-[500px] bg-gradient-to-tr from-indigo-500/5 to-violet-500/8 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '10s', animationDelay: '2s' }} />
-        <div className="absolute -bottom-40 right-1/4 w-[500px] h-[500px] bg-gradient-to-tl from-cyan-500/5 to-teal-500/8 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '12s', animationDelay: '4s' }} />
-        
-        {/* Subtle grid pattern */}
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.01)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.01)_1px,transparent_1px)] bg-[size:60px_60px] opacity-40" />
-        
-        {/* Noise texture overlay */}
-        <div className="absolute inset-0 opacity-[0.015]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 256 256\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noise\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noise)\'/%3E%3C/svg%3E")' }} />
-      </div>
-      
-      <Sidebar />
-      <div className="flex-1 flex flex-col overflow-hidden relative z-10">
-        <Header />
-        <main className="flex-1 overflow-y-auto">
+    <Box sx={{ display: "flex", minHeight: "100vh", bgcolor: "background.default" }}>
+      {/* Premium Background Effects */}
+      <Box
+        sx={{
+          position: "fixed",
+          inset: 0,
+          pointerEvents: "none",
+          overflow: "hidden",
+          zIndex: 0,
+        }}
+      >
+        <Box
+          sx={{
+            position: "absolute",
+            top: -160,
+            right: -160,
+            width: 600,
+            height: 600,
+            borderRadius: "50%",
+            background: (theme) =>
+              `radial-gradient(circle, ${alpha(theme.palette.primary.main, 0.08)} 0%, transparent 70%)`,
+            animation: "pulse 8s ease-in-out infinite",
+          }}
+        />
+        <Box
+          sx={{
+            position: "absolute",
+            top: "33%",
+            left: -240,
+            width: 500,
+            height: 500,
+            borderRadius: "50%",
+            background: (theme) =>
+              `radial-gradient(circle, ${alpha(theme.palette.secondary.main, 0.06)} 0%, transparent 70%)`,
+            animation: "pulse 10s ease-in-out infinite 2s",
+          }}
+        />
+        <Box
+          sx={{
+            position: "absolute",
+            bottom: -160,
+            right: "25%",
+            width: 500,
+            height: 500,
+            borderRadius: "50%",
+            background: (theme) =>
+              `radial-gradient(circle, ${alpha(theme.palette.info.main, 0.06)} 0%, transparent 70%)`,
+            animation: "pulse 12s ease-in-out infinite 4s",
+          }}
+        />
+      </Box>
+
+      <MuiSidebar />
+      <Box sx={{ flex: 1, display: "flex", flexDirection: "column", position: "relative", zIndex: 1 }}>
+        <MuiHeader />
+        <Box component="main" sx={{ flex: 1, overflow: "auto" }}>
           {children}
-        </main>
-      </div>
-    </div>
+        </Box>
+      </Box>
+    </Box>
   );
 }
 
@@ -145,11 +184,11 @@ function DesktopRouter({ authState }: { authState: { isAuthenticated: boolean; u
     return <MuiLogin />;
   }
 
-  // If employee tries to access desktop, show access denied with logout option
-  if (user?.role === 'employee') {
+  // If employee tries to access desktop, show access denied
+  if (user?.role === "employee") {
     const handleLogout = async () => {
       try {
-        await apiRequest('POST', '/api/auth/logout');
+        await apiRequest("POST", "/api/auth/logout");
       } catch (e) {
         // Ignore logout errors
       }
@@ -157,32 +196,52 @@ function DesktopRouter({ authState }: { authState: { isAuthenticated: boolean; u
     };
 
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center max-w-md p-8">
-          <div className="w-16 h-16 bg-destructive/10 rounded-xl flex items-center justify-center mx-auto mb-4">
-            <Coffee className="h-8 w-8 text-destructive" />
-          </div>
-          <h1 className="text-2xl font-bold mb-2">Access Restricted</h1>
-          <p className="text-muted-foreground mb-4">
-            This portal is for managers and administrators only. 
-            Please use the mobile app to access your employee dashboard.
-          </p>
-          <p className="text-sm text-muted-foreground mb-6">
-            Mobile Portal: <span className="font-mono text-primary">port 5001</span>
-          </p>
-          <div className="space-y-3">
-            <button
-              onClick={handleLogout}
-              className="w-full px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-            >
-              Logout & Switch Account
-            </button>
-            <p className="text-xs text-muted-foreground">
-              Login as <span className="font-mono">admin</span> or <span className="font-mono">sarah</span> for manager access
-            </p>
-          </div>
-        </div>
-      </div>
+      <Box
+        sx={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          bgcolor: "background.default",
+        }}
+      >
+        <Box sx={{ textAlign: "center", maxWidth: 400, p: 4 }}>
+          <Box
+            sx={{
+              width: 64,
+              height: 64,
+              borderRadius: 3,
+              bgcolor: (theme) => alpha(theme.palette.error.main, 0.1),
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              mx: "auto",
+              mb: 2,
+            }}
+          >
+            <CoffeeIcon sx={{ fontSize: 32, color: "error.main" }} />
+          </Box>
+          <Typography variant="h5" fontWeight={700} gutterBottom>
+            Access Restricted
+          </Typography>
+          <Typography color="text.secondary" sx={{ mb: 2 }}>
+            This portal is for managers and administrators only. Please use the mobile app to access
+            your employee dashboard.
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            Mobile Portal:{" "}
+            <Typography component="span" sx={{ fontFamily: "monospace", color: "primary.main" }}>
+              port 5001
+            </Typography>
+          </Typography>
+          <Button variant="contained" fullWidth onClick={handleLogout} sx={{ mb: 2 }}>
+            Logout & Switch Account
+          </Button>
+          <Typography variant="caption" color="text.secondary">
+            Login as <code>admin</code> or <code>sarah</code> for manager access
+          </Typography>
+        </Box>
+      </Box>
     );
   }
 
@@ -286,23 +345,49 @@ function MobileRouter({ authState }: { authState: { isAuthenticated: boolean; us
   }
 
   // If manager/admin tries to access mobile, show access info
-  if (user?.role === 'manager' || user?.role === 'admin') {
+  if (user?.role === "manager" || user?.role === "admin") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-6">
-        <div className="text-center max-w-md">
-          <div className="w-16 h-16 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-4">
-            <Coffee className="h-8 w-8 text-primary" />
-          </div>
-          <h1 className="text-2xl font-bold mb-2">Manager Portal</h1>
-          <p className="text-muted-foreground mb-6">
-            You're logged in as a {user.role}. This mobile app is designed for employees.
-            Please use the desktop portal for full management features.
-          </p>
-          <p className="text-sm text-muted-foreground">
-            Desktop Portal: <span className="font-mono text-primary">port 5000</span>
-          </p>
-        </div>
-      </div>
+      <Box
+        sx={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          bgcolor: "background.default",
+          p: 3,
+        }}
+      >
+        <Box sx={{ textAlign: "center", maxWidth: 400 }}>
+          <Box
+            sx={{
+              width: 64,
+              height: 64,
+              borderRadius: 3,
+              bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1),
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              mx: "auto",
+              mb: 2,
+            }}
+          >
+            <CoffeeIcon sx={{ fontSize: 32, color: "primary.main" }} />
+          </Box>
+          <Typography variant="h5" fontWeight={700} gutterBottom>
+            Manager Portal
+          </Typography>
+          <Typography color="text.secondary" sx={{ mb: 3 }}>
+            You're logged in as a {user.role}. This mobile app is designed for employees. Please
+            use the desktop portal for full management features.
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Desktop Portal:{" "}
+            <Typography component="span" sx={{ fontFamily: "monospace", color: "primary.main" }}>
+              port 5000
+            </Typography>
+          </Typography>
+        </Box>
+      </Box>
     );
   }
 
@@ -437,10 +522,7 @@ function App() {
       <ThemeProvider>
         <MuiThemeProvider>
           <QueryClientProvider client={queryClient}>
-            <TooltipProvider>
-              <Toaster />
-              <Setup />
-            </TooltipProvider>
+            <Setup />
           </QueryClientProvider>
         </MuiThemeProvider>
       </ThemeProvider>
@@ -452,10 +534,11 @@ function App() {
     <ThemeProvider>
       <MuiThemeProvider>
         <QueryClientProvider client={queryClient}>
-          <TooltipProvider>
-            <Toaster />
-            {isMobileServer() ? <MobileRouter authState={authState} /> : <DesktopRouter authState={authState} />}
-          </TooltipProvider>
+          {isMobileServer() ? (
+            <MobileRouter authState={authState} />
+          ) : (
+            <DesktopRouter authState={authState} />
+          )}
         </QueryClientProvider>
       </MuiThemeProvider>
     </ThemeProvider>

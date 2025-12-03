@@ -23,8 +23,8 @@ import { format, parseISO, differenceInDays } from "date-fns";
 import { apiRequest } from "@/lib/queryClient";
 import { getCurrentUser } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
-import MobileHeader from "@/components/layout/mobile-header";
-import MobileBottomNav from "@/components/layout/mobile-bottom-nav";
+import MuiMobileHeader from "@/components/mui/mui-mobile-header";
+import MuiMobileBottomNav from "@/components/mui/mui-mobile-bottom-nav";
 import { motion, AnimatePresence } from "framer-motion";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -151,7 +151,7 @@ export default function MobileTimeOff() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/30 pb-28">
-      <MobileHeader
+      <MuiMobileHeader
         title="Time Off"
         subtitle="Request and manage your time off"
         showBack={true}
@@ -452,7 +452,7 @@ export default function MobileTimeOff() {
         </div>
       </div>
 
-      <MobileBottomNav />
+      <MuiMobileBottomNav />
     </div>
   );
 }

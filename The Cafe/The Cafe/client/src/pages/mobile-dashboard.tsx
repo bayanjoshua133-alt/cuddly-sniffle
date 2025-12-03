@@ -1,31 +1,39 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { 
-  Calendar, 
-  Clock, 
-  DollarSign, 
-  ArrowRightLeft, 
-  Bell, 
-  FileText, 
-  TrendingUp, 
+import {
+  Box,
+  Card,
+  CardContent,
+  Typography,
+  Chip,
+  Button,
+  CircularProgress,
+  alpha,
+  Paper,
+} from "@mui/material";
+import {
+  CalendarMonth as Calendar,
+  AccessTime as Clock,
+  AttachMoney as DollarSign,
+  SwapHoriz as ArrowRightLeft,
+  Notifications as Bell,
+  Description as FileText,
+  TrendingUp,
   TrendingDown,
-  Target,
-  Award,
+  GpsFixed as Target,
+  EmojiEvents as Award,
   ChevronRight,
-  Sun,
-  Moon,
-  Coffee
-} from "lucide-react";
+  LightMode as Sun,
+  DarkMode as Moon,
+  LocalCafe as Coffee,
+} from "@mui/icons-material";
 import { format, isToday, isTomorrow, parseISO, differenceInHours } from "date-fns";
 import { motion } from "framer-motion";
 import { apiRequest } from "@/lib/queryClient";
 import { getCurrentUser, getAuthState } from "@/lib/auth";
 import { useLocation } from "wouter";
-import MobileHeader from "@/components/layout/mobile-header";
-import MobileBottomNav from "@/components/layout/mobile-bottom-nav";
+import MuiMuiMobileHeader from "@/components/mui/mui-mobile-header";
+import MuiMuiMobileBottomNav from "@/components/mui/mui-mobile-bottom-nav";
 
 interface Shift {
   id: string;
@@ -317,7 +325,7 @@ export default function MobileDashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-background/95 pb-28 mobile-app">
-      <MobileHeader
+      <MuiMobileHeader
         title={`${greeting}!`}
         subtitle={currentUser?.firstName || 'Team Member'}
         showBack={false}
@@ -715,7 +723,7 @@ export default function MobileDashboard() {
         )}
       </div>
 
-      <MobileBottomNav notificationCount={unreadCount} />
+      <MuiMobileBottomNav notificationCount={unreadCount} />
     </div>
   );
 }
