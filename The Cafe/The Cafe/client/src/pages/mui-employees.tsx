@@ -199,24 +199,32 @@ export default function MuiEmployees() {
     }
   }, [managerRole, setLocation]);
 
-  // Queries
-  const { data: employeesResponse, isLoading: employeesLoading } = useQuery<{ employees: Employee[] }>({
+  // Queries with real-time updates
+  const { data: employeesResponse, isLoading: employeesLoading, refetch: refetchEmployees } = useQuery<{ employees: Employee[] }>({
     queryKey: ["/api/hours/all-employees"],
     enabled: managerRole,
+    refetchInterval: 5000, // Poll every 5 seconds for real-time employee updates
+    refetchOnWindowFocus: true,
+    refetchIntervalInBackground: true,
   });
 
   const { data: branchesResponse } = useQuery<{ branches: Branch[] }>({
     queryKey: ["/api/branches"],
     enabled: managerRole,
+    refetchInterval: 30000, // Branches don't change often
+    refetchOnWindowFocus: true,
   });
 
-  const { data: employeeStats } = useQuery({
+  const { data: employeeStats, refetch: refetchStats } = useQuery({
     queryKey: ["employee-stats"],
     queryFn: async () => {
       const response = await apiRequest("GET", "/api/employees/stats");
       return response.json();
     },
     enabled: managerRole,
+    refetchInterval: 10000, // Poll every 10 seconds for stats
+    refetchOnWindowFocus: true,
+    refetchIntervalInBackground: true,
   });
 
   const employeesData = employeesResponse?.employees || [];
@@ -425,38 +433,39 @@ export default function MuiEmployees() {
     }
   };
 
-  // DataGrid columns
+  // DataGrid columns - optimized for better visibility
   const columns: GridColDef[] = [
     {
       field: "employee",
       headerName: "Employee",
-      flex: 1.5,
-      minWidth: 250,
+      flex: 2,
+      minWidth: 280,
       valueGetter: (value, row) => `${row.firstName} ${row.lastName}`,
       renderCell: (params: GridRenderCellParams<Employee>) => (
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2, py: 1 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, py: 1, overflow: "hidden" }}>
           <Avatar
             sx={{
-              width: 40,
-              height: 40,
+              width: 36,
+              height: 36,
+              flexShrink: 0,
               bgcolor: params.row.role === "manager" ? "primary.main" : params.row.role === "admin" ? "secondary.main" : "success.main",
-              fontSize: "0.875rem",
+              fontSize: "0.8rem",
               fontWeight: 600,
             }}
           >
             {params.row.firstName?.charAt(0)}
             {params.row.lastName?.charAt(0)}
           </Avatar>
-          <Box>
+          <Box sx={{ minWidth: 0, flex: 1 }}>
             <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+              <Typography variant="body2" sx={{ fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                 {params.row.firstName} {params.row.lastName}
               </Typography>
               {params.row.blockchainVerified && (
-                <VerifiedIcon sx={{ fontSize: 14, color: "success.main" }} />
+                <VerifiedIcon sx={{ fontSize: 14, color: "success.main", flexShrink: 0 }} />
               )}
             </Box>
-            <Typography variant="caption" color="text.secondary">
+            <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block" }}>
               {params.row.email}
             </Typography>
           </Box>
@@ -466,16 +475,18 @@ export default function MuiEmployees() {
     {
       field: "position",
       headerName: "Position",
-      flex: 1,
-      minWidth: 150,
+      flex: 1.2,
+      minWidth: 180,
       renderCell: (params: GridRenderCellParams<Employee>) => (
-        <Box>
-          <Typography variant="body2">{params.row.position}</Typography>
+        <Box sx={{ display: "flex", flexDirection: "column", justifyContent: "center", gap: 0.5, py: 0.5 }}>
+          <Typography variant="body2" sx={{ fontWeight: 500, lineHeight: 1.2 }}>
+            {params.row.position}
+          </Typography>
           <Chip
             size="small"
             label={params.row.role}
             color={getRoleColor(params.row.role)}
-            sx={{ mt: 0.5, height: 20, fontSize: "0.7rem" }}
+            sx={{ height: 18, fontSize: "0.65rem", width: "fit-content" }}
           />
         </Box>
       ),
@@ -483,41 +494,61 @@ export default function MuiEmployees() {
     {
       field: "branch",
       headerName: "Branch",
-      flex: 0.8,
-      minWidth: 120,
+      flex: 1,
+      minWidth: 140,
       valueGetter: (value, row) => getBranchName(row.branchId),
+      renderCell: (params: GridRenderCellParams<Employee>) => (
+        <Typography variant="body2" sx={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          {getBranchName(params.row.branchId)}
+        </Typography>
+      ),
     },
     {
       field: "hourlyRate",
       headerName: "Rate",
-      flex: 0.6,
-      minWidth: 100,
+      width: 100,
       align: "right",
       headerAlign: "right",
-      renderCell: (params: GridRenderCellParams<Employee>) => (
-        <Typography variant="body2" sx={{ fontWeight: 600 }}>
-          ₱{parseFloat(params.row.hourlyRate).toFixed(0)}/hr
-        </Typography>
-      ),
+      renderCell: (params: GridRenderCellParams<Employee>) => {
+        const rate = parseFloat(params.row.hourlyRate || "0");
+        return (
+          <Typography 
+            variant="body2" 
+            sx={{ 
+              fontWeight: 600,
+              color: rate === 0 ? 'text.disabled' : 'text.primary'
+            }}
+          >
+            ₱{rate.toLocaleString('en-PH')}/hr
+          </Typography>
+        );
+      },
     },
     {
       field: "hoursThisMonth",
       headerName: "Hours",
-      flex: 0.6,
-      minWidth: 80,
+      width: 80,
       align: "right",
       headerAlign: "right",
-      renderCell: (params: GridRenderCellParams<Employee>) => (
-        <Typography variant="body2" sx={{ fontFamily: "monospace" }}>
-          {params.row.hoursThisMonth?.toFixed(1) || "0.0"}h
-        </Typography>
-      ),
+      renderCell: (params: GridRenderCellParams<Employee>) => {
+        const hours = params.row.hoursThisMonth || 0;
+        return (
+          <Typography 
+            variant="body2" 
+            sx={{ 
+              fontFamily: "monospace",
+              color: hours === 0 ? 'text.disabled' : 'text.primary'
+            }}
+          >
+            {hours.toLocaleString('en-PH', { minimumFractionDigits: 0, maximumFractionDigits: 1 })}h
+          </Typography>
+        );
+      },
     },
     {
       field: "isActive",
       headerName: "Status",
-      flex: 0.5,
-      minWidth: 100,
+      width: 110,
       renderCell: (params: GridRenderCellParams<Employee>) => (
         <Chip
           size="small"
@@ -531,8 +562,7 @@ export default function MuiEmployees() {
     {
       field: "actions",
       headerName: "Actions",
-      flex: 0.8,
-      minWidth: 150,
+      width: 160,
       sortable: false,
       filterable: false,
       renderCell: (params: GridRenderCellParams<Employee>) => (
@@ -611,7 +641,7 @@ export default function MuiEmployees() {
             <Grid size={{ xs: 6, lg: 3 }}>
               <StatCard
                 title="Hours This Month"
-                value={stats.totalHoursThisMonth.toFixed(0)}
+                value={stats.totalHoursThisMonth.toLocaleString('en-PH', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                 subtitle="Total team hours"
                 icon={<ClockIcon />}
                 color="info"
@@ -620,7 +650,7 @@ export default function MuiEmployees() {
             <Grid size={{ xs: 6, lg: 3 }}>
               <StatCard
                 title="Monthly Payroll"
-                value={`₱${stats.totalPayrollThisMonth.toFixed(0)}`}
+                value={`₱${stats.totalPayrollThisMonth.toLocaleString('en-PH', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`}
                 subtitle="This month estimate"
                 icon={<DollarIcon />}
                 color="warning"
@@ -721,6 +751,8 @@ export default function MuiEmployees() {
                 loading={employeesLoading}
                 checkboxSelection
                 disableRowSelectionOnClick
+                rowHeight={65}
+                getRowHeight={() => 65}
                 onRowSelectionModelChange={(newSelection) => {
                   setSelectedEmployees(Array.from(newSelection.ids || []).map(String));
                 }}
@@ -739,8 +771,20 @@ export default function MuiEmployees() {
                 sx={{
                   border: "none",
                   minHeight: 500,
+                  "& .MuiDataGrid-cell": { 
+                    py: 1,
+                    display: "flex",
+                    alignItems: "center",
+                  },
                   "& .MuiDataGrid-cell:focus": { outline: "none" },
                   "& .MuiDataGrid-columnHeader:focus": { outline: "none" },
+                  "& .MuiDataGrid-columnHeaders": {
+                    bgcolor: "action.hover",
+                    borderRadius: 0,
+                  },
+                  "& .MuiDataGrid-columnHeaderTitle": {
+                    fontWeight: 600,
+                  },
                 }}
               />
             </Paper>

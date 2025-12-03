@@ -1863,6 +1863,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         employeeIds.map(empId => storage.getTimeOffRequestsByUser(empId))
       );
       requests = allRequests.flat();
+      // Sort combined requests by requestedAt descending (newest first)
+      requests.sort((a, b) => new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime());
     } else {
       requests = await storage.getTimeOffRequestsByUser(userId);
     }
@@ -2020,9 +2022,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       for (const manager of managers) {
         await storage.createNotification({
           userId: manager.id,
-          type: 'schedule',
+          type: 'time_off',
           title: 'New Time Off Request',
           message: `${employee?.firstName} ${employee?.lastName} has requested time off from ${format(new Date(request.startDate), "MMM d")} to ${format(new Date(request.endDate), "MMM d, yyyy")} (${requestData.type})`,
+          isRead: false,
           data: JSON.stringify({
             requestId: request.id,
             employeeId: req.user!.id,
@@ -2064,9 +2067,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Create notification for employee
     await storage.createNotification({
       userId: request.userId,
-      type: 'schedule',
+      type: 'time_off_approved',
       title: 'Time Off Request Approved',
       message: `Your time off request from ${format(new Date(request.startDate), "MMM d")} to ${format(new Date(request.endDate), "MMM d, yyyy")} has been approved`,
+      isRead: false,
       data: JSON.stringify({
         requestId: request.id,
         status: 'approved'
@@ -2090,9 +2094,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Create notification for employee
     await storage.createNotification({
       userId: request.userId,
-      type: 'schedule',
+      type: 'time_off_rejected',
       title: 'Time Off Request Rejected',
       message: `Your time off request from ${format(new Date(request.startDate), "MMM d")} to ${format(new Date(request.endDate), "MMM d, yyyy")} has been rejected`,
+      isRead: false,
       data: JSON.stringify({
         requestId: request.id,
         status: 'rejected'

@@ -245,7 +245,7 @@ export default function MobileDashboard() {
     );
   }
 
-  // Fetch upcoming shifts
+  // Fetch upcoming shifts with real-time updates
   const { data: shiftsData } = useQuery({
     queryKey: ['mobile-shifts', currentUser?.id],
     queryFn: async () => {
@@ -257,11 +257,12 @@ export default function MobileDashboard() {
       );
       return response.json();
     },
-    refetchInterval: 10000, // Poll every 10 seconds
+    refetchInterval: 5000, // Poll every 5 seconds for real-time
     refetchOnWindowFocus: true,
+    refetchIntervalInBackground: true,
   });
 
-  // Fetch recent payroll
+  // Fetch recent payroll with real-time updates
   const { data: payrollData } = useQuery({
     queryKey: ['mobile-payroll'],
     queryFn: async () => {
@@ -270,17 +271,19 @@ export default function MobileDashboard() {
     },
     refetchInterval: 5000, // Poll every 5 seconds for real-time payslip updates
     refetchOnWindowFocus: true,
+    refetchIntervalInBackground: true,
   });
 
-  // Fetch hours summary
+  // Fetch hours summary with real-time updates
   const { data: hoursSummary } = useQuery({
     queryKey: ['hours-summary'],
     queryFn: async () => {
       const response = await apiRequest('GET', '/api/hours/my-summary');
       return response.json();
     },
-    refetchInterval: 10000, // Poll every 10 seconds
+    refetchInterval: 5000, // Poll every 5 seconds for real-time
     refetchOnWindowFocus: true,
+    refetchIntervalInBackground: true,
   });
 
   // Fetch notifications with real-time updates

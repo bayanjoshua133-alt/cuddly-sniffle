@@ -113,22 +113,28 @@ export default function MuiPayroll() {
   const [selectedPayslip, setSelectedPayslip] = useState<PayrollEntry | null>(null);
   const [payslipDialogOpen, setPayslipDialogOpen] = useState(false);
 
-  // Fetch payroll entries for current user
-  const { data: payrollData, isLoading: payrollLoading } = useQuery({
+  // Fetch payroll entries for current user with real-time updates
+  const { data: payrollData, isLoading: payrollLoading, refetch: refetchPayroll } = useQuery({
     queryKey: ["payroll-entries"],
     queryFn: async () => {
       const response = await apiRequest("GET", "/api/payroll");
       return response.json();
     },
+    refetchInterval: 5000, // Poll every 5 seconds for real-time payroll updates
+    refetchOnWindowFocus: true,
+    refetchIntervalInBackground: true,
   });
 
-  // Fetch current payroll period
-  const { data: currentPeriod } = useQuery({
+  // Fetch current payroll period with real-time updates
+  const { data: currentPeriod, refetch: refetchPeriod } = useQuery({
     queryKey: ["current-payroll-period"],
     queryFn: async () => {
       const response = await apiRequest("GET", `/api/payroll/periods/current?branchId=${currentUser?.branchId}`);
       return response.json();
     },
+    refetchInterval: 10000, // Poll every 10 seconds for period updates
+    refetchOnWindowFocus: true,
+    refetchIntervalInBackground: true,
   });
 
   const payrollEntries: PayrollEntry[] = payrollData?.entries || [];

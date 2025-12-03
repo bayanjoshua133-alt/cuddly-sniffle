@@ -80,6 +80,9 @@ export default function MuiDeductionSettings() {
 
   const { data: settingsData, isLoading } = useQuery<{ settings: DeductionSettings }>({
     queryKey: ["/api/deduction-settings"],
+    refetchInterval: 5000, // Poll every 5 seconds for real-time updates
+    refetchOnWindowFocus: true,
+    refetchIntervalInBackground: true,
   });
 
   useEffect(() => {

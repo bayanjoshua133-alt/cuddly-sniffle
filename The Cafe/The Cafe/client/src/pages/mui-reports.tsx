@@ -111,7 +111,7 @@ export default function MuiReports() {
     end: format(endOfMonth(new Date()), "yyyy-MM-dd"),
   });
 
-  // Fetch report data
+  // Fetch report data with real-time updates
   const { data: reportData, isLoading, refetch } = useQuery({
     queryKey: ["reports", dateRange],
     queryFn: async () => {
@@ -122,15 +122,21 @@ export default function MuiReports() {
       return response.json();
     },
     enabled: isManagerRole || isAdminRole,
+    refetchInterval: 10000, // Poll every 10 seconds for real-time report updates
+    refetchOnWindowFocus: true,
+    refetchIntervalInBackground: true,
   });
 
-  // Fetch employees for detailed report
+  // Fetch employees for detailed report with real-time updates
   const { data: employeesResponse } = useQuery({
     queryKey: ["employees"],
     queryFn: async () => {
       const response = await apiRequest("GET", "/api/employees");
       return response.json();
     },
+    refetchInterval: 10000, // Poll every 10 seconds
+    refetchOnWindowFocus: true,
+    refetchIntervalInBackground: true,
   });
 
   const employees = employeesResponse?.employees || [];

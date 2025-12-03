@@ -111,23 +111,28 @@ export default function MuiShiftTrading() {
     reason: "",
   });
 
-  // Fetch shift trades
+  // Fetch shift trades with real-time updates
   const { data: tradesResponse, isLoading, refetch } = useQuery({
     queryKey: ["shift-trades"],
     queryFn: async () => {
       const response = await apiRequest("GET", "/api/shift-trades");
       return response.json();
     },
-    refetchInterval: 30000,
+    refetchInterval: 5000, // Poll every 5 seconds for real-time trade updates
+    refetchOnWindowFocus: true,
+    refetchIntervalInBackground: true,
   });
 
-  // Fetch my shifts (for creating trade requests)
+  // Fetch my shifts (for creating trade requests) with real-time updates
   const { data: myShiftsResponse } = useQuery({
     queryKey: ["my-shifts"],
     queryFn: async () => {
       const response = await apiRequest("GET", "/api/shifts");
       return response.json();
     },
+    refetchInterval: 5000, // Poll every 5 seconds for real-time schedule updates
+    refetchOnWindowFocus: true,
+    refetchIntervalInBackground: true,
   });
 
   // Fetch employees (for selecting trade target)
@@ -137,6 +142,8 @@ export default function MuiShiftTrading() {
       const response = await apiRequest("GET", "/api/employees");
       return response.json();
     },
+    refetchInterval: 30000, // Employee list doesn't change often
+    refetchOnWindowFocus: true,
   });
 
   const trades: ShiftTrade[] = tradesResponse?.trades || [];

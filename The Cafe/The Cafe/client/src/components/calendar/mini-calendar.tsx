@@ -28,6 +28,9 @@ export function MiniCalendar({ className }: MiniCalendarProps) {
   // Fetch upcoming shifts for the next 7 days
   const { data: upcomingEvents = [], isLoading } = useQuery({
     queryKey: ['upcoming-shifts', currentUser?.id],
+    refetchInterval: 5000, // Poll every 5 seconds for real-time updates
+    refetchOnWindowFocus: true,
+    refetchIntervalInBackground: true,
     queryFn: async () => {
       const startDate = new Date();
       const endDate = addDays(startDate, 7);

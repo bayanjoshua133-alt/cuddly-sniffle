@@ -104,13 +104,16 @@ export default function MuiBranches() {
     email: "",
   });
 
-  // Fetch branches
+  // Fetch branches with real-time updates
   const { data: branchesResponse, isLoading, refetch } = useQuery({
     queryKey: ["branches"],
     queryFn: async () => {
       const response = await apiRequest("GET", "/api/branches");
       return response.json();
     },
+    refetchInterval: 5000, // Poll every 5 seconds for real-time branch updates
+    refetchOnWindowFocus: true,
+    refetchIntervalInBackground: true,
   });
 
   const branches: Branch[] = branchesResponse?.branches || [];

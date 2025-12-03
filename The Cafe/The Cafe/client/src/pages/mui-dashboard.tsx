@@ -83,36 +83,41 @@ export default function MuiDashboard() {
   const { data: approvals, isLoading: approvalsLoading } = useQuery<ApprovalsResponse>({
     queryKey: ["/api/approvals"],
     enabled: isManagerRole,
-    refetchInterval: 30000,
+    refetchInterval: 5000, // Poll every 5 seconds for real-time updates
     refetchOnWindowFocus: true,
+    refetchIntervalInBackground: true,
   });
 
   const { data: timeOffResponse, isLoading: timeOffLoading } = useQuery<TimeOffResponse>({
     queryKey: ["/api/time-off-requests"],
     enabled: isManagerRole,
-    refetchInterval: 30000,
+    refetchInterval: 5000, // Poll every 5 seconds for real-time time off requests
     refetchOnWindowFocus: true,
+    refetchIntervalInBackground: true,
   });
 
   const { data: shifts, isLoading: shiftsLoading } = useQuery<ShiftsResponse>({
     queryKey: ["/api/shifts/branch"],
     enabled: isManagerRole,
-    refetchInterval: 30000,
+    refetchInterval: 5000, // Poll every 5 seconds for real-time schedule updates
     refetchOnWindowFocus: true,
+    refetchIntervalInBackground: true,
   });
 
   const { data: employeeShifts, isLoading: employeeShiftsLoading } = useQuery<ShiftsResponse>({
     queryKey: ["/api/shifts"],
     enabled: !isManagerRole,
-    refetchInterval: 30000,
+    refetchInterval: 5000, // Poll every 5 seconds for real-time schedule updates
     refetchOnWindowFocus: true,
+    refetchIntervalInBackground: true,
   });
 
   const { data: teamHours, isLoading: teamHoursLoading } = useQuery<TeamHoursResponse>({
     queryKey: ["/api/hours/team-summary"],
     enabled: isManagerRole,
-    refetchInterval: 30000,
+    refetchInterval: 10000, // Poll every 10 seconds for team hours
     refetchOnWindowFocus: true,
+    refetchIntervalInBackground: true,
   });
 
   // Filter today's shifts

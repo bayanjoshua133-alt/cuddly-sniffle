@@ -13,6 +13,9 @@ export default function PaySummary() {
       startDate: payPeriod.start.toISOString(),
       endDate: payPeriod.end.toISOString(),
     }],
+    refetchInterval: 5000, // Poll every 5 seconds for real-time pay summary
+    refetchOnWindowFocus: true,
+    refetchIntervalInBackground: true,
   });
 
   // Calculate totals

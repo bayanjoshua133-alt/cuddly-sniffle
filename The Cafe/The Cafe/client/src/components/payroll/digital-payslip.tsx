@@ -114,6 +114,9 @@ export function DigitalPayslip({ entryId, open, onOpenChange }: DigitalPayslipPr
       return response.json();
     },
     enabled: open && !!entryId,
+    refetchInterval: open ? 5000 : false, // Poll every 5 seconds when open
+    refetchOnWindowFocus: true,
+    refetchIntervalInBackground: true,
   });
 
   const payslip: PayslipData | null = data?.payslip || null;

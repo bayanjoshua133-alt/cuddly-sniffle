@@ -7,7 +7,9 @@ import { Badge } from "@/components/ui/badge";
 export default function EmployeeStatus() {
   const { data: employeeStatus, isLoading } = useQuery({
     queryKey: ["/api/dashboard/employee-status"],
-    refetchInterval: 30000, // Refresh every 30 seconds
+    refetchInterval: 5000, // Poll every 5 seconds for real-time status
+    refetchOnWindowFocus: true,
+    refetchIntervalInBackground: true,
   });
 
   const getStatusIcon = (status: string) => {

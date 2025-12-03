@@ -122,7 +122,7 @@ export default function MuiSchedule() {
   const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 0 });
   const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
 
-  // Fetch employees for managers
+  // Fetch employees for managers with real-time updates
   const { data: employeesData } = useQuery({
     queryKey: ["employees"],
     queryFn: async () => {
@@ -130,6 +130,9 @@ export default function MuiSchedule() {
       return response.json();
     },
     enabled: isManagerRole,
+    refetchInterval: 10000, // Poll every 10 seconds
+    refetchOnWindowFocus: true,
+    refetchIntervalInBackground: true,
   });
 
   // API returns direct array, not {employees: []}
@@ -152,6 +155,7 @@ export default function MuiSchedule() {
     },
     refetchInterval: 5000, // Poll every 5 seconds for real-time updates
     refetchOnWindowFocus: true,
+    refetchIntervalInBackground: true, // Keep polling even when tab is not focused
   });
 
   const shifts: Shift[] = shiftsData?.shifts || [];

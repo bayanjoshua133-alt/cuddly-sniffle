@@ -119,19 +119,20 @@ export default function MuiPayrollManagement() {
   const [activeTab, setActiveTab] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Fetch payroll periods
-  const { data: periodsData, isLoading: periodsLoading } = useQuery({
+  // Fetch payroll periods with real-time updates
+  const { data: periodsData, isLoading: periodsLoading, refetch: refetchPeriods } = useQuery({
     queryKey: ["payroll-periods"],
     queryFn: async () => {
       const response = await apiRequest("GET", "/api/payroll/periods");
       return response.json();
     },
-    refetchInterval: 30000,
+    refetchInterval: 5000, // Poll every 5 seconds for real-time payroll updates
     refetchOnWindowFocus: true,
+    refetchIntervalInBackground: true,
   });
 
-  // Fetch payroll entries for selected period
-  const { data: entriesData, isLoading: entriesLoading } = useQuery({
+  // Fetch payroll entries for selected period with real-time updates
+  const { data: entriesData, isLoading: entriesLoading, refetch: refetchEntries } = useQuery({
     queryKey: ["payroll-entries-branch", selectedPeriod?.id],
     queryFn: async () => {
       const url = selectedPeriod
@@ -141,8 +142,9 @@ export default function MuiPayrollManagement() {
       return response.json();
     },
     enabled: !!selectedPeriod,
-    refetchInterval: 15000,
+    refetchInterval: 5000, // Poll every 5 seconds for real-time entry updates
     refetchOnWindowFocus: true,
+    refetchIntervalInBackground: true,
   });
 
   // Mutations

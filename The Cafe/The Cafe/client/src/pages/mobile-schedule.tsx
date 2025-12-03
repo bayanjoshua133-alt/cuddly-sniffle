@@ -112,8 +112,8 @@ export default function MobileSchedule() {
 
   const dateRange = getDateRange();
 
-  // Fetch shifts for the range
-  const { data: shiftsData, isLoading } = useQuery({
+  // Fetch shifts for the range with real-time updates
+  const { data: shiftsData, isLoading, refetch } = useQuery({
     queryKey: ['mobile-schedule-shifts', currentUser?.id, dateRange.start, dateRange.end],
     queryFn: async () => {
       const response = await apiRequest(
@@ -122,6 +122,9 @@ export default function MobileSchedule() {
       );
       return response.json();
     },
+    refetchInterval: 5000, // Poll every 5 seconds for real-time schedule updates
+    refetchOnWindowFocus: true,
+    refetchIntervalInBackground: true, // Keep polling even when tab is not focused
   });
 
   const shifts: Shift[] = shiftsData?.shifts || [];

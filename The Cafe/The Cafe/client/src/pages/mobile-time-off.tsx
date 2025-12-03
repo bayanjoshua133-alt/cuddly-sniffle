@@ -68,13 +68,16 @@ export default function MobileTimeOff() {
     reason: "",
   });
 
-  // Fetch time off requests
-  const { data: requestsData, isLoading } = useQuery({
+  // Fetch time off requests with real-time updates
+  const { data: requestsData, isLoading, refetch } = useQuery({
     queryKey: ['mobile-time-off', currentUser?.id],
     queryFn: async () => {
       const response = await apiRequest('GET', '/api/time-off-requests');
       return response.json();
     },
+    refetchInterval: 5000, // Poll every 5 seconds for real-time time off updates
+    refetchOnWindowFocus: true,
+    refetchIntervalInBackground: true,
   });
 
   // Submit time off request

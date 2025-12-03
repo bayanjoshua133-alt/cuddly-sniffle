@@ -24,7 +24,9 @@ export default function ClockInterface() {
 
   const { data: clockStatus, isLoading } = useQuery({
     queryKey: ["/api/clock/status"],
-    refetchInterval: 30000, // Refresh every 30 seconds
+    refetchInterval: 5000, // Poll every 5 seconds for real-time status
+    refetchOnWindowFocus: true,
+    refetchIntervalInBackground: true,
   });
 
   const { data: todayEntries } = useQuery({
@@ -32,6 +34,9 @@ export default function ClockInterface() {
       startDate: new Date().toISOString().split('T')[0],
       endDate: new Date().toISOString().split('T')[0]
     }],
+    refetchInterval: 5000, // Poll every 5 seconds for real-time entries
+    refetchOnWindowFocus: true,
+    refetchIntervalInBackground: true,
   });
 
   const clockMutation = useMutation({

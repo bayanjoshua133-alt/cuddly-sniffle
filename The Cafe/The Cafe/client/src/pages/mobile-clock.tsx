@@ -39,14 +39,16 @@ export default function MobileClock() {
     return () => clearInterval(timer);
   }, []);
 
-  // Fetch clock status
-  const { data: clockStatus, isLoading } = useQuery<ClockStatus>({
+  // Fetch clock status with real-time updates
+  const { data: clockStatus, isLoading, refetch } = useQuery<ClockStatus>({
     queryKey: ['clock-status', currentUser?.id],
     queryFn: async () => {
       const response = await apiRequest('GET', '/api/clock/status');
       return response.json();
     },
-    refetchInterval: 30000, // Refresh every 30 seconds
+    refetchInterval: 5000, // Poll every 5 seconds for real-time clock updates
+    refetchOnWindowFocus: true,
+    refetchIntervalInBackground: true,
   });
 
   // Calculate elapsed time

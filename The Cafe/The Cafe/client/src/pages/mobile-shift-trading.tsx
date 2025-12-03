@@ -46,22 +46,28 @@ export default function MobileShiftTrading() {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<"available" | "my">("available");
 
-  // Fetch available shifts
-  const { data: availableData, isLoading: loadingAvailable } = useQuery({
+  // Fetch available shifts with real-time updates
+  const { data: availableData, isLoading: loadingAvailable, refetch: refetchAvailable } = useQuery({
     queryKey: ['mobile-shift-trades-available'],
     queryFn: async () => {
       const response = await apiRequest('GET', '/api/shift-trades/available');
       return response.json();
     },
+    refetchInterval: 5000, // Poll every 5 seconds for real-time trade updates
+    refetchOnWindowFocus: true,
+    refetchIntervalInBackground: true,
   });
 
-  // Fetch my trades
-  const { data: myTradesData, isLoading: loadingMy } = useQuery({
+  // Fetch my trades with real-time updates
+  const { data: myTradesData, isLoading: loadingMy, refetch: refetchMyTrades } = useQuery({
     queryKey: ['mobile-shift-trades-my'],
     queryFn: async () => {
       const response = await apiRequest('GET', '/api/shift-trades');
       return response.json();
     },
+    refetchInterval: 5000, // Poll every 5 seconds for real-time trade updates
+    refetchOnWindowFocus: true,
+    refetchIntervalInBackground: true,
   });
 
   // Take shift mutation

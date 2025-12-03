@@ -168,8 +168,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getShiftsByUser(userId: string, startDate?: Date, endDate?: Date): Promise<Shift[]> {
-    let query = db.select().from(shifts).where(eq(shifts.userId, userId));
-    
     if (startDate && endDate) {
       return db.select().from(shifts).where(
         and(
@@ -177,10 +175,12 @@ export class DatabaseStorage implements IStorage {
           gte(shifts.startTime, startDate),
           lte(shifts.startTime, endDate)
         )
-      );
+      ).orderBy(shifts.startTime); // Sort by start time ascending for chronological order
     }
     
-    return query;
+    return db.select().from(shifts)
+      .where(eq(shifts.userId, userId))
+      .orderBy(shifts.startTime);
   }
 
   async getShiftsByBranch(branchId: string, startDate?: Date, endDate?: Date): Promise<Shift[]> {
@@ -430,7 +430,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getTimeOffRequestsByUser(userId: string): Promise<TimeOffRequest[]> {
-    const result = await db.select().from(timeOffRequests).where(eq(timeOffRequests.userId, userId));
+    const result = await db.select().from(timeOffRequests)
+      .where(eq(timeOffRequests.userId, userId))
+      .orderBy(desc(timeOffRequests.requestedAt));
     return result as TimeOffRequest[];
   }
 

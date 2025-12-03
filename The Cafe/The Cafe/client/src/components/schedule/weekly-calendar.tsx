@@ -19,6 +19,9 @@ export default function WeeklyCalendar() {
         endDate: currentWeek.end.toISOString(),
       }
     ],
+    refetchInterval: 5000, // Poll every 5 seconds for real-time schedule
+    refetchOnWindowFocus: true,
+    refetchIntervalInBackground: true,
   });
 
   const navigateWeek = (direction: 'prev' | 'next') => {

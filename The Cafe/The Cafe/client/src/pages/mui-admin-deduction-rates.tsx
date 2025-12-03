@@ -84,6 +84,9 @@ export default function MuiAdminDeductionRates() {
 
   const { data: ratesData, isLoading } = useQuery<{ rates: DeductionRate[] }>({
     queryKey: ["/api/admin/deduction-rates"],
+    refetchInterval: 5000, // Poll every 5 seconds for real-time updates
+    refetchOnWindowFocus: true,
+    refetchIntervalInBackground: true,
   });
 
   const createMutation = useMutation({
