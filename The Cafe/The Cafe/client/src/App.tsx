@@ -176,6 +176,28 @@ function RequireAdmin({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+// Manager/Admin route guard
+function RequireManagerOrAdmin({ children }: { children: React.ReactNode }) {
+  const { user, isAuthenticated } = getAuthState();
+  const [, setLocation] = useLocation();
+
+  useEffect(() => {
+    if (isAuthenticated && user && user.role !== 'manager' && user.role !== 'admin') {
+      setLocation('/');
+    }
+  }, [isAuthenticated, user, setLocation]);
+
+  if (!isAuthenticated || !user) {
+    return <LoadingScreen />;
+  }
+
+  if (user.role !== 'manager' && user.role !== 'admin') {
+    return null;
+  }
+
+  return <>{children}</>;
+}
+
 // Desktop Router (Manager/Admin only - Port 5000)
 function DesktopRouter({ authState }: { authState: { isAuthenticated: boolean; user: any } }) {
   const { isAuthenticated, user } = authState;
@@ -184,8 +206,8 @@ function DesktopRouter({ authState }: { authState: { isAuthenticated: boolean; u
     return <MuiLogin />;
   }
 
-  // If employee tries to access desktop, show access denied
-  if (user?.role === "employee") {
+  // Only allow manager and admin roles on desktop
+  if (!user || (user.role !== 'manager' && user.role !== 'admin')) {
     const handleLogout = async () => {
       try {
         await apiRequest("POST", "/api/auth/logout");
