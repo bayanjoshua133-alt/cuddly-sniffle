@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { calculateShiftPay, HolidayType } from "./payroll-utils";
-import { Holiday, Shift } from "@shared/schema";
+import { Holiday, Shift } from "../shared/schema";
 
 const HOUR = 60 * 60 * 1000;
 const DEFAULT_RATE = 100;
