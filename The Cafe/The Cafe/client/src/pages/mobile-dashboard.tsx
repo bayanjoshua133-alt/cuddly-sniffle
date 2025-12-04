@@ -386,7 +386,7 @@ export default function MobileDashboard() {
                   </div>
                   <div className="bg-white/10 rounded-xl p-4">
                     <p className="text-primary-foreground/70 text-sm mb-1">Position</p>
-                    <p className="text-xl font-bold">{nextShiftInfo.shift.position}</p>
+                    <p className="text-xl font-bold">{currentUser?.position || nextShiftInfo.shift.position}</p>
                   </div>
                 </div>
               </CardContent>

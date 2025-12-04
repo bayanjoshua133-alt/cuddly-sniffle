@@ -111,6 +111,16 @@ export class DatabaseStorage implements IStorage {
     return this.getUser(id);
   }
 
+  async deleteUser(id: string): Promise<boolean> {
+    try {
+      await db.delete(users).where(eq(users.id, id));
+      return true;
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      return false;
+    }
+  }
+
   async getUsersByBranch(branchId: string): Promise<User[]> {
     return db.select().from(users).where(eq(users.branchId, branchId));
   }

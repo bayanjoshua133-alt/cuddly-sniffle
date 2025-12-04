@@ -416,9 +416,9 @@ export default function MobileSchedule() {
                         className={`
                           aspect-square rounded-2xl p-2 flex flex-col items-center justify-center
                           transition-all duration-200 relative shadow-sm
-                          ${day.isToday ? 'ring-3 ring-primary ring-offset-2' : ''}
-                          ${isSelected ? 'bg-primary text-primary-foreground shadow-lg scale-105' : 'bg-card'}
-                          ${hasShifts && !isSelected ? 'bg-primary/20 border-2 border-primary/30' : ''}
+                          ${day.isToday ? 'ring-3 ring-primary ring-offset-2 ring-offset-background' : ''}
+                          ${isSelected ? 'bg-primary text-primary-foreground shadow-lg scale-105' : 'bg-secondary/80'}
+                          ${hasShifts && !isSelected ? 'bg-secondary border border-primary/40' : ''}
                         `}
                       >
                         <span className={`text-2xl font-bold ${day.isToday && !isSelected ? 'text-primary' : ''}`}>
@@ -452,9 +452,9 @@ export default function MobileSchedule() {
                         className={`
                           aspect-square rounded-xl p-1 flex flex-col items-center justify-center
                           transition-all duration-200 relative text-base
-                          ${day.isToday ? 'ring-2 ring-primary ring-offset-1' : ''}
-                          ${isSelected ? 'bg-primary text-primary-foreground shadow-md' : 'bg-card/50'}
-                          ${hasShifts && !isSelected ? 'bg-primary/20' : ''}
+                          ${day.isToday ? 'ring-2 ring-primary ring-offset-1 ring-offset-background' : ''}
+                          ${isSelected ? 'bg-primary text-primary-foreground shadow-md' : 'bg-secondary/60'}
+                          ${hasShifts && !isSelected ? 'bg-secondary/80 border border-primary/30' : ''}
                         `}
                       >
                         <span className={`text-lg font-bold ${day.isToday && !isSelected ? 'text-primary' : ''}`}>

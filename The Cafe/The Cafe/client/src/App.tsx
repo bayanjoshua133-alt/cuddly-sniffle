@@ -595,10 +595,25 @@ function App() {
   useEffect(() => {
     checkAuth();
     const unsubscribe = subscribeToAuth(setLocalAuthState);
+    
+    // Poll for user data updates every 5 seconds to keep position/profile in sync
+    const authPollInterval = setInterval(async () => {
+      if (setupComplete) {
+        try {
+          const authResponse = await apiRequest("GET", "/api/auth/me");
+          const authData = await authResponse.json();
+          setAuthState({ user: authData.user, isAuthenticated: true });
+        } catch {
+          // Silent fail - don't log user out on network blips
+        }
+      }
+    }, 5000);
+    
     return () => {
       unsubscribe();
+      clearInterval(authPollInterval);
     };
-  }, [checkAuth]);
+  }, [checkAuth, setupComplete]);
 
   // Loading state
   if (isLoading) {

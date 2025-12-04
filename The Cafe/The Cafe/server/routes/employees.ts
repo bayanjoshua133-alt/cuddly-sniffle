@@ -426,4 +426,47 @@ router.put('/api/employees/:id/deductions', requireAuth, requireRole(['manager']
   }
 });
 
+// Delete employee (Manager/Admin only)
+router.delete('/api/employees/:id', requireAuth, requireRole(['manager']), async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Get the existing employee
+    const existingEmployee = await storage.getUser(id);
+    if (!existingEmployee) {
+      return res.status(404).json({ message: 'Employee not found' });
+    }
+
+    // Only managers from the same branch can delete the employee
+    if (req.session.user?.role === 'manager' &&
+        req.session.user?.branchId !== existingEmployee.branchId) {
+      return res.status(403).json({ message: 'Unauthorized to delete this employee' });
+    }
+
+    // Prevent deleting yourself
+    if (existingEmployee.id === req.session.user?.id) {
+      return res.status(400).json({ message: 'You cannot delete your own account' });
+    }
+
+    // Prevent deleting admin accounts (only admins can delete admins)
+    if (existingEmployee.role === 'admin' && req.session.user?.role !== 'admin') {
+      return res.status(403).json({ message: 'Only admins can delete admin accounts' });
+    }
+
+    // Delete the employee
+    const deleted = await storage.deleteUser(id);
+
+    if (!deleted) {
+      return res.status(500).json({ message: 'Failed to delete employee' });
+    }
+
+    console.log(`🗑️ Employee deleted: ${existingEmployee.firstName} ${existingEmployee.lastName} (${existingEmployee.id})`);
+
+    res.json({ message: 'Employee deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting employee:', error);
+    res.status(500).json({ message: 'Failed to delete employee' });
+  }
+});
+
 export default router;
