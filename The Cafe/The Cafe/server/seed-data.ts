@@ -50,11 +50,14 @@ async function seedSampleData() {
 
   let shiftCount = 0;
   
-  // Create shifts for the past 14 days and next 14 days
-  for (let day = -14; day <= 14; day++) {
-    for (const emp of employees) {
-      // Each employee works about 5 days a week
-      if (Math.random() > 0.7) continue; // Skip some days randomly
+  // Create shifts for the past 7 days and next 7 days (reduced from 14)
+  // Only assign shifts to a few employees, not all
+  const selectedEmployees = employees.slice(0, Math.min(3, employees.length)); // Only first 3 employees get shifts
+  
+  for (let day = -7; day <= 7; day++) {
+    for (const emp of selectedEmployees) {
+      // Each employee works about 3-4 days a week (reduced from 5)
+      if (Math.random() > 0.5) continue; // Skip more days randomly (50% chance to skip)
       
       const pattern = shiftPatterns[Math.floor(Math.random() * shiftPatterns.length)];
       const shiftId = `shift-${emp.id}-day${day}-${crypto.randomUUID().slice(0, 8)}`;
@@ -75,7 +78,7 @@ async function seedSampleData() {
       } catch (e) {}
     }
   }
-  console.log(`   ✅ Created ${shiftCount} shifts\n`);
+  console.log(`   ✅ Created ${shiftCount} shifts (for ${selectedEmployees.length} employees)\n`);
 
   // ═══════════════════════════════════════════════════════════════
   // SEED PAYROLL PERIODS AND ENTRIES

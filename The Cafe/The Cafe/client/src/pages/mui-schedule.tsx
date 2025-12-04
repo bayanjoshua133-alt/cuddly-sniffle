@@ -4,9 +4,15 @@ import { isManager, getCurrentUser } from "@/lib/auth";
 import {
   format,
   addDays,
+  addWeeks,
+  addMonths,
   subDays,
+  subWeeks,
+  subMonths,
   startOfWeek,
   endOfWeek,
+  startOfMonth,
+  endOfMonth,
   eachDayOfInterval,
   isSameDay,
   parseISO,
@@ -76,12 +82,15 @@ interface Employee {
   role?: string;
 }
 
+type ViewMode = 'week' | 'month';
+
 export default function MuiSchedule() {
   const currentUser = getCurrentUser();
   const isManagerRole = isManager();
   const queryClient = useQueryClient();
 
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [viewMode, setViewMode] = useState<ViewMode>('week');
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   // Time preset definitions
   const timePresets = {
@@ -117,10 +126,25 @@ export default function MuiSchedule() {
     }
   };
 
-  // Calculate week range
+  // Calculate date range based on view mode
+  const dateRange = useMemo(() => {
+    if (viewMode === 'week') {
+      return {
+        start: startOfWeek(selectedDate, { weekStartsOn: 0 }),
+        end: endOfWeek(selectedDate, { weekStartsOn: 0 }),
+      };
+    } else {
+      return {
+        start: startOfMonth(selectedDate),
+        end: endOfMonth(selectedDate),
+      };
+    }
+  }, [selectedDate, viewMode]);
+
+  // For backward compatibility
   const weekStart = startOfWeek(selectedDate, { weekStartsOn: 0 });
   const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 0 });
-  const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
+  const allDays = eachDayOfInterval({ start: dateRange.start, end: dateRange.end });
 
   // Fetch employees for managers with real-time updates
   const { data: employeesData } = useQuery({
@@ -145,11 +169,11 @@ export default function MuiSchedule() {
     isError,
     refetch,
   } = useQuery({
-    queryKey: ["shifts", weekStart.toISOString(), weekEnd.toISOString()],
+    queryKey: ["shifts", dateRange.start.toISOString(), dateRange.end.toISOString()],
     queryFn: async () => {
       const endpoint = isManagerRole
-        ? `/api/shifts/branch?startDate=${weekStart.toISOString()}&endDate=${weekEnd.toISOString()}`
-        : `/api/shifts?startDate=${weekStart.toISOString()}&endDate=${weekEnd.toISOString()}`;
+        ? `/api/shifts/branch?startDate=${dateRange.start.toISOString()}&endDate=${dateRange.end.toISOString()}`
+        : `/api/shifts?startDate=${dateRange.start.toISOString()}&endDate=${dateRange.end.toISOString()}`;
       const response = await apiRequest("GET", endpoint);
       return response.json();
     },
@@ -217,8 +241,22 @@ export default function MuiSchedule() {
   };
 
   // Navigation handlers
-  const goToPreviousWeek = () => setSelectedDate(subDays(selectedDate, 7));
-  const goToNextWeek = () => setSelectedDate(addDays(selectedDate, 7));
+  const navigatePrevious = () => {
+    if (viewMode === 'week') {
+      setSelectedDate(subWeeks(selectedDate, 1));
+    } else {
+      setSelectedDate(subMonths(selectedDate, 1));
+    }
+  };
+  
+  const navigateNext = () => {
+    if (viewMode === 'week') {
+      setSelectedDate(addWeeks(selectedDate, 1));
+    } else {
+      setSelectedDate(addMonths(selectedDate, 1));
+    }
+  };
+  
   const goToToday = () => setSelectedDate(new Date());
 
   // Handle form submission
@@ -285,9 +323,11 @@ export default function MuiSchedule() {
           direction="row"
           alignItems="center"
           justifyContent="space-between"
+          flexWrap="wrap"
+          gap={2}
         >
-          <Stack direction="row" spacing={1}>
-            <IconButton onClick={goToPreviousWeek}>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <IconButton onClick={navigatePrevious}>
               <ChevronLeftIcon />
             </IconButton>
             <Button
@@ -298,14 +338,31 @@ export default function MuiSchedule() {
             >
               Today
             </Button>
-            <IconButton onClick={goToNextWeek}>
+            <IconButton onClick={navigateNext}>
               <ChevronRightIcon />
             </IconButton>
           </Stack>
 
           <Typography variant="h6" fontWeight={600}>
-            {format(weekStart, "MMM d")} - {format(weekEnd, "MMM d, yyyy")}
+            {viewMode === 'week' 
+              ? `${format(dateRange.start, "MMM d")} - ${format(dateRange.end, "MMM d, yyyy")}`
+              : format(selectedDate, "MMMM yyyy")
+            }
           </Typography>
+
+          <ToggleButtonGroup
+            value={viewMode}
+            exclusive
+            onChange={(_, newMode) => newMode && setViewMode(newMode)}
+            size="small"
+          >
+            <ToggleButton value="week" sx={{ px: 2 }}>
+              Week
+            </ToggleButton>
+            <ToggleButton value="month" sx={{ px: 2 }}>
+              Month
+            </ToggleButton>
+          </ToggleButtonGroup>
         </Stack>
       </Paper>
 
@@ -323,7 +380,7 @@ export default function MuiSchedule() {
         </Alert>
       )}
 
-      {/* Week View Calendar */}
+      {/* Calendar View */}
       {!isLoading && !isError && (
         <Box
           sx={{
@@ -331,12 +388,26 @@ export default function MuiSchedule() {
             gridTemplateColumns: {
               xs: "1fr",
               sm: "repeat(2, 1fr)",
-              md: "repeat(7, 1fr)",
+              md: viewMode === 'week' ? "repeat(7, 1fr)" : "repeat(7, 1fr)",
             },
-            gap: 2,
+            gap: viewMode === 'week' ? 2 : 1,
           }}
         >
-          {weekDays.map((day) => {
+          {/* Day Headers for Month View */}
+          {viewMode === 'month' && ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
+            <Box key={day} sx={{ p: 1, textAlign: 'center', display: { xs: 'none', md: 'block' } }}>
+              <Typography variant="caption" fontWeight={600} color="text.secondary">
+                {day}
+              </Typography>
+            </Box>
+          ))}
+          
+          {/* Empty cells for month view alignment */}
+          {viewMode === 'month' && Array.from({ length: dateRange.start.getDay() }).map((_, i) => (
+            <Box key={`empty-${i}`} sx={{ display: { xs: 'none', md: 'block' } }} />
+          ))}
+          
+          {allDays.map((day) => {
             const dayShifts = getShiftsForDay(day);
             const isToday = isSameDay(day, new Date());
 
@@ -344,16 +415,16 @@ export default function MuiSchedule() {
               <Card
                 key={day.toISOString()}
                 sx={{
-                  minHeight: 200,
+                  minHeight: viewMode === 'week' ? 200 : 100,
                   borderRadius: 2,
                   border: isToday ? 2 : 1,
                   borderColor: isToday ? "primary.main" : "divider",
                   bgcolor: isToday ? "primary.50" : "background.paper",
                 }}
               >
-                <CardContent sx={{ p: 2 }}>
+                <CardContent sx={{ p: viewMode === 'week' ? 2 : 1 }}>
                   {/* Day Header */}
-                  <Box sx={{ mb: 2 }}>
+                  <Box sx={{ mb: viewMode === 'week' ? 2 : 1 }}>
                     <Typography
                       variant="caption"
                       color={isToday ? "primary.main" : "text.secondary"}
@@ -363,7 +434,7 @@ export default function MuiSchedule() {
                       {format(day, "EEE")}
                     </Typography>
                     <Typography
-                      variant="h5"
+                      variant={viewMode === 'week' ? "h5" : "body1"}
                       fontWeight={isToday ? 700 : 500}
                       color={isToday ? "primary.main" : "text.primary"}
                     >
@@ -371,19 +442,21 @@ export default function MuiSchedule() {
                     </Typography>
                   </Box>
 
-                  <Divider sx={{ mb: 2 }} />
+                  {viewMode === 'week' && <Divider sx={{ mb: 2 }} />}
 
                   {/* Shifts */}
-                  <Stack spacing={1}>
+                  <Stack spacing={viewMode === 'week' ? 1 : 0.5}>
                     {dayShifts.length === 0 ? (
-                      <Typography
-                        variant="body2"
-                        color="text.disabled"
-                        sx={{ fontStyle: "italic" }}
-                      >
-                        No shifts
-                      </Typography>
-                    ) : (
+                      viewMode === 'week' && (
+                        <Typography
+                          variant="body2"
+                          color="text.disabled"
+                          sx={{ fontStyle: "italic" }}
+                        >
+                          No shifts
+                        </Typography>
+                      )
+                    ) : viewMode === 'week' ? (
                       dayShifts.map((shift) => (
                         <Paper
                           key={shift.id}
@@ -436,6 +509,16 @@ export default function MuiSchedule() {
                           </Stack>
                         </Paper>
                       ))
+                    ) : (
+                      // Month view - compact display
+                      <Box>
+                        <Chip
+                          size="small"
+                          label={`${dayShifts.length} shift${dayShifts.length > 1 ? 's' : ''}`}
+                          color="primary"
+                          sx={{ fontSize: '0.7rem', height: 20 }}
+                        />
+                      </Box>
                     )}
                   </Stack>
                 </CardContent>

@@ -54,7 +54,7 @@ import {
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
-import { format, subDays, startOfMonth, endOfMonth } from "date-fns";
+import { format, subDays, addDays, startOfMonth, endOfMonth } from "date-fns";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -108,6 +108,8 @@ const getStatusColor = (status: string) => {
   }
 };
 
+type PeriodType = '2weeks' | 'month' | 'custom';
+
 export default function MuiPayrollManagement() {
   const theme = useTheme();
   const { toast } = useToast();
@@ -116,6 +118,23 @@ export default function MuiPayrollManagement() {
   const [selectedPeriod, setSelectedPeriod] = useState<PayrollPeriod | null>(null);
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
+  const [periodType, setPeriodType] = useState<PeriodType>('2weeks');
+
+  // Handle period type change
+  const handlePeriodTypeChange = (type: PeriodType) => {
+    setPeriodType(type);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    if (type === '2weeks') {
+      setStartDate(today);
+      setEndDate(addDays(today, 13)); // 14 days total (2 weeks)
+    } else if (type === 'month') {
+      setStartDate(startOfMonth(today));
+      setEndDate(endOfMonth(today));
+    }
+    // For 'custom', don't change dates - let user pick
+  };
   const [activeTab, setActiveTab] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -927,6 +946,61 @@ export default function MuiPayrollManagement() {
         <DialogContent sx={{ pt: 3 }}>
           <LocalizationProvider dateAdapter={AdapterDateFns}>
             <Stack spacing={3}>
+              {/* Period Type Selection */}
+              <Box
+                sx={{
+                  p: 2,
+                  borderRadius: 3,
+                  bgcolor: alpha(theme.palette.info.main, 0.04),
+                  border: `1px solid ${alpha(theme.palette.info.main, 0.1)}`,
+                }}
+              >
+                <Typography variant="subtitle2" color="info.main" fontWeight={600} sx={{ mb: 2 }}>
+                  ⏱️ Period Duration
+                </Typography>
+                <Stack direction="row" spacing={1}>
+                  <Button
+                    variant={periodType === '2weeks' ? 'contained' : 'outlined'}
+                    onClick={() => handlePeriodTypeChange('2weeks')}
+                    sx={{ 
+                      flex: 1, 
+                      borderRadius: 2,
+                      py: 1.5,
+                      textTransform: 'none',
+                      fontWeight: 600,
+                    }}
+                  >
+                    2 Weeks
+                  </Button>
+                  <Button
+                    variant={periodType === 'month' ? 'contained' : 'outlined'}
+                    onClick={() => handlePeriodTypeChange('month')}
+                    sx={{ 
+                      flex: 1, 
+                      borderRadius: 2,
+                      py: 1.5,
+                      textTransform: 'none',
+                      fontWeight: 600,
+                    }}
+                  >
+                    1 Month
+                  </Button>
+                  <Button
+                    variant={periodType === 'custom' ? 'contained' : 'outlined'}
+                    onClick={() => handlePeriodTypeChange('custom')}
+                    sx={{ 
+                      flex: 1, 
+                      borderRadius: 2,
+                      py: 1.5,
+                      textTransform: 'none',
+                      fontWeight: 600,
+                    }}
+                  >
+                    Custom
+                  </Button>
+                </Stack>
+              </Box>
+
               <Box
                 sx={{
                   p: 3,
