@@ -284,7 +284,7 @@ export default function MuiSchedule() {
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          mb: 4,
+          mb: 3,
           flexWrap: "wrap",
           gap: 2,
         }}
@@ -294,14 +294,19 @@ export default function MuiSchedule() {
             Schedule
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            {isManagerRole
-              ? "Manage team schedules and shifts"
-              : "View your upcoming shifts"}
+            Manage shifts and schedules
           </Typography>
         </Box>
 
         <Stack direction="row" spacing={1}>
-          <IconButton onClick={() => refetch()} size="small">
+          <IconButton 
+            onClick={() => refetch()} 
+            size="small"
+            sx={{ 
+              bgcolor: 'grey.100', 
+              '&:hover': { bgcolor: 'grey.200' } 
+            }}
+          >
             <RefreshIcon />
           </IconButton>
           {isManagerRole && (
@@ -309,7 +314,12 @@ export default function MuiSchedule() {
               variant="contained"
               startIcon={<AddIcon />}
               onClick={() => setCreateDialogOpen(true)}
-              sx={{ borderRadius: 2 }}
+              sx={{ 
+                borderRadius: 2,
+                px: 2.5,
+                fontWeight: 600,
+                textTransform: 'none',
+              }}
             >
               Add Shift
             </Button>
@@ -318,7 +328,14 @@ export default function MuiSchedule() {
       </Box>
 
       {/* Navigation */}
-      <Paper sx={{ p: 2, mb: 3, borderRadius: 2 }}>
+      <Paper 
+        sx={{ 
+          p: 2, 
+          mb: 3, 
+          borderRadius: 3,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+        }}
+      >
         <Stack
           direction="row"
           alignItems="center"
@@ -327,7 +344,13 @@ export default function MuiSchedule() {
           gap={2}
         >
           <Stack direction="row" spacing={1} alignItems="center">
-            <IconButton onClick={navigatePrevious}>
+            <IconButton 
+              onClick={navigatePrevious}
+              sx={{ 
+                bgcolor: 'grey.100', 
+                '&:hover': { bgcolor: 'grey.200' } 
+              }}
+            >
               <ChevronLeftIcon />
             </IconButton>
             <Button
@@ -335,15 +358,26 @@ export default function MuiSchedule() {
               startIcon={<TodayIcon />}
               onClick={goToToday}
               size="small"
+              sx={{ 
+                borderRadius: 2,
+                textTransform: 'none',
+                fontWeight: 500,
+              }}
             >
               Today
             </Button>
-            <IconButton onClick={navigateNext}>
+            <IconButton 
+              onClick={navigateNext}
+              sx={{ 
+                bgcolor: 'grey.100', 
+                '&:hover': { bgcolor: 'grey.200' } 
+              }}
+            >
               <ChevronRightIcon />
             </IconButton>
           </Stack>
 
-          <Typography variant="h6" fontWeight={600}>
+          <Typography variant="h6" fontWeight={600} color="text.primary">
             {viewMode === 'week' 
               ? `${format(dateRange.start, "MMM d")} - ${format(dateRange.end, "MMM d, yyyy")}`
               : format(selectedDate, "MMMM yyyy")
@@ -355,11 +389,27 @@ export default function MuiSchedule() {
             exclusive
             onChange={(_, newMode) => newMode && setViewMode(newMode)}
             size="small"
+            sx={{
+              '& .MuiToggleButton-root': {
+                px: 2.5,
+                py: 0.75,
+                textTransform: 'none',
+                fontWeight: 500,
+                borderRadius: 2,
+                '&.Mui-selected': {
+                  bgcolor: 'primary.main',
+                  color: 'white',
+                  '&:hover': {
+                    bgcolor: 'primary.dark',
+                  }
+                }
+              }
+            }}
           >
-            <ToggleButton value="week" sx={{ px: 2 }}>
+            <ToggleButton value="week">
               Week
             </ToggleButton>
-            <ToggleButton value="month" sx={{ px: 2 }}>
+            <ToggleButton value="month">
               Month
             </ToggleButton>
           </ToggleButtonGroup>
@@ -390,7 +440,7 @@ export default function MuiSchedule() {
               sm: "repeat(2, 1fr)",
               md: viewMode === 'week' ? "repeat(7, 1fr)" : "repeat(7, 1fr)",
             },
-            gap: viewMode === 'week' ? 2 : 1,
+            gap: viewMode === 'week' ? 1.5 : 1,
           }}
         >
           {/* Day Headers for Month View */}
@@ -415,46 +465,103 @@ export default function MuiSchedule() {
               <Card
                 key={day.toISOString()}
                 sx={{
-                  minHeight: viewMode === 'week' ? 200 : 100,
-                  borderRadius: 2,
+                  minHeight: viewMode === 'week' ? 280 : 100,
+                  maxHeight: viewMode === 'week' ? 400 : 'auto',
+                  borderRadius: 3,
                   border: isToday ? 2 : 1,
                   borderColor: isToday ? "primary.main" : "divider",
-                  bgcolor: isToday ? "primary.50" : "background.paper",
+                  bgcolor: isToday ? "rgba(46, 125, 50, 0.04)" : "background.paper",
+                  display: 'flex',
+                  flexDirection: 'column',
+                  transition: 'all 0.2s ease',
+                  '&:hover': {
+                    boxShadow: 3,
+                    borderColor: 'primary.light',
+                  }
                 }}
               >
-                <CardContent sx={{ p: viewMode === 'week' ? 2 : 1 }}>
-                  {/* Day Header */}
-                  <Box sx={{ mb: viewMode === 'week' ? 2 : 1 }}>
-                    <Typography
-                      variant="caption"
-                      color={isToday ? "primary.main" : "text.secondary"}
-                      fontWeight={600}
-                      sx={{ textTransform: "uppercase" }}
-                    >
-                      {format(day, "EEE")}
-                    </Typography>
-                    <Typography
-                      variant={viewMode === 'week' ? "h5" : "body1"}
-                      fontWeight={isToday ? 700 : 500}
-                      color={isToday ? "primary.main" : "text.primary"}
-                    >
-                      {format(day, "d")}
-                    </Typography>
-                  </Box>
+                {/* Day Header - Fixed */}
+                <Box 
+                  sx={{ 
+                    p: 1.5, 
+                    borderBottom: 1, 
+                    borderColor: 'divider',
+                    bgcolor: isToday ? "rgba(46, 125, 50, 0.08)" : "grey.50",
+                    borderTopLeftRadius: 12,
+                    borderTopRightRadius: 12,
+                  }}
+                >
+                  <Stack direction="row" alignItems="center" justifyContent="space-between">
+                    <Box>
+                      <Typography
+                        variant="caption"
+                        color={isToday ? "primary.main" : "text.secondary"}
+                        fontWeight={600}
+                        sx={{ textTransform: "uppercase", letterSpacing: 0.5 }}
+                      >
+                        {format(day, "EEE")}
+                      </Typography>
+                      <Typography
+                        variant={viewMode === 'week' ? "h5" : "body1"}
+                        fontWeight={isToday ? 700 : 600}
+                        color={isToday ? "primary.main" : "text.primary"}
+                      >
+                        {format(day, "d")}
+                      </Typography>
+                    </Box>
+                    {dayShifts.length > 0 && (
+                      <Chip 
+                        size="small" 
+                        label={dayShifts.length}
+                        color={isToday ? "primary" : "default"}
+                        sx={{ 
+                          height: 24, 
+                          minWidth: 24,
+                          fontWeight: 600,
+                          fontSize: '0.75rem'
+                        }} 
+                      />
+                    )}
+                  </Stack>
+                </Box>
 
-                  {viewMode === 'week' && <Divider sx={{ mb: 2 }} />}
-
-                  {/* Shifts */}
-                  <Stack spacing={viewMode === 'week' ? 1 : 0.5}>
+                {/* Shifts - Scrollable */}
+                <Box 
+                  sx={{ 
+                    flex: 1, 
+                    overflow: 'auto',
+                    p: 1.5,
+                    '&::-webkit-scrollbar': {
+                      width: 4,
+                    },
+                    '&::-webkit-scrollbar-track': {
+                      bgcolor: 'grey.100',
+                      borderRadius: 2,
+                    },
+                    '&::-webkit-scrollbar-thumb': {
+                      bgcolor: 'grey.300',
+                      borderRadius: 2,
+                    },
+                  }}
+                >
+                  <Stack spacing={1}>
                     {dayShifts.length === 0 ? (
                       viewMode === 'week' && (
-                        <Typography
-                          variant="body2"
-                          color="text.disabled"
-                          sx={{ fontStyle: "italic" }}
-                        >
-                          No shifts
-                        </Typography>
+                        <Box sx={{ 
+                          py: 3, 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'center',
+                          flexDirection: 'column',
+                          gap: 0.5
+                        }}>
+                          <Typography
+                            variant="body2"
+                            color="text.disabled"
+                          >
+                            No shifts
+                          </Typography>
+                        </Box>
                       )
                     ) : viewMode === 'week' ? (
                       dayShifts.map((shift) => (
@@ -463,19 +570,26 @@ export default function MuiSchedule() {
                           elevation={0}
                           sx={{
                             p: 1.5,
-                            bgcolor: "primary.50",
-                            borderRadius: 1.5,
+                            bgcolor: "rgba(46, 125, 50, 0.08)",
+                            borderRadius: 2,
                             borderLeft: 3,
                             borderColor: "primary.main",
+                            transition: 'all 0.15s ease',
+                            cursor: 'pointer',
+                            '&:hover': {
+                              bgcolor: "rgba(46, 125, 50, 0.12)",
+                              transform: 'translateX(2px)',
+                            }
                           }}
                         >
-                          <Stack direction="row" alignItems="center" spacing={1}>
+                          <Stack direction="row" alignItems="center" spacing={1.5}>
                             <Avatar
                               sx={{
-                                width: 28,
-                                height: 28,
+                                width: 32,
+                                height: 32,
                                 bgcolor: "primary.main",
-                                fontSize: "0.75rem",
+                                fontSize: "0.8rem",
+                                fontWeight: 600,
                               }}
                             >
                               {shift.user?.firstName?.[0] || "?"}
@@ -485,9 +599,10 @@ export default function MuiSchedule() {
                                 variant="body2"
                                 fontWeight={600}
                                 noWrap
+                                sx={{ mb: 0.25 }}
                               >
                                 {shift.user?.firstName || "Staff"}{" "}
-                                {shift.user?.lastName?.[0] || ""}
+                                {shift.user?.lastName?.[0] || ""}.
                               </Typography>
                               <Stack
                                 direction="row"
@@ -495,11 +610,12 @@ export default function MuiSchedule() {
                                 spacing={0.5}
                               >
                                 <AccessTimeIcon
-                                  sx={{ fontSize: 12, color: "text.secondary" }}
+                                  sx={{ fontSize: 13, color: "text.secondary" }}
                                 />
                                 <Typography
                                   variant="caption"
                                   color="text.secondary"
+                                  fontWeight={500}
                                 >
                                   {format(parseISO(shift.startTime), "h:mm a")} -{" "}
                                   {format(parseISO(shift.endTime), "h:mm a")}
@@ -521,7 +637,7 @@ export default function MuiSchedule() {
                       </Box>
                     )}
                   </Stack>
-                </CardContent>
+                </Box>
               </Card>
             );
           })}

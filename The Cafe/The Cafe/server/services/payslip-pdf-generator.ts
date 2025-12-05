@@ -355,45 +355,45 @@ function drawEarningsSection(
   
   y -= 15;
   
-  // Table header
-  const colX = {
-    label: MARGIN,
-    hours: MARGIN + 180,
-    rate: MARGIN + 230,
-    amount: MARGIN + CONTENT_WIDTH / 2 - 60,
-  };
+  // Table header - simplified 2-column layout for earnings
+  const earningsEndX = MARGIN + CONTENT_WIDTH / 2 - 15;
   
-  page.drawText('Description', { x: colX.label, y, size: FONT_SIZES.tiny, font: fontBold, color: COLORS.secondary });
-  page.drawText('Hours', { x: colX.hours, y, size: FONT_SIZES.tiny, font: fontBold, color: COLORS.secondary });
-  page.drawText('Rate', { x: colX.rate, y, size: FONT_SIZES.tiny, font: fontBold, color: COLORS.secondary });
-  page.drawText('Amount', { x: colX.amount, y, size: FONT_SIZES.tiny, font: fontBold, color: COLORS.secondary });
+  page.drawText('Description', { x: MARGIN, y, size: FONT_SIZES.tiny, font: fontBold, color: COLORS.secondary });
+  // Right-align "Amount" header
+  const amtHeaderWidth = fontBold.widthOfTextAtSize('Amount', FONT_SIZES.tiny);
+  page.drawText('Amount', { x: earningsEndX - amtHeaderWidth, y, size: FONT_SIZES.tiny, font: fontBold, color: COLORS.secondary });
   
   y -= 12;
   
   // Earnings rows
   for (const earning of data.earnings) {
-    // Label with holiday indicator
+    // Build description with hours/rate info inline
     let label = earning.label;
     if (earning.multiplier) {
       label += ` (${earning.multiplier}%)`;
     }
-    page.drawText(label.substring(0, 30), { x: colX.label, y, size: FONT_SIZES.small, font: fontRegular, color: COLORS.black });
-    
-    // Hours
-    if (earning.hours !== undefined) {
-      page.drawText(earning.hours.toFixed(1), { x: colX.hours, y, size: FONT_SIZES.small, font: fontRegular, color: COLORS.black });
+    // Add hours x rate info if available
+    if (earning.hours !== undefined && earning.rate !== undefined) {
+      label += ` - ${earning.hours.toFixed(1)}h @ ₱${earning.rate.toFixed(0)}`;
+    } else if (earning.hours !== undefined) {
+      label += ` - ${earning.hours.toFixed(1)}h`;
     }
     
-    // Rate
-    if (earning.rate !== undefined) {
-      page.drawText(formatPHP(earning.rate), { x: colX.rate, y, size: FONT_SIZES.small, font: fontRegular, color: COLORS.black });
+    // Truncate to fit
+    const maxLabelWidth = earningsEndX - MARGIN - 80;
+    let displayLabel = label;
+    while (fontRegular.widthOfTextAtSize(displayLabel, FONT_SIZES.small) > maxLabelWidth && displayLabel.length > 10) {
+      displayLabel = displayLabel.substring(0, displayLabel.length - 1);
     }
+    if (displayLabel !== label) displayLabel += '...';
     
-    // Amount
+    page.drawText(displayLabel, { x: MARGIN, y, size: FONT_SIZES.small, font: fontRegular, color: COLORS.black });
+    
+    // Amount - right align
     const amountText = formatPHP(earning.amount);
     const amountWidth = fontBold.widthOfTextAtSize(amountText, FONT_SIZES.small);
     page.drawText(amountText, {
-      x: colX.amount + 50 - amountWidth,
+      x: earningsEndX - amountWidth,
       y,
       size: FONT_SIZES.small,
       font: fontBold,
@@ -406,9 +406,10 @@ function drawEarningsSection(
   y -= 5;
   
   // Gross Pay total
+  const earningsLineEndX = MARGIN + CONTENT_WIDTH / 2 - 15;
   page.drawLine({
     start: { x: MARGIN, y },
-    end: { x: MARGIN + CONTENT_WIDTH / 2 - 10, y },
+    end: { x: earningsLineEndX, y },
     thickness: 1,
     color: COLORS.border,
   });
@@ -419,7 +420,7 @@ function drawEarningsSection(
   const grossText = formatPHP(data.gross);
   const grossWidth = fontBold.widthOfTextAtSize(grossText, FONT_SIZES.body);
   page.drawText(grossText, {
-    x: colX.amount + 50 - grossWidth,
+    x: earningsLineEndX - grossWidth,
     y,
     size: FONT_SIZES.body,
     font: fontBold,
