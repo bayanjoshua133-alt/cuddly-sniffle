@@ -53,35 +53,42 @@ app.use((req, res, next) => {
 (async () => {
   let loadSample = false;
 
-  // Check if FRESH_DB environment variable is set
-  if (process.env.FRESH_DB === 'true') {
-    console.log('\n🔄 FRESH_DB flag detected. Deleting existing database...\n');
-    deleteDatabaseFile();
-    // Recreate the database connection after deletion
-    recreateConnection();
-  }
+  // Skip SQLite-specific logic in production (Render)
+  const isProduction = process.env.NODE_ENV === 'production';
 
-  // Check if this is an interactive terminal (not running in CI/CD or background)
-  const isInteractive = process.stdin.isTTY && !process.env.CI && !process.env.NON_INTERACTIVE;
-
-  // Prompt for database choice only in interactive mode and if not already handled by FRESH_DB
-  if (isInteractive && process.env.FRESH_DB !== 'true') {
-    const choice = await promptDatabaseChoice();
-
-    if (choice === 'fresh') {
+  if (!isProduction) {
+    // Check if FRESH_DB environment variable is set
+    if (process.env.FRESH_DB === 'true') {
+      console.log('\n🔄 FRESH_DB flag detected. Deleting existing database...\n');
       deleteDatabaseFile();
       // Recreate the database connection after deletion
       recreateConnection();
-      console.log('🔄 Starting with a fresh database...\n');
-    } else if (choice === 'sample') {
-      deleteDatabaseFile();
-      // Recreate the database connection after deletion
-      recreateConnection();
-      console.log('🔄 Starting with a fresh database...\n');
-      loadSample = true;
-    } else {
-      displayDatabaseStats();
     }
+
+    // Check if this is an interactive terminal (not running in CI/CD or background)
+    const isInteractive = process.stdin.isTTY && !process.env.CI && !process.env.NON_INTERACTIVE;
+
+    // Prompt for database choice only in interactive mode and if not already handled by FRESH_DB
+    if (isInteractive && process.env.FRESH_DB !== 'true') {
+      const choice = await promptDatabaseChoice();
+
+      if (choice === 'fresh') {
+        deleteDatabaseFile();
+        // Recreate the database connection after deletion
+        recreateConnection();
+        console.log('🔄 Starting with a fresh database...\n');
+      } else if (choice === 'sample') {
+        deleteDatabaseFile();
+        // Recreate the database connection after deletion
+        recreateConnection();
+        console.log('🔄 Starting with a fresh database...\n');
+        loadSample = true;
+      } else {
+        displayDatabaseStats();
+      }
+    }
+  } else {
+    console.log('🚀 Production mode: Using SQLite database');
   }
 
   // Initialize database (creates tables if they don't exist)

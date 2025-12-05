@@ -1,46 +1,13 @@
 import { Router, Request, Response } from "express";
-import { db } from "../db";
-import { branches } from "@shared/schema";
-import { eq, sql, and } from "drizzle-orm";
 import { z } from "zod";
-
-// Define the Branch interface
-type Branch = {
-  id: string;
-  name: string;
-  address: string;
-  phone: string | null;
-  is_active: boolean;
-  created_at: string;
-};
-
-// Helper function to transform branch data from DB to API format
-function transformBranch(branch: Branch) {
-  return {
-    id: branch.id,
-    name: branch.name,
-    address: branch.address,
-    phone: branch.phone,
-    isActive: Boolean(branch.is_active),
-    createdAt: branch.created_at,
-  };
-}
+import { dbStorage } from "../db-storage";
 
 export function registerBranchesRoutes(router: Router) {
   // Get all branches with pagination and search
   router.get("/api/branches", async (req: Request, res: Response) => {
     try {
-      const search = req.query.search as string | undefined;
-      let query = sql`SELECT * FROM branches`;
-
-      if (search) {
-        const searchTerm = `%${search}%`;
-        query = sql`SELECT * FROM branches WHERE name LIKE ${searchTerm} OR address LIKE ${searchTerm}`;
-      }
-
-      const allBranches = await db.all<Branch>(query);
-      const transformedBranches = allBranches.map(transformBranch);
-      res.json({ branches: transformedBranches });
+      const allBranches = await dbStorage.getAllBranches();
+      res.json({ branches: allBranches });
     } catch (error) {
       console.error("Error fetching branches:", error);
       res.status(500).json({ message: "Failed to fetch branches" });
@@ -51,14 +18,13 @@ export function registerBranchesRoutes(router: Router) {
   router.get("/api/branches/:id", async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
-      const branch = await db.get<Branch>(sql`
-        SELECT * FROM branches WHERE id = ${id}
-      `);
+      const branch = await dbStorage.getBranch(id);
+      
       if (!branch) {
         return res.status(404).json({ message: "Branch not found" });
       }
 
-      res.json(transformBranch(branch));
+      res.json(branch);
     } catch (error) {
       console.error("Error fetching branch:", error);
       res.status(500).json({ message: "Failed to fetch branch" });
@@ -86,49 +52,15 @@ export function registerBranchesRoutes(router: Router) {
         });
       }
 
-      const branchId = crypto.randomUUID();
-      const createdAt = new Date().toISOString();
-      const isActive = result.data.isActive ? 1 : 0;
-      
-      console.log('Attempting to insert branch:', {
-        ...result.data,
-        id: branchId,
-        created_at: createdAt,
-        is_active: isActive
+      const newBranch = await dbStorage.createBranch({
+        name: result.data.name,
+        address: result.data.address,
+        phone: result.data.phone,
+        isActive: result.data.isActive,
       });
 
-      try {
-        // Insert the new branch using Drizzle's sql template literal
-        await db.run(sql`
-          INSERT INTO branches (id, name, address, phone, is_active, created_at)
-          VALUES (
-            ${branchId},
-            ${result.data.name},
-            ${result.data.address},
-            ${result.data.phone || null},
-            ${isActive ? 1 : 0},
-            ${createdAt}
-          )
-        `);
-        
-        console.log('Branch inserted successfully, fetching...');
-        
-        // Get the newly created branch using Drizzle's sql template literal
-        const newBranch = await db.get<Branch>(sql`
-          SELECT * FROM branches WHERE id = ${branchId}
-        `);
-
-        if (!newBranch) {
-          throw new Error("Failed to retrieve created branch");
-        }
-
-        console.log('Retrieved new branch:', newBranch);
-        res.status(201).json(transformBranch(newBranch));
-        
-      } catch (dbError) {
-        console.error('Database error:', dbError);
-        throw dbError;
-      }
+      console.log('Branch created:', newBranch);
+      res.status(201).json(newBranch);
     } catch (error) {
       console.error("Error creating branch:", error);
       res.status(500).json({ 
@@ -158,29 +90,18 @@ export function registerBranchesRoutes(router: Router) {
         });
       }
 
-      // Update the branch using Drizzle's sql template
-      const isActive = result.data.isActive ? 1 : 0;
-      const phone = result.data.phone || null;
-
-      await db.run(sql`
-        UPDATE branches
-        SET name = ${result.data.name},
-            address = ${result.data.address},
-            phone = ${phone},
-            is_active = ${isActive}
-        WHERE id = ${id}
-      `);
-
-      // Get the updated branch
-      const updatedBranch = await db.get<Branch>(sql`
-        SELECT * FROM branches WHERE id = ${id}
-      `);
+      const updatedBranch = await dbStorage.updateBranch(id, {
+        name: result.data.name,
+        address: result.data.address,
+        phone: result.data.phone,
+        isActive: result.data.isActive,
+      });
 
       if (!updatedBranch) {
         return res.status(404).json({ message: "Branch not found" });
       }
 
-      res.json(transformBranch(updatedBranch));
+      res.json(updatedBranch);
     } catch (error) {
       console.error("Error updating branch:", error);
       res.status(500).json({ message: "Failed to update branch" });
@@ -188,15 +109,11 @@ export function registerBranchesRoutes(router: Router) {
   });
 
   // Delete a branch (soft delete by setting isActive to false)
-  router.delete("/api/branches/:id", async (req, res) => {
+  router.delete("/api/branches/:id", async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
       
-      const [updatedBranch] = await db
-        .update(branches)
-        .set({ isActive: false })
-        .where(and(eq(branches.id, id), eq(branches.isActive, true)))
-        .returning();
+      const updatedBranch = await dbStorage.updateBranch(id, { isActive: false });
 
       if (!updatedBranch) {
         return res.status(404).json({ message: "Active branch not found" });
