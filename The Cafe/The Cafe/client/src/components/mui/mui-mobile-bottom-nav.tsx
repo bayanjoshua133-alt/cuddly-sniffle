@@ -58,6 +58,7 @@ export default function MuiMobileBottomNav({ notificationCount = 0 }: MuiMobileB
         borderColor: 'divider',
         bgcolor: (t: Theme) => alpha(t.palette.background.paper, 0.95),
         backdropFilter: 'blur(20px)',
+        paddingBottom: 'env(safe-area-inset-bottom, 0px)',
       }} 
       elevation={8}
     >
@@ -66,12 +67,13 @@ export default function MuiMobileBottomNav({ notificationCount = 0 }: MuiMobileB
         value={getNavValue()}
         onChange={handleNavChange}
         sx={{
-          height: 70,
+          height: { xs: 60, sm: 70 },
           '& .MuiBottomNavigationAction-root': {
-            minWidth: 64,
-            py: 1.5,
-            borderRadius: 3,
-            mx: 0.5,
+            minWidth: { xs: 48, sm: 64 },
+            py: { xs: 1, sm: 1.5 },
+            px: { xs: 0.5, sm: 1 },
+            borderRadius: 2,
+            mx: { xs: 0.25, sm: 0.5 },
             transition: 'all 0.2s',
             '&.Mui-selected': {
               bgcolor: (t: Theme) => alpha(t.palette.primary.main, 0.1),
@@ -84,9 +86,12 @@ export default function MuiMobileBottomNav({ notificationCount = 0 }: MuiMobileB
             },
           },
           '& .MuiBottomNavigationAction-label': {
-            fontSize: '0.75rem',
+            fontSize: { xs: '0.625rem', sm: '0.75rem' },
             fontWeight: 500,
             mt: 0.5,
+          },
+          '& .MuiSvgIcon-root': {
+            fontSize: { xs: '1.25rem', sm: '1.5rem' },
           },
         }}
       >
@@ -107,9 +112,9 @@ export default function MuiMobileBottomNav({ notificationCount = 0 }: MuiMobileB
           icon={
             <Avatar
               sx={{
-                width: 28,
-                height: 28,
-                fontSize: '0.75rem',
+                width: { xs: 24, sm: 28 },
+                height: { xs: 24, sm: 28 },
+                fontSize: { xs: '0.625rem', sm: '0.75rem' },
                 fontWeight: 700,
                 bgcolor: getNavValue() === 3 ? 'primary.main' : 'grey.400',
                 border: getNavValue() === 3 ? 2 : 0,

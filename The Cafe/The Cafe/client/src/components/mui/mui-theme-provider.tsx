@@ -62,30 +62,30 @@ export function MuiThemeProvider({ children }: MuiThemeProviderProps) {
           fontFamily: '"Inter", "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
           h1: {
             fontWeight: 700,
-            fontSize: "2.5rem",
+            fontSize: "clamp(1.75rem, 5vw, 2.5rem)",
             letterSpacing: "-0.02em",
           },
           h2: {
             fontWeight: 700,
-            fontSize: "2rem",
+            fontSize: "clamp(1.5rem, 4vw, 2rem)",
             letterSpacing: "-0.01em",
           },
           h3: {
             fontWeight: 600,
-            fontSize: "1.5rem",
+            fontSize: "clamp(1.25rem, 3vw, 1.5rem)",
             letterSpacing: "-0.01em",
           },
           h4: {
             fontWeight: 600,
-            fontSize: "1.25rem",
+            fontSize: "clamp(1.125rem, 2.5vw, 1.25rem)",
           },
           h5: {
             fontWeight: 600,
-            fontSize: "1.1rem",
+            fontSize: "clamp(1rem, 2vw, 1.1rem)",
           },
           h6: {
             fontWeight: 600,
-            fontSize: "1rem",
+            fontSize: "clamp(0.875rem, 1.5vw, 1rem)",
           },
           body1: {
             fontSize: "0.9375rem",

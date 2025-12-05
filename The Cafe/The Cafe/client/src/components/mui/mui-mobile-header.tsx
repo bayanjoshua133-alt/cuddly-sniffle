@@ -80,52 +80,80 @@ export default function MuiMobileHeader({
       elevation={4}
       sx={{
         background: (t: Theme) => `linear-gradient(135deg, ${t.palette.primary.main} 0%, ${t.palette.primary.dark} 100%)`,
+        paddingTop: 'env(safe-area-inset-top, 0px)',
       }}
     >
-      <Toolbar sx={{ py: 1.5, px: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1 }}>
+      <Toolbar sx={{ 
+        py: { xs: 1, sm: 1.5 }, 
+        px: { xs: 1.5, sm: 2 },
+        minHeight: { xs: 56, sm: 64 },
+      }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 2 }, flex: 1, minWidth: 0 }}>
           {showBack && (
             <IconButton
               edge="start"
               color="inherit"
               onClick={onBack || (() => window.history.back())}
+              size="small"
               sx={{
                 bgcolor: (t: Theme) => alpha(t.palette.common.white, 0.1),
                 '&:hover': {
                   bgcolor: (t: Theme) => alpha(t.palette.common.white, 0.2),
                 },
                 borderRadius: 2,
+                p: { xs: 0.75, sm: 1 },
               }}
             >
-              <ArrowBackIcon />
+              <ArrowBackIcon sx={{ fontSize: { xs: 20, sm: 24 } }} />
             </IconButton>
           )}
-          <Box sx={{ flex: 1 }}>
-            <Typography variant="h6" component="h1" fontWeight={700}>
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Typography 
+              variant="h6" 
+              component="h1" 
+              fontWeight={700}
+              sx={{ 
+                fontSize: { xs: '1rem', sm: '1.25rem' },
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}
+            >
               {title}
             </Typography>
             {subtitle && (
-              <Typography variant="body2" sx={{ opacity: 0.9 }}>
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  opacity: 0.9,
+                  fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+              >
                 {subtitle}
               </Typography>
             )}
           </Box>
         </Box>
 
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.5, sm: 1 }, flexShrink: 0 }}>
           {showThemeToggle && (
             <IconButton
               color="inherit"
               onClick={toggleTheme}
+              size="small"
               sx={{
                 bgcolor: (t: Theme) => alpha(t.palette.common.white, 0.1),
                 '&:hover': {
                   bgcolor: (t: Theme) => alpha(t.palette.common.white, 0.2),
                 },
                 borderRadius: 2,
+                p: { xs: 0.75, sm: 1 },
               }}
             >
-              {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
+              {theme === 'dark' ? <SunIcon sx={{ fontSize: { xs: 18, sm: 22 } }} /> : <MoonIcon sx={{ fontSize: { xs: 18, sm: 22 } }} />}
             </IconButton>
           )}
           
@@ -133,16 +161,18 @@ export default function MuiMobileHeader({
             <IconButton
               color="inherit"
               onClick={onNotificationClick}
+              size="small"
               sx={{
                 bgcolor: (t: Theme) => alpha(t.palette.common.white, 0.1),
                 '&:hover': {
                   bgcolor: (t: Theme) => alpha(t.palette.common.white, 0.2),
                 },
                 borderRadius: 2,
+                p: { xs: 0.75, sm: 1 },
               }}
             >
               <Badge badgeContent={notificationCount} color="error" max={9}>
-                <NotificationsIcon />
+                <NotificationsIcon sx={{ fontSize: { xs: 18, sm: 22 } }} />
               </Badge>
             </IconButton>
           )}
@@ -154,15 +184,17 @@ export default function MuiMobileHeader({
               edge="end"
               color="inherit"
               onClick={onMenuToggle}
+              size="small"
               sx={{
                 bgcolor: (t: Theme) => alpha(t.palette.common.white, 0.1),
                 '&:hover': {
                   bgcolor: (t: Theme) => alpha(t.palette.common.white, 0.2),
                 },
                 borderRadius: 2,
+                p: { xs: 0.75, sm: 1 },
               }}
             >
-              {menuOpen ? <CloseIcon /> : <MenuIcon />}
+              {menuOpen ? <CloseIcon sx={{ fontSize: { xs: 20, sm: 24 } }} /> : <MenuIcon sx={{ fontSize: { xs: 20, sm: 24 } }} />}
             </IconButton>
           )}
         </Box>
