@@ -1,81 +1,80 @@
 import { sql } from "drizzle-orm";
-import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
+import { pgTable, text, boolean, timestamp, integer } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const branches = sqliteTable("branches", {
+export const branches = pgTable("branches", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   address: text("address").notNull(),
   phone: text("phone"),
-  isActive: integer("is_active", { mode: 'boolean' }).default(true),
-  createdAt: integer("created_at", { mode: 'timestamp' }).default(sql`(unixepoch())`),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
-export const users = sqliteTable("users", {
+export const users = pgTable("users", {
   id: text("id").primaryKey(),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
   firstName: text("first_name").notNull(),
   lastName: text("last_name").notNull(),
   email: text("email").notNull().unique(),
-  role: text("role").notNull().default("employee"), // employee, manager, admin
+  role: text("role").notNull().default("employee"),
   position: text("position").notNull(),
   hourlyRate: text("hourly_rate").notNull(),
   branchId: text("branch_id").references(() => branches.id).notNull(),
-  isActive: integer("is_active", { mode: 'boolean' }).default(true),
-  blockchainVerified: integer("blockchain_verified", { mode: 'boolean' }).default(false),
-  blockchainHash: text("blockchain_hash"), // Hash of the employee record for blockchain verification
-  verifiedAt: integer("verified_at", { mode: 'timestamp' }),
-  // Recurring deductions per pay period
+  isActive: boolean("is_active").default(true),
+  blockchainVerified: boolean("blockchain_verified").default(false),
+  blockchainHash: text("blockchain_hash"),
+  verifiedAt: timestamp("verified_at"),
   sssLoanDeduction: text("sss_loan_deduction").default("0"),
   pagibigLoanDeduction: text("pagibig_loan_deduction").default("0"),
   cashAdvanceDeduction: text("cash_advance_deduction").default("0"),
   otherDeductions: text("other_deductions").default("0"),
-  createdAt: integer("created_at", { mode: 'timestamp' }).default(sql`(unixepoch())`),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
-export const shifts = sqliteTable("shifts", {
+export const shifts = pgTable("shifts", {
   id: text("id").primaryKey(),
   userId: text("user_id").references(() => users.id).notNull(),
   branchId: text("branch_id").references(() => branches.id).notNull(),
-  startTime: integer("start_time", { mode: 'timestamp' }).notNull(),
-  endTime: integer("end_time", { mode: 'timestamp' }).notNull(),
+  startTime: timestamp("start_time").notNull(),
+  endTime: timestamp("end_time").notNull(),
   position: text("position").notNull(),
-  isRecurring: integer("is_recurring", { mode: 'boolean' }).default(false),
-  recurringPattern: text("recurring_pattern"), // weekly, biweekly, monthly
-  status: text("status").default("scheduled"), // scheduled, completed, missed, cancelled
-  actualStartTime: integer("actual_start_time", { mode: 'timestamp' }),
-  actualEndTime: integer("actual_end_time", { mode: 'timestamp' }),
-  createdAt: integer("created_at", { mode: 'timestamp' }).default(sql`(unixepoch())`),
+  isRecurring: boolean("is_recurring").default(false),
+  recurringPattern: text("recurring_pattern"),
+  status: text("status").default("scheduled"),
+  actualStartTime: timestamp("actual_start_time"),
+  actualEndTime: timestamp("actual_end_time"),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
-export const shiftTrades = sqliteTable("shift_trades", {
+export const shiftTrades = pgTable("shift_trades", {
   id: text("id").primaryKey(),
   shiftId: text("shift_id").references(() => shifts.id).notNull(),
   fromUserId: text("from_user_id").references(() => users.id).notNull(),
   toUserId: text("to_user_id").references(() => users.id),
   reason: text("reason").notNull(),
-  status: text("status").default("pending"), // pending, approved, rejected, completed
-  urgency: text("urgency").default("normal"), // urgent, normal, low
+  status: text("status").default("pending"),
+  urgency: text("urgency").default("normal"),
   notes: text("notes"),
-  requestedAt: integer("requested_at", { mode: 'timestamp' }).default(sql`(unixepoch())`),
-  approvedAt: integer("approved_at", { mode: 'timestamp' }),
+  requestedAt: timestamp("requested_at").defaultNow(),
+  approvedAt: timestamp("approved_at"),
   approvedBy: text("approved_by").references(() => users.id),
 });
 
-export const payrollPeriods = sqliteTable("payroll_periods", {
+export const payrollPeriods = pgTable("payroll_periods", {
   id: text("id").primaryKey(),
   branchId: text("branch_id").references(() => branches.id).notNull(),
-  startDate: integer("start_date", { mode: 'timestamp' }).notNull(),
-  endDate: integer("end_date", { mode: 'timestamp' }).notNull(),
-  status: text("status").default("open"), // open, closed, paid
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date").notNull(),
+  status: text("status").default("open"),
   totalHours: text("total_hours"),
   totalPay: text("total_pay"),
-  createdAt: integer("created_at", { mode: 'timestamp' }).default(sql`(unixepoch())`),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
-export const payrollEntries = sqliteTable("payroll_entries", {
+export const payrollEntries = pgTable("payroll_entries", {
   id: text("id").primaryKey(),
   userId: text("user_id").references(() => users.id).notNull(),
   payrollPeriodId: text("payroll_period_id").references(() => payrollPeriods.id).notNull(),
@@ -83,14 +82,12 @@ export const payrollEntries = sqliteTable("payroll_entries", {
   regularHours: text("regular_hours").notNull(),
   overtimeHours: text("overtime_hours").default("0"),
   nightDiffHours: text("night_diff_hours").default("0"),
-  // Basic pay components
   basicPay: text("basic_pay").notNull(),
   holidayPay: text("holiday_pay").default("0"),
   overtimePay: text("overtime_pay").default("0"),
   nightDiffPay: text("night_diff_pay").default("0"),
   restDayPay: text("rest_day_pay").default("0"),
   grossPay: text("gross_pay").notNull(),
-  // Detailed deductions
   sssContribution: text("sss_contribution").default("0"),
   sssLoan: text("sss_loan").default("0"),
   philHealthContribution: text("philhealth_contribution").default("0"),
@@ -100,29 +97,106 @@ export const payrollEntries = sqliteTable("payroll_entries", {
   advances: text("advances").default("0"),
   otherDeductions: text("other_deductions").default("0"),
   totalDeductions: text("total_deductions").default("0"),
-  deductions: text("deductions").default("0"), // Keep for backward compatibility
+  deductions: text("deductions").default("0"),
   netPay: text("net_pay").notNull(),
   payBreakdown: text("pay_breakdown"),
-  status: text("status").default("pending"), // pending, approved, paid
-  // Blockchain fields
-  blockchainHash: text("blockchain_hash"), // Hash of the record for blockchain verification
-  blockNumber: integer("block_number"), // Block number where record was stored
-  transactionHash: text("transaction_hash"), // Transaction hash for the blockchain record
-  verified: integer("verified", { mode: 'boolean' }).default(false), // Whether the record has been verified on blockchain
-  createdAt: integer("created_at", { mode: 'timestamp' }).default(sql`(unixepoch())`),
+  status: text("status").default("pending"),
+  blockchainHash: text("blockchain_hash"),
+  blockNumber: integer("block_number"),
+  transactionHash: text("transaction_hash"),
+  verified: boolean("verified").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
-export const approvals = sqliteTable("approvals", {
+export const approvals = pgTable("approvals", {
   id: text("id").primaryKey(),
-  type: text("type").notNull(), // shift_trade, leave_request, time_correction
-  requestId: text("request_id").notNull(), // ID of the related request
+  type: text("type").notNull(),
+  requestId: text("request_id").notNull(),
   requestedBy: text("requested_by").references(() => users.id).notNull(),
   approvedBy: text("approved_by").references(() => users.id),
-  status: text("status").default("pending"), // pending, approved, rejected
+  status: text("status").default("pending"),
   reason: text("reason"),
-  requestData: text("request_data"), // Additional data about the request (JSON string)
-  requestedAt: integer("requested_at", { mode: 'timestamp' }).default(sql`(unixepoch())`),
-  respondedAt: integer("responded_at", { mode: 'timestamp' }),
+  requestData: text("request_data"),
+  requestedAt: timestamp("requested_at").defaultNow(),
+  respondedAt: timestamp("responded_at"),
+});
+
+export const timeOffRequests = pgTable("time_off_requests", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").references(() => users.id).notNull(),
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date").notNull(),
+  type: text("type").notNull(),
+  reason: text("reason").notNull(),
+  status: text("status").default("pending"),
+  requestedAt: timestamp("requested_at").defaultNow(),
+  approvedAt: timestamp("approved_at"),
+  approvedBy: text("approved_by").references(() => users.id),
+});
+
+export const notifications = pgTable("notifications", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").references(() => users.id).notNull(),
+  type: text("type").notNull(),
+  title: text("title").notNull(),
+  message: text("message").notNull(),
+  isRead: boolean("is_read").default(false),
+  data: text("data"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const setupStatus = pgTable("setup_status", {
+  id: text("id").primaryKey(),
+  isSetupComplete: boolean("is_setup_complete").default(false),
+  setupCompletedAt: timestamp("setup_completed_at"),
+});
+
+export const deductionSettings = pgTable("deduction_settings", {
+  id: text("id").primaryKey(),
+  branchId: text("branch_id").references(() => branches.id).notNull(),
+  deductSSS: boolean("deduct_sss").default(true),
+  deductPhilHealth: boolean("deduct_philhealth").default(false),
+  deductPagibig: boolean("deduct_pagibig").default(false),
+  deductWithholdingTax: boolean("deduct_withholding_tax").default(false),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const deductionRates = pgTable("deduction_rates", {
+  id: text("id").primaryKey(),
+  type: text("type").notNull(),
+  minSalary: text("min_salary").notNull(),
+  maxSalary: text("max_salary"),
+  employeeRate: text("employee_rate"),
+  employeeContribution: text("employee_contribution"),
+  description: text("description"),
+  isActive: boolean("is_active").default(true),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const holidays = pgTable("holidays", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  date: timestamp("date").notNull(),
+  type: text("type").notNull(),
+  year: integer("year").notNull(),
+  isRecurring: boolean("is_recurring").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const archivedPayrollPeriods = pgTable("archived_payroll_periods", {
+  id: text("id").primaryKey(),
+  originalPeriodId: text("original_period_id").notNull(),
+  branchId: text("branch_id").references(() => branches.id).notNull(),
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date").notNull(),
+  status: text("status").notNull(),
+  totalHours: text("total_hours"),
+  totalPay: text("total_pay"),
+  archivedAt: timestamp("archived_at").defaultNow(),
+  archivedBy: text("archived_by").references(() => users.id),
+  entriesSnapshot: text("entries_snapshot"),
 });
 
 // Insert Schemas
@@ -140,7 +214,6 @@ export const insertShiftSchema = createInsertSchema(shifts).omit({
   id: true,
   createdAt: true,
 }).extend({
-  // Coerce string dates to Date objects
   startTime: z.union([z.date(), z.string().pipe(z.coerce.date())]),
   endTime: z.union([z.date(), z.string().pipe(z.coerce.date())]),
 });
@@ -171,87 +244,6 @@ export const insertPayrollEntrySchema = createInsertSchema(payrollEntries).omit(
   createdAt: true,
 });
 
-export const timeOffRequests = sqliteTable("time_off_requests", {
-  id: text("id").primaryKey(),
-  userId: text("user_id").references(() => users.id).notNull(),
-  startDate: integer("start_date", { mode: 'timestamp' }).notNull(),
-  endDate: integer("end_date", { mode: 'timestamp' }).notNull(),
-  type: text("type").notNull(), // vacation, sick, personal
-  reason: text("reason").notNull(),
-  status: text("status").default("pending"), // pending, approved, rejected
-  requestedAt: integer("requested_at", { mode: 'timestamp' }).default(sql`(unixepoch())`),
-  approvedAt: integer("approved_at", { mode: 'timestamp' }),
-  approvedBy: text("approved_by").references(() => users.id),
-});
-
-export const notifications = sqliteTable("notifications", {
-  id: text("id").primaryKey(),
-  userId: text("user_id").references(() => users.id).notNull(),
-  type: text("type").notNull(), // payroll, schedule, announcement, system
-  title: text("title").notNull(),
-  message: text("message").notNull(),
-  isRead: integer("is_read", { mode: 'boolean' }).default(false),
-  data: text("data"), // Additional data for the notification (JSON string)
-  createdAt: integer("created_at", { mode: 'timestamp' }).default(sql`(unixepoch())`),
-});
-
-export const setupStatus = sqliteTable("setup_status", {
-  id: text("id").primaryKey(),
-  isSetupComplete: integer("is_setup_complete", { mode: 'boolean' }).default(false),
-  setupCompletedAt: integer("setup_completed_at", { mode: 'timestamp' }),
-});
-
-export const deductionSettings = sqliteTable("deduction_settings", {
-  id: text("id").primaryKey(),
-  branchId: text("branch_id").references(() => branches.id).notNull(),
-  deductSSS: integer("deduct_sss", { mode: 'boolean' }).default(true),
-  deductPhilHealth: integer("deduct_philhealth", { mode: 'boolean' }).default(false),
-  deductPagibig: integer("deduct_pagibig", { mode: 'boolean' }).default(false),
-  deductWithholdingTax: integer("deduct_withholding_tax", { mode: 'boolean' }).default(false),
-  updatedAt: integer("updated_at", { mode: 'timestamp' }).default(sql`(unixepoch())`),
-  createdAt: integer("created_at", { mode: 'timestamp' }).default(sql`(unixepoch())`),
-});
-
-// Deduction rates configuration (admin-editable)
-export const deductionRates = sqliteTable("deduction_rates", {
-  id: text("id").primaryKey(),
-  type: text("type").notNull(), // 'sss', 'philhealth', 'pagibig', 'tax'
-  minSalary: text("min_salary").notNull(), // Stored as text for precision
-  maxSalary: text("max_salary"), // null for unlimited
-  employeeRate: text("employee_rate"), // Percentage or fixed amount
-  employeeContribution: text("employee_contribution"), // Fixed contribution amount
-  description: text("description"), // Description of the bracket
-  isActive: integer("is_active", { mode: 'boolean' }).default(true),
-  updatedAt: integer("updated_at", { mode: 'timestamp' }).default(sql`(unixepoch())`),
-  createdAt: integer("created_at", { mode: 'timestamp' }).default(sql`(unixepoch())`),
-});
-
-// Philippine Holidays table for pay computation
-export const holidays = sqliteTable("holidays", {
-  id: text("id").primaryKey(),
-  name: text("name").notNull(),
-  date: integer("date", { mode: 'timestamp' }).notNull(), // The holiday date
-  type: text("type").notNull(), // 'regular', 'special_non_working', 'special_working'
-  year: integer("year").notNull(), // Year for easy filtering
-  isRecurring: integer("is_recurring", { mode: 'boolean' }).default(false), // Same date every year
-  createdAt: integer("created_at", { mode: 'timestamp' }).default(sql`(unixepoch())`),
-});
-
-// Archived payroll periods for audit trail
-export const archivedPayrollPeriods = sqliteTable("archived_payroll_periods", {
-  id: text("id").primaryKey(),
-  originalPeriodId: text("original_period_id").notNull(),
-  branchId: text("branch_id").references(() => branches.id).notNull(),
-  startDate: integer("start_date", { mode: 'timestamp' }).notNull(),
-  endDate: integer("end_date", { mode: 'timestamp' }).notNull(),
-  status: text("status").notNull(),
-  totalHours: text("total_hours"),
-  totalPay: text("total_pay"),
-  archivedAt: integer("archived_at", { mode: 'timestamp' }).default(sql`(unixepoch())`),
-  archivedBy: text("archived_by").references(() => users.id),
-  entriesSnapshot: text("entries_snapshot"), // JSON snapshot of all entries
-});
-
 export const insertApprovalSchema = createInsertSchema(approvals).omit({
   id: true,
   requestedAt: true,
@@ -263,7 +255,6 @@ export const insertTimeOffRequestSchema = createInsertSchema(timeOffRequests).om
   requestedAt: true,
   approvedAt: true,
 }).extend({
-  // Coerce string dates to Date objects
   startDate: z.union([z.date(), z.string().pipe(z.coerce.date())]),
   endDate: z.union([z.date(), z.string().pipe(z.coerce.date())]),
 });
