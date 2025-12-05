@@ -12,10 +12,232 @@ export async function initializeDatabase() {
   console.log('🔧 Initializing PostgreSQL database with Neon...');
 
   try {
-    // Create tables using Drizzle - tables are created via drizzle-kit push
-    // For now, we just verify connection works
-    console.log('✅ Database connection established');
-    console.log('ℹ️  Tables will be created via "npm run db:push"');
+    // Create all tables if they don't exist
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS branches (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        address TEXT NOT NULL,
+        phone TEXT,
+        is_active BOOLEAN DEFAULT true,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS users (
+        id TEXT PRIMARY KEY,
+        username TEXT NOT NULL UNIQUE,
+        password TEXT NOT NULL,
+        first_name TEXT NOT NULL,
+        last_name TEXT NOT NULL,
+        email TEXT NOT NULL UNIQUE,
+        role TEXT NOT NULL DEFAULT 'employee',
+        position TEXT NOT NULL,
+        hourly_rate TEXT NOT NULL,
+        branch_id TEXT REFERENCES branches(id) NOT NULL,
+        is_active BOOLEAN DEFAULT true,
+        blockchain_verified BOOLEAN DEFAULT false,
+        blockchain_hash TEXT,
+        verified_at TIMESTAMP,
+        sss_loan_deduction TEXT DEFAULT '0',
+        pagibig_loan_deduction TEXT DEFAULT '0',
+        cash_advance_deduction TEXT DEFAULT '0',
+        other_deductions TEXT DEFAULT '0',
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS shifts (
+        id TEXT PRIMARY KEY,
+        user_id TEXT REFERENCES users(id) NOT NULL,
+        branch_id TEXT REFERENCES branches(id) NOT NULL,
+        start_time TIMESTAMP NOT NULL,
+        end_time TIMESTAMP NOT NULL,
+        position TEXT NOT NULL,
+        is_recurring BOOLEAN DEFAULT false,
+        recurring_pattern TEXT,
+        status TEXT DEFAULT 'scheduled',
+        actual_start_time TIMESTAMP,
+        actual_end_time TIMESTAMP,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS shift_trades (
+        id TEXT PRIMARY KEY,
+        shift_id TEXT REFERENCES shifts(id) NOT NULL,
+        from_user_id TEXT REFERENCES users(id) NOT NULL,
+        to_user_id TEXT REFERENCES users(id),
+        reason TEXT NOT NULL,
+        status TEXT DEFAULT 'pending',
+        urgency TEXT DEFAULT 'normal',
+        notes TEXT,
+        requested_at TIMESTAMP DEFAULT NOW(),
+        approved_at TIMESTAMP,
+        approved_by TEXT REFERENCES users(id)
+      )
+    `);
+
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS payroll_periods (
+        id TEXT PRIMARY KEY,
+        branch_id TEXT REFERENCES branches(id) NOT NULL,
+        start_date TIMESTAMP NOT NULL,
+        end_date TIMESTAMP NOT NULL,
+        status TEXT DEFAULT 'open',
+        total_hours TEXT,
+        total_pay TEXT,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS payroll_entries (
+        id TEXT PRIMARY KEY,
+        user_id TEXT REFERENCES users(id) NOT NULL,
+        payroll_period_id TEXT REFERENCES payroll_periods(id) NOT NULL,
+        total_hours TEXT NOT NULL,
+        regular_hours TEXT NOT NULL,
+        overtime_hours TEXT DEFAULT '0',
+        night_diff_hours TEXT DEFAULT '0',
+        basic_pay TEXT NOT NULL,
+        holiday_pay TEXT DEFAULT '0',
+        overtime_pay TEXT DEFAULT '0',
+        night_diff_pay TEXT DEFAULT '0',
+        rest_day_pay TEXT DEFAULT '0',
+        gross_pay TEXT NOT NULL,
+        sss_contribution TEXT DEFAULT '0',
+        sss_loan TEXT DEFAULT '0',
+        philhealth_contribution TEXT DEFAULT '0',
+        pagibig_contribution TEXT DEFAULT '0',
+        pagibig_loan TEXT DEFAULT '0',
+        withholding_tax TEXT DEFAULT '0',
+        advances TEXT DEFAULT '0',
+        other_deductions TEXT DEFAULT '0',
+        total_deductions TEXT DEFAULT '0',
+        deductions TEXT DEFAULT '0',
+        net_pay TEXT NOT NULL,
+        pay_breakdown TEXT,
+        status TEXT DEFAULT 'pending',
+        blockchain_hash TEXT,
+        block_number INTEGER,
+        transaction_hash TEXT,
+        verified BOOLEAN DEFAULT false,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS approvals (
+        id TEXT PRIMARY KEY,
+        type TEXT NOT NULL,
+        request_id TEXT NOT NULL,
+        requested_by TEXT REFERENCES users(id) NOT NULL,
+        approved_by TEXT REFERENCES users(id),
+        status TEXT DEFAULT 'pending',
+        reason TEXT,
+        request_data TEXT,
+        requested_at TIMESTAMP DEFAULT NOW(),
+        responded_at TIMESTAMP
+      )
+    `);
+
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS time_off_requests (
+        id TEXT PRIMARY KEY,
+        user_id TEXT REFERENCES users(id) NOT NULL,
+        start_date TIMESTAMP NOT NULL,
+        end_date TIMESTAMP NOT NULL,
+        type TEXT NOT NULL,
+        reason TEXT NOT NULL,
+        status TEXT DEFAULT 'pending',
+        requested_at TIMESTAMP DEFAULT NOW(),
+        approved_at TIMESTAMP,
+        approved_by TEXT REFERENCES users(id)
+      )
+    `);
+
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS notifications (
+        id TEXT PRIMARY KEY,
+        user_id TEXT REFERENCES users(id) NOT NULL,
+        type TEXT NOT NULL,
+        title TEXT NOT NULL,
+        message TEXT NOT NULL,
+        is_read BOOLEAN DEFAULT false,
+        data TEXT,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS setup_status (
+        id TEXT PRIMARY KEY,
+        is_setup_complete BOOLEAN DEFAULT false,
+        setup_completed_at TIMESTAMP
+      )
+    `);
+
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS deduction_settings (
+        id TEXT PRIMARY KEY,
+        branch_id TEXT REFERENCES branches(id) NOT NULL,
+        deduct_sss BOOLEAN DEFAULT true,
+        deduct_philhealth BOOLEAN DEFAULT false,
+        deduct_pagibig BOOLEAN DEFAULT false,
+        deduct_withholding_tax BOOLEAN DEFAULT false,
+        updated_at TIMESTAMP DEFAULT NOW(),
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS deduction_rates (
+        id TEXT PRIMARY KEY,
+        type TEXT NOT NULL,
+        min_salary TEXT NOT NULL,
+        max_salary TEXT,
+        employee_rate TEXT,
+        employee_contribution TEXT,
+        description TEXT,
+        is_active BOOLEAN DEFAULT true,
+        updated_at TIMESTAMP DEFAULT NOW(),
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS holidays (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        date TIMESTAMP NOT NULL,
+        type TEXT NOT NULL,
+        year INTEGER NOT NULL,
+        is_recurring BOOLEAN DEFAULT false,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS archived_payroll_periods (
+        id TEXT PRIMARY KEY,
+        original_period_id TEXT NOT NULL,
+        branch_id TEXT REFERENCES branches(id) NOT NULL,
+        start_date TIMESTAMP NOT NULL,
+        end_date TIMESTAMP NOT NULL,
+        status TEXT NOT NULL,
+        total_hours TEXT,
+        total_pay TEXT,
+        archived_at TIMESTAMP DEFAULT NOW(),
+        archived_by TEXT REFERENCES users(id),
+        entries_snapshot TEXT
+      )
+    `);
+
+    console.log('✅ All database tables created successfully');
   } catch (error) {
     console.error('❌ Database initialization error:', error);
     throw error;
