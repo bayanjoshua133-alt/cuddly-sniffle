@@ -3,7 +3,7 @@ import cors from "cors";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { networkInterfaces } from "os";
-import { initializeDatabase, createAdminAccount, seedDeductionRates, seedPhilippineHolidays, seedSampleUsers } from "./init-db";
+import { initializeDatabase, createAdminAccount, seedDeductionRates, seedPhilippineHolidays, seedSampleUsers, seedSampleSchedulesAndPayroll } from "./init-db";
 import { promptDatabaseChoice, deleteDatabaseFile, displayDatabaseStats, loadSampleData } from "./db-manager";
 import { recreateConnection } from "./db";
 
@@ -109,6 +109,9 @@ app.use((req, res, next) => {
 
   // Seed sample users (manager + employees)
   await seedSampleUsers();
+
+  // Seed sample schedules and payroll data
+  await seedSampleSchedulesAndPayroll();
 
   // Seed default deduction rates if table is empty
   await seedDeductionRates();

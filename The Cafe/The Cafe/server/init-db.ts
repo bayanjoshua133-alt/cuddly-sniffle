@@ -454,16 +454,75 @@ export async function seedSampleUsers() {
     const branchId = branch[0].id;
     const hashedPassword = await bcrypt.hash('password123', 10);
 
+    // Realistic Philippine café employees for December 2025
     const sampleUsers = [
-      { username: 'manager1', firstName: 'Maria', lastName: 'Santos', email: 'maria@thecafe.com', role: 'manager', position: 'Branch Manager', hourlyRate: '150' },
-      { username: 'emp001', firstName: 'Juan', lastName: 'Dela Cruz', email: 'juan@thecafe.com', role: 'employee', position: 'Barista', hourlyRate: '75' },
-      { username: 'emp002', firstName: 'Ana', lastName: 'Garcia', email: 'ana@thecafe.com', role: 'employee', position: 'Cashier', hourlyRate: '70' },
-      { username: 'emp003', firstName: 'Pedro', lastName: 'Reyes', email: 'pedro@thecafe.com', role: 'employee', position: 'Cook', hourlyRate: '80' },
+      // Manager
+      { 
+        id: 'user-mgr-maria',
+        username: 'maria', 
+        firstName: 'Maria Clara', 
+        lastName: 'Santos', 
+        email: 'maria.santos@thecafe.ph', 
+        role: 'manager', 
+        position: 'Branch Manager', 
+        hourlyRate: '187.50',
+        sssLoan: '0',
+        pagibigLoan: '0',
+      },
+      // Employees
+      { 
+        id: 'user-emp-juan',
+        username: 'juan', 
+        firstName: 'Juan Carlos', 
+        lastName: 'Dela Cruz', 
+        email: 'juan.delacruz@thecafe.ph', 
+        role: 'employee', 
+        position: 'Senior Barista', 
+        hourlyRate: '112.50',
+        sssLoan: '1500',
+        pagibigLoan: '500',
+      },
+      { 
+        id: 'user-emp-ana',
+        username: 'ana', 
+        firstName: 'Ana Marie', 
+        lastName: 'Garcia', 
+        email: 'ana.garcia@thecafe.ph', 
+        role: 'employee', 
+        position: 'Cashier', 
+        hourlyRate: '93.75',
+        sssLoan: '0',
+        pagibigLoan: '0',
+      },
+      { 
+        id: 'user-emp-pedro',
+        username: 'pedro', 
+        firstName: 'Pedro Miguel', 
+        lastName: 'Reyes', 
+        email: 'pedro.reyes@thecafe.ph', 
+        role: 'employee', 
+        position: 'Kitchen Staff', 
+        hourlyRate: '100.00',
+        sssLoan: '2000',
+        pagibigLoan: '0',
+      },
+      { 
+        id: 'user-emp-rosa',
+        username: 'rosa', 
+        firstName: 'Rosa Linda', 
+        lastName: 'Fernandez', 
+        email: 'rosa.fernandez@thecafe.ph', 
+        role: 'employee', 
+        position: 'Barista', 
+        hourlyRate: '93.75',
+        sssLoan: '0',
+        pagibigLoan: '1000',
+      },
     ];
 
     for (const user of sampleUsers) {
       await db.insert(users).values({
-        id: randomUUID(),
+        id: user.id || randomUUID(),
         username: user.username,
         password: hashedPassword,
         firstName: user.firstName,
@@ -474,12 +533,231 @@ export async function seedSampleUsers() {
         hourlyRate: user.hourlyRate,
         branchId: branchId,
         isActive: true,
+        sssLoanDeduction: user.sssLoan || '0',
+        pagibigLoanDeduction: user.pagibigLoan || '0',
       });
     }
 
     console.log('✅ Sample users created (password: password123)');
   } catch (error) {
     console.error('❌ Error seeding sample users:', error);
+    throw error;
+  }
+}
+
+export async function seedSampleSchedulesAndPayroll() {
+  console.log('📅 Seeding sample schedules and payroll...');
+
+  try {
+    // Check if shifts already exist
+    const existingShifts = await db.select().from(shifts).limit(1);
+    if (existingShifts.length > 0) {
+      console.log('✅ Sample schedules already exist');
+      return;
+    }
+
+    // Get branch and employees
+    const branch = await db.select().from(branches).limit(1);
+    const allUsers = await db.select().from(users);
+    const employees = allUsers.filter(u => u.role === 'employee');
+    const manager = allUsers.find(u => u.role === 'manager');
+
+    if (branch.length === 0 || employees.length === 0) {
+      console.log('⚠️ No branch or employees found, skipping schedules');
+      return;
+    }
+
+    const branchId = branch[0].id;
+    const now = new Date();
+
+    // ═══════════════════════════════════════════════════════════════
+    // CREATE SHIFTS (December 2025 Schedule - 2 weeks)
+    // ═══════════════════════════════════════════════════════════════
+    
+    const shiftPatterns = [
+      { name: 'Morning', start: 6, end: 14 },
+      { name: 'Day', start: 10, end: 18 },
+      { name: 'Afternoon', start: 14, end: 22 },
+    ];
+
+    // Create shifts for Dec 1-15, 2025 (past 2 weeks)
+    for (let day = -14; day <= 7; day++) {
+      const shiftDate = new Date(now);
+      shiftDate.setDate(shiftDate.getDate() + day);
+      const dayOfWeek = shiftDate.getDay();
+
+      // Skip Sundays (day off)
+      if (dayOfWeek === 0) continue;
+
+      for (let i = 0; i < employees.length; i++) {
+        const emp = employees[i];
+        // Each employee works ~5 days a week
+        if (Math.random() > 0.7) continue; // 30% chance to skip (day off)
+
+        // Assign different shift patterns to different employees
+        const pattern = shiftPatterns[i % shiftPatterns.length];
+        
+        const startTime = new Date(shiftDate);
+        startTime.setHours(pattern.start, 0, 0, 0);
+        
+        const endTime = new Date(shiftDate);
+        endTime.setHours(pattern.end, 0, 0, 0);
+
+        const status = day < 0 ? 'completed' : (day === 0 ? 'in-progress' : 'scheduled');
+
+        await db.insert(shifts).values({
+          id: randomUUID(),
+          userId: emp.id,
+          branchId: branchId,
+          startTime: startTime,
+          endTime: endTime,
+          position: emp.position,
+          status: status,
+        });
+      }
+    }
+    console.log('   ✅ Created shifts for 3 weeks');
+
+    // ═══════════════════════════════════════════════════════════════
+    // CREATE PAYROLL PERIODS (November 16-30 and December 1-15, 2025)
+    // ═══════════════════════════════════════════════════════════════
+
+    const payrollPeriodsList = [
+      { 
+        startDate: new Date('2025-11-01'), 
+        endDate: new Date('2025-11-15'), 
+        status: 'closed',
+        id: 'period-2025-11-01'
+      },
+      { 
+        startDate: new Date('2025-11-16'), 
+        endDate: new Date('2025-11-30'), 
+        status: 'closed',
+        id: 'period-2025-11-16'
+      },
+      { 
+        startDate: new Date('2025-12-01'), 
+        endDate: new Date('2025-12-15'), 
+        status: 'open',
+        id: 'period-2025-12-01'
+      },
+    ];
+
+    for (const period of payrollPeriodsList) {
+      await db.insert(payrollPeriods).values({
+        id: period.id,
+        branchId: branchId,
+        startDate: period.startDate,
+        endDate: period.endDate,
+        status: period.status,
+        totalHours: '440',
+        totalPay: '75000',
+      });
+
+      // Create payroll entries for each employee
+      for (const emp of employees) {
+        const hourlyRate = parseFloat(emp.hourlyRate);
+        const regularHours = 80 + Math.floor(Math.random() * 8); // 80-88 hours per period
+        const overtimeHours = Math.floor(Math.random() * 10); // 0-10 OT hours
+        const nightDiffHours = Math.floor(Math.random() * 16); // 0-16 ND hours
+
+        const basicPay = regularHours * hourlyRate;
+        const overtimePay = overtimeHours * hourlyRate * 1.25;
+        const nightDiffPay = nightDiffHours * hourlyRate * 0.10;
+        const holidayPay = period.startDate.getMonth() === 10 ? hourlyRate * 8 * 2 : 0; // Bonifacio Day in Nov
+
+        const grossPay = basicPay + overtimePay + nightDiffPay + holidayPay;
+
+        // Calculate deductions (2025 rates)
+        const sssContribution = grossPay >= 20000 ? 900 : grossPay >= 15000 ? 675 : grossPay >= 10000 ? 450 : 225;
+        const philhealthContribution = Math.min(grossPay * 0.025, 500);
+        const pagibigContribution = Math.min(grossPay * 0.02, 200);
+        const withholdingTax = grossPay > 20833 ? (grossPay - 20833) * 0.20 : 0;
+
+        const sssLoan = parseFloat(emp.sssLoanDeduction || '0');
+        const pagibigLoan = parseFloat(emp.pagibigLoanDeduction || '0');
+
+        const totalDeductions = sssContribution + philhealthContribution + pagibigContribution + withholdingTax + sssLoan + pagibigLoan;
+        const netPay = grossPay - totalDeductions;
+
+        await db.insert(payrollEntries).values({
+          id: randomUUID(),
+          userId: emp.id,
+          payrollPeriodId: period.id,
+          totalHours: (regularHours + overtimeHours).toFixed(2),
+          regularHours: regularHours.toFixed(2),
+          overtimeHours: overtimeHours.toFixed(2),
+          nightDiffHours: nightDiffHours.toFixed(2),
+          basicPay: basicPay.toFixed(2),
+          overtimePay: overtimePay.toFixed(2),
+          nightDiffPay: nightDiffPay.toFixed(2),
+          holidayPay: holidayPay.toFixed(2),
+          grossPay: grossPay.toFixed(2),
+          sssContribution: sssContribution.toFixed(2),
+          sssLoan: sssLoan.toFixed(2),
+          philHealthContribution: philhealthContribution.toFixed(2),
+          pagibigContribution: pagibigContribution.toFixed(2),
+          pagibigLoan: pagibigLoan.toFixed(2),
+          withholdingTax: withholdingTax.toFixed(2),
+          totalDeductions: totalDeductions.toFixed(2),
+          deductions: totalDeductions.toFixed(2),
+          netPay: netPay.toFixed(2),
+          status: period.status === 'closed' ? 'paid' : 'pending',
+        });
+      }
+    }
+    console.log('   ✅ Created 3 payroll periods with entries');
+
+    // ═══════════════════════════════════════════════════════════════
+    // CREATE TIME-OFF REQUESTS
+    // ═══════════════════════════════════════════════════════════════
+
+    const timeOffRequests_data = [
+      { userId: employees[0].id, startDate: new Date('2025-12-24'), endDate: new Date('2025-12-25'), type: 'vacation', reason: 'Christmas family gathering', status: 'approved' },
+      { userId: employees[1].id, startDate: new Date('2025-12-10'), endDate: new Date('2025-12-10'), type: 'sick', reason: 'Medical checkup', status: 'pending' },
+      { userId: employees[2].id, startDate: new Date('2025-12-31'), endDate: new Date('2026-01-01'), type: 'vacation', reason: 'New Year celebration', status: 'pending' },
+    ];
+
+    for (const req of timeOffRequests_data) {
+      await db.insert(timeOffRequests).values({
+        id: randomUUID(),
+        userId: req.userId,
+        startDate: req.startDate,
+        endDate: req.endDate,
+        type: req.type,
+        reason: req.reason,
+        status: req.status,
+      });
+    }
+    console.log('   ✅ Created time-off requests');
+
+    // ═══════════════════════════════════════════════════════════════
+    // CREATE NOTIFICATIONS
+    // ═══════════════════════════════════════════════════════════════
+
+    const notificationsList = [
+      { userId: employees[0].id, type: 'payroll', title: 'Payslip Available', message: 'Your payslip for Nov 16-30, 2025 is now available.' },
+      { userId: employees[0].id, type: 'schedule', title: 'New Shift Assigned', message: 'You have been assigned morning shift for Dec 10, 2025.' },
+      { userId: employees[1].id, type: 'time_off', title: 'Time-Off Request Pending', message: 'Your sick leave request for Dec 10 is under review.' },
+      { userId: manager?.id || employees[0].id, type: 'approval', title: 'Pending Approvals', message: 'You have 2 time-off requests awaiting your approval.' },
+      { userId: manager?.id || employees[0].id, type: 'payroll', title: 'Payroll Due', message: 'December 1-15 payroll needs to be processed by Dec 20.' },
+    ];
+
+    for (const notif of notificationsList) {
+      await db.insert(notifications).values({
+        id: randomUUID(),
+        userId: notif.userId,
+        type: notif.type,
+        title: notif.title,
+        message: notif.message,
+        isRead: false,
+      });
+    }
+    console.log('   ✅ Created notifications');
+
+    console.log('✅ Sample schedules and payroll seeded successfully');
+  } catch (error) {
+    console.error('❌ Error seeding schedules and payroll:', error);
     throw error;
   }
 }
