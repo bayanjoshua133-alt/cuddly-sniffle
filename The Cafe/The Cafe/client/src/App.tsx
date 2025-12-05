@@ -202,7 +202,7 @@ function RequireManagerOrAdmin({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-// Desktop Router (Manager/Admin only - Port 5000)
+// Desktop Router (All authenticated users - Port 5000)
 function DesktopRouter({ authState }: { authState: { isAuthenticated: boolean; user: any } }) {
   const { isAuthenticated, user } = authState;
 
@@ -210,65 +210,9 @@ function DesktopRouter({ authState }: { authState: { isAuthenticated: boolean; u
     return <MuiLogin />;
   }
 
-  // Only allow manager and admin roles on desktop
-  if (!user || (user.role !== 'manager' && user.role !== 'admin')) {
-    const handleLogout = async () => {
-      try {
-        await apiRequest("POST", "/api/auth/logout");
-      } catch (e) {
-        // Ignore logout errors
-      }
-      setAuthState({ user: null, isAuthenticated: false });
-    };
-
-    return (
-      <Box
-        sx={{
-          minHeight: "100vh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          bgcolor: "background.default",
-        }}
-      >
-        <Box sx={{ textAlign: "center", maxWidth: 400, p: 4 }}>
-          <Box
-            sx={{
-              width: 64,
-              height: 64,
-              borderRadius: 3,
-              bgcolor: (theme) => alpha(theme.palette.error.main, 0.1),
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              mx: "auto",
-              mb: 2,
-            }}
-          >
-            <CoffeeIcon sx={{ fontSize: 32, color: "error.main" }} />
-          </Box>
-          <Typography variant="h5" fontWeight={700} gutterBottom>
-            Access Restricted
-          </Typography>
-          <Typography color="text.secondary" sx={{ mb: 2 }}>
-            This portal is for managers and administrators only. Please use the mobile app to access
-            your employee dashboard.
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            Mobile Portal:{" "}
-            <Typography component="span" sx={{ fontFamily: "monospace", color: "primary.main" }}>
-              port 5001
-            </Typography>
-          </Typography>
-          <Button variant="contained" fullWidth onClick={handleLogout} sx={{ mb: 2 }}>
-            Logout & Switch Account
-          </Button>
-          <Typography variant="caption" color="text.secondary">
-            Login as <code>admin</code> or <code>sarah</code> for manager access
-          </Typography>
-        </Box>
-      </Box>
-    );
+  // Allow all authenticated users on desktop
+  if (!user) {
+    return <LoadingScreen />;
   }
 
   return (
