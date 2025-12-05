@@ -642,6 +642,269 @@ const styles = `
     display: flex;
     gap: 10px;
   }
+  
+  /* ============================================================
+     MOBILE RESPONSIVE STYLES
+     ============================================================ */
+  
+  @media screen and (max-width: 768px) {
+    .payslip-professional {
+      padding: 4mm;
+      max-width: 100%;
+      font-size: 9pt;
+    }
+    
+    /* Header - Stack vertically on mobile */
+    .payslip-header {
+      flex-direction: column;
+      gap: 10px;
+      padding-bottom: 8px;
+    }
+    
+    .company-info {
+      flex-direction: column !important;
+      align-items: center !important;
+      text-align: center;
+    }
+    
+    .company-logo {
+      width: 50px;
+      height: 50px;
+      margin-right: 0;
+      margin-bottom: 8px;
+    }
+    
+    .company-name {
+      font-size: 14pt;
+    }
+    
+    .company-address {
+      font-size: 9pt;
+    }
+    
+    .payslip-title {
+      text-align: center;
+    }
+    
+    .payslip-title h1 {
+      font-size: 18pt;
+    }
+    
+    /* Info Section - Stack on mobile */
+    .info-section {
+      flex-direction: column;
+      gap: 10px;
+      padding: 8px;
+    }
+    
+    .info-section > div {
+      text-align: left !important;
+    }
+    
+    .info-section > div:last-child {
+      border-top: 1px dashed #666;
+      padding-top: 8px;
+    }
+    
+    .info-row {
+      flex-wrap: wrap;
+      justify-content: flex-start !important;
+    }
+    
+    .info-label {
+      font-size: 9pt;
+      min-width: 90px;
+    }
+    
+    .info-value {
+      font-size: 9pt;
+      margin-left: 0 !important;
+    }
+    
+    /* Two column - Stack on mobile */
+    .two-column {
+      flex-direction: column;
+      gap: 10px;
+    }
+    
+    .column-header {
+      font-size: 10pt;
+      padding: 6px;
+    }
+    
+    /* Tables - Smaller font on mobile */
+    .payslip-table {
+      font-size: 8pt;
+    }
+    
+    .payslip-table th,
+    .payslip-table td {
+      padding: 4px 6px;
+    }
+    
+    .payslip-table th {
+      font-size: 7pt;
+    }
+    
+    /* Summary Section */
+    .summary-section {
+      padding: 10px;
+    }
+    
+    .summary-row {
+      font-size: 9pt;
+    }
+    
+    .summary-row.net-pay {
+      font-size: 12pt;
+    }
+    
+    /* Attendance Grid - 2 columns on mobile */
+    .attendance-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .attendance-item {
+      padding: 6px;
+      font-size: 8pt;
+    }
+    
+    .attendance-item:nth-child(4n) {
+      border-right: 1px solid #000;
+    }
+    
+    .attendance-item:nth-child(2n) {
+      border-right: none;
+    }
+    
+    .attendance-item:nth-last-child(-n+4) {
+      border-bottom: 1px solid #000;
+    }
+    
+    .attendance-item:nth-last-child(-n+2) {
+      border-bottom: none;
+    }
+    
+    /* Metadata Grid - Stack on mobile */
+    .metadata-grid {
+      grid-template-columns: 1fr;
+      gap: 6px;
+    }
+    
+    .metadata-section {
+      padding: 8px;
+      font-size: 8pt;
+    }
+    
+    /* Signatures - Stack on mobile */
+    .signatures-section {
+      flex-direction: column;
+      gap: 20px;
+      margin-top: 20px;
+    }
+    
+    .signature-box {
+      min-width: 100%;
+    }
+    
+    .signature-line {
+      margin-top: 25px;
+    }
+    
+    /* Action Buttons - Full width on mobile */
+    .action-buttons {
+      flex-direction: column;
+      gap: 8px;
+    }
+    
+    .action-btn {
+      width: 100%;
+      justify-content: center;
+      padding: 12px 16px;
+      font-size: 13px;
+    }
+    
+    /* Notes Section */
+    .notes-section {
+      padding: 8px;
+      font-size: 8pt;
+    }
+    
+    /* Footer */
+    .payslip-footer {
+      font-size: 7pt;
+      padding-top: 8px;
+    }
+    
+    /* Status Badge */
+    .status-badge {
+      font-size: 8pt;
+      padding: 2px 8px;
+    }
+    
+    /* Page Indicator - Hide on mobile */
+    .page-indicator {
+      display: none;
+    }
+    
+    /* Remarks */
+    .remarks-input {
+      font-size: 9pt;
+      padding: 8px;
+    }
+    
+    .remarks-actions {
+      flex-direction: column;
+    }
+  }
+  
+  /* Extra small screens (< 400px) */
+  @media screen and (max-width: 400px) {
+    .payslip-professional {
+      padding: 3mm;
+      font-size: 8pt;
+    }
+    
+    .company-name {
+      font-size: 12pt;
+    }
+    
+    .payslip-title h1 {
+      font-size: 16pt;
+      letter-spacing: 1px;
+    }
+    
+    .info-label {
+      min-width: 75px;
+      font-size: 8pt;
+    }
+    
+    .info-value {
+      font-size: 8pt;
+    }
+    
+    .payslip-table {
+      font-size: 7pt;
+    }
+    
+    .payslip-table th {
+      font-size: 6pt;
+    }
+    
+    .payslip-table th,
+    .payslip-table td {
+      padding: 3px 4px;
+    }
+    
+    .summary-row.net-pay {
+      font-size: 11pt;
+    }
+    
+    .action-btn {
+      font-size: 12px;
+      padding: 10px 12px;
+    }
+  }
 `;
 
 // ============================================================
@@ -1161,75 +1424,142 @@ export const PayslipProfessional: React.FC<PayslipProfessionalProps> = ({
 };
 
 // ============================================================
-// SAMPLE DATA FOR TESTING
+// SAMPLE DATA FOR TESTING (December 2025 - Current Period)
 // ============================================================
 
 export const SAMPLE_PAYSLIP_PROFESSIONAL: PayslipDataProfessional = {
-  payslip_id: 'PS-2025-001234',
+  payslip_id: 'PS-2025-120045',
   company: {
     name: 'The Café Inc.',
-    address: '123 Coffee Street, Makati City, Metro Manila 1234',
-    tin: '123-456-789-000',
+    address: '2F Ayala Triangle Gardens, Makati City, Metro Manila 1226',
+    tin: '009-456-789-000',
     logo_url: '',
-    email: 'payroll@thecafe.ph',
+    phone: '+63 2 8888 1234',
+    email: 'hr@thecafe.com.ph',
   },
   employee: {
-    id: 'EMP-0045',
-    name: 'Juan Dela Cruz',
+    id: 'EMP-2024-0045',
+    name: 'Maria Clara Santos',
     position: 'Senior Barista',
-    department: 'Operations',
-    tin: '123-456-789',
-    sss: '01-2345678-9',
-    philhealth: '12-345678901-2',
-    pagibig: '0000-1234-5678',
+    department: 'Operations - Makati Branch',
+    tin: '456-789-123',
+    sss: '34-5678901-2',
+    philhealth: '12-987654321-0',
+    pagibig: '1234-5678-9012',
   },
   pay_period: {
-    start: '2025-01-01',
-    end: '2025-01-15',
-    payment_date: '2025-01-20',
+    start: '2025-11-16',
+    end: '2025-11-30',
+    payment_date: '2025-12-05',
     frequency: 'semi-monthly',
   },
   earnings: [
-    { code: 'BASIC', label: 'Basic Pay', amount: 8000.00, hours: 88, rate: 90.91, category: 'basic' },
-    { code: 'OT', label: 'Overtime Pay', amount: 590.91, hours: 5, rate: 118.18, category: 'overtime' },
-    { code: 'HOLIDAY', label: 'Holiday Pay', amount: 1454.55, category: 'holiday' },
-    { code: 'ND', label: 'Night Differential', amount: 145.45, category: 'night_diff' },
-    { code: 'ALLOW_MEAL', label: 'Meal Allowance', amount: 1500.00, category: 'allowance' },
-    { code: 'ALLOW_TRANS', label: 'Transportation Allowance', amount: 1000.00, category: 'allowance' },
-    { code: 'INCENTIVE', label: 'Performance Incentive', amount: 0, category: 'incentive' }, // Will be hidden
+    { code: 'BASIC', label: 'Basic Pay (11 days)', amount: 9900.00, hours: 88, rate: 112.50, category: 'basic' },
+    { code: 'OT', label: 'Overtime Pay', amount: 1462.50, hours: 10, rate: 146.25, category: 'overtime' },
+    { code: 'HOLIDAY', label: 'Bonifacio Day (Nov 30)', amount: 2250.00, hours: 8, rate: 281.25, category: 'holiday' },
+    { code: 'ND', label: 'Night Differential (8PM-6AM)', amount: 337.50, hours: 15, rate: 22.50, category: 'night_diff' },
+    { code: 'ALLOW_MEAL', label: 'Meal Allowance', amount: 1650.00, category: 'allowance' },
+    { code: 'ALLOW_TRANS', label: 'Transportation Allowance', amount: 1100.00, category: 'allowance' },
+    { code: 'TIPS', label: 'Service Charge (Tips Share)', amount: 850.00, category: 'incentive' },
   ],
   deductions: [
-    { code: 'SSS', label: 'SSS Contribution', amount: 450.00, is_mandatory: true },
-    { code: 'PHILHEALTH', label: 'PhilHealth Contribution', amount: 225.00, is_mandatory: true },
-    { code: 'PAGIBIG', label: 'Pag-IBIG Contribution', amount: 100.00, is_mandatory: true },
-    { code: 'TAX', label: 'Withholding Tax', amount: 1250.00, is_mandatory: true },
-    { code: 'SSS_LOAN', label: 'SSS Loan', amount: 500.00, is_loan: true, loan_balance: 4500.00 },
-    { code: 'LATE', label: 'Late Deduction', amount: 0, category: 'attendance' }, // Will be hidden
-    { code: 'ABSENT', label: 'Absent Deduction', amount: 0, category: 'attendance' }, // Will be hidden
+    { code: 'SSS', label: 'SSS Contribution', amount: 800.00, is_mandatory: true },
+    { code: 'PHILHEALTH', label: 'PhilHealth Contribution', amount: 437.50, is_mandatory: true },
+    { code: 'PAGIBIG', label: 'Pag-IBIG Contribution', amount: 200.00, is_mandatory: true },
+    { code: 'TAX', label: 'Withholding Tax', amount: 1125.00, is_mandatory: true },
+    { code: 'SSS_LOAN', label: 'SSS Salary Loan', amount: 1500.00, is_loan: true, loan_balance: 7500.00 },
+    { code: 'PAGIBIG_LOAN', label: 'Pag-IBIG MP2 Savings', amount: 500.00, is_loan: true, loan_balance: 12000.00 },
+    { code: 'LATE', label: 'Tardiness Deduction', amount: 56.25, category: 'attendance' },
   ],
-  gross_pay: 12690.91,
-  total_deductions: 2525.00,
-  net_pay: 10165.91,
+  gross_pay: 17550.00,
+  total_deductions: 4618.75,
+  net_pay: 12931.25,
   attendance: {
     days_worked: 11,
-    overtime_hours: 5,
+    overtime_hours: 10,
     late_hours: 0.5,
-    night_diff_hours: 16,
+    night_diff_hours: 15,
     absent_days: 0,
     vl_taken: 0,
     sl_taken: 0,
   },
   metadata: {
-    status: 'ready',
-    generated_at: '2025-01-18T10:00:00Z',
-    approved_at: '2025-01-19T14:30:00Z',
+    status: 'paid',
+    generated_at: '2025-12-03T09:00:00+08:00',
+    approved_at: '2025-12-04T14:30:00+08:00',
+    sent_at: '2025-12-05T08:00:00+08:00',
     delivery_method: 'portal',
-    prepared_by: 'Maria Santos',
-    approved_by: 'Jose Reyes',
-    remarks: 'Approved for release. Holiday pay includes Bonifacio Day (Nov 30).',
+    prepared_by: 'Angela Reyes (Payroll Officer)',
+    approved_by: 'Jose Miguel Torres (HR Manager)',
+    remarks: 'Bonifacio Day (Nov 30) holiday pay included. SSS loan deduction as scheduled.',
   },
-  notes: 'Holiday pay for Bonifacio Day (Regular Holiday) included in this payslip.',
-  verification_code: 'ABC123',
+  notes: 'Thank you for your hard work! Holiday season bonus will be released on December 20, 2025.',
+  verification_code: 'PSV-DEC2025-SANTOS',
 };
+
+// Additional sample payslips for different scenarios
+export const SAMPLE_PAYSLIPS: PayslipDataProfessional[] = [
+  SAMPLE_PAYSLIP_PROFESSIONAL,
+  {
+    payslip_id: 'PS-2025-120046',
+    company: {
+      name: 'The Café Inc.',
+      address: '2F Ayala Triangle Gardens, Makati City, Metro Manila 1226',
+      tin: '009-456-789-000',
+      logo_url: '',
+      email: 'hr@thecafe.com.ph',
+    },
+    employee: {
+      id: 'EMP-2023-0012',
+      name: 'Juan Carlos Reyes',
+      position: 'Shift Supervisor',
+      department: 'Operations - BGC Branch',
+      tin: '789-012-345',
+      sss: '12-3456789-0',
+      philhealth: '98-765432109-8',
+      pagibig: '9876-5432-1098',
+    },
+    pay_period: {
+      start: '2025-11-16',
+      end: '2025-11-30',
+      payment_date: '2025-12-05',
+      frequency: 'semi-monthly',
+    },
+    earnings: [
+      { code: 'BASIC', label: 'Basic Pay (11 days)', amount: 13750.00, hours: 88, rate: 156.25, category: 'basic' },
+      { code: 'OT', label: 'Overtime Pay', amount: 2031.25, hours: 10, rate: 203.13, category: 'overtime' },
+      { code: 'HOLIDAY', label: 'Bonifacio Day (Nov 30)', amount: 3125.00, hours: 8, rate: 390.63, category: 'holiday' },
+      { code: 'ND', label: 'Night Differential', amount: 468.75, hours: 20, rate: 23.44, category: 'night_diff' },
+      { code: 'ALLOW_MEAL', label: 'Meal Allowance', amount: 1650.00, category: 'allowance' },
+      { code: 'ALLOW_TRANS', label: 'Transportation Allowance', amount: 1500.00, category: 'allowance' },
+      { code: 'SUPERVISOR', label: 'Supervisor Allowance', amount: 2000.00, category: 'allowance' },
+    ],
+    deductions: [
+      { code: 'SSS', label: 'SSS Contribution', amount: 1125.00, is_mandatory: true },
+      { code: 'PHILHEALTH', label: 'PhilHealth Contribution', amount: 612.50, is_mandatory: true },
+      { code: 'PAGIBIG', label: 'Pag-IBIG Contribution', amount: 200.00, is_mandatory: true },
+      { code: 'TAX', label: 'Withholding Tax', amount: 2850.00, is_mandatory: true },
+    ],
+    gross_pay: 24525.00,
+    total_deductions: 4787.50,
+    net_pay: 19737.50,
+    attendance: {
+      days_worked: 11,
+      overtime_hours: 10,
+      late_hours: 0,
+      night_diff_hours: 20,
+      absent_days: 0,
+    },
+    metadata: {
+      status: 'paid',
+      generated_at: '2025-12-03T09:00:00+08:00',
+      approved_at: '2025-12-04T14:30:00+08:00',
+      delivery_method: 'portal',
+      prepared_by: 'Angela Reyes (Payroll Officer)',
+      approved_by: 'Jose Miguel Torres (HR Manager)',
+    },
+    verification_code: 'PSV-DEC2025-REYES',
+  },
+];
 
 export default PayslipProfessional;
