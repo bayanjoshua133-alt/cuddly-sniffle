@@ -753,9 +753,31 @@ export default function MuiNotifications() {
                           <Typography variant="body2" color="text.secondary" sx={{ textTransform: 'capitalize' }}>
                             {key.replace(/_/g, ' ')}
                           </Typography>
-                          <Typography variant="body2" fontWeight={500}>
-                            {typeof value === 'object' ? JSON.stringify(value) : String(value)}
-                          </Typography>
+                          {/* Render objects/arrays as pretty JSON inside a preformatted block */}
+                          {typeof value === 'object' ? (
+                            <Box
+                              component="pre"
+                              sx={{
+                                m: 0,
+                                p: 1,
+                                fontFamily: 'monospace',
+                                fontSize: '0.8rem',
+                                whiteSpace: 'pre-wrap',
+                                wordBreak: 'break-word',
+                                bgcolor: alpha(theme.palette.background.paper, 0.02),
+                                borderRadius: 1,
+                                maxHeight: 280,
+                                overflow: 'auto',
+                                width: '100%',
+                              }}
+                            >
+                              {JSON.stringify(value, null, 2)}
+                            </Box>
+                          ) : (
+                            <Typography variant="body2" fontWeight={500} sx={{ wordBreak: 'break-word' }}>
+                              {String(value)}
+                            </Typography>
+                          )}
                         </Stack>
                       ))}
                     </Stack>
