@@ -436,11 +436,11 @@ export async function seedSampleUsers() {
   console.log('👥 Checking sample users...');
 
   try {
-    // Check if we already have employees
-    const existingUsers = await db.select().from(users).limit(5);
+    // Check if we already have employees (not just admin)
+    const existingEmployees = await db.select().from(users).where(eq(users.role, 'employee')).limit(1);
     
-    if (existingUsers.length > 1) {
-      console.log('✅ Sample users already exist');
+    if (existingEmployees.length > 0) {
+      console.log('✅ Sample employees already exist');
       return;
     }
 
