@@ -105,6 +105,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // In dev, allow localhost origins
       if (origin.startsWith('http://localhost:')) return callback(null, true);
 
+      // Allow Render.com domains (production)
+      if (origin.endsWith('.onrender.com')) return callback(null, true);
+
+      // Allow the exact production URL
+      if (origin === 'https://donmacchiatos.onrender.com') return callback(null, true);
+
       // Allow local network IPs (192.168.x.x, 10.x.x.x, 172.16-31.x.x)
       const localNetworkPattern = /^http:\/\/(192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}):\d+$/;
       if (localNetworkPattern.test(origin)) return callback(null, true);
