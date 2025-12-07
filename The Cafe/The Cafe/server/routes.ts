@@ -96,29 +96,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   };
 
   // Enable CORS
-  app.use(cors({
-    // Allow the requesting origin in development; adjust for production as needed
-    origin: (origin, callback) => {
-      // Allow requests with no origin like mobile apps or curl requests
-      if (!origin) return callback(null, true);
 
-      // In dev, allow localhost origins
-      if (origin.startsWith('http://localhost:')) return callback(null, true);
+  // CORS is configured in index.ts
 
-      // Allow Render.com domains (production)
-      if (origin.endsWith('.onrender.com')) return callback(null, true);
-
-      // Allow the exact production URL
-      if (origin === 'https://donmacchiatos.onrender.com') return callback(null, true);
-
-      // Allow local network IPs (192.168.x.x, 10.x.x.x, 172.16-31.x.x)
-      const localNetworkPattern = /^http:\/\/(192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}):\d+$/;
-      if (localNetworkPattern.test(origin)) return callback(null, true);
-
-      return callback(new Error('Not allowed by CORS'));
-    },
-    credentials: true
-  }));
 
   // Session configuration (trust proxy is set in index.ts)
   app.use(session({
@@ -128,9 +108,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     cookie: {
       secure: process.env.NODE_ENV === 'production',
       httpOnly: true,
-      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+      sameSite: 'none',
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
-      domain: process.env.NODE_ENV === 'production' ? '.onrender.com' : undefined
+      path: '/'
     }
   }));
 

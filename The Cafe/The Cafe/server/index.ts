@@ -48,6 +48,27 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
+
+// Add debugging headers for cookie issues
+app.use((req, res, next) => {
+  // Log incoming cookies
+  if (req.cookies && Object.keys(req.cookies).length > 0) {
+    console.log(`🍪 Cookies received:`, req.cookies);
+  }
+  
+  // Log session info
+  if (req.session) {
+    console.log(`📝 Session ID: ${req.sessionID}, User: ${(req.session as any).user?.username || 'none'}`);
+  }
+  
+  // Ensure proper headers for HTTPS
+  if (process.env.NODE_ENV === 'production') {
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  }
+  
+  next();
+});
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
