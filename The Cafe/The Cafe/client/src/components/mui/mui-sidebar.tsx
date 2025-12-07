@@ -31,6 +31,7 @@ import {
   Dashboard as DashboardIcon,
   CalendarMonth as CalendarIcon,
   SwapHoriz as SwapIcon,
+  Event as EventIcon,
   AttachMoney as MoneyIcon,
   Notifications as NotificationsIcon,
   People as PeopleIcon,
@@ -59,6 +60,7 @@ const navigation: NavItem[] = [
   { name: "Dashboard", href: "/", icon: DashboardIcon, roles: ["employee", "manager", "admin"] },
   { name: "Schedule", href: "/schedule", icon: CalendarIcon, roles: ["employee", "manager", "admin"] },
   { name: "Shift Trading", href: "/shift-trading", icon: SwapIcon, roles: ["employee", "manager", "admin"] },
+  { name: "Time Off", href: "/time-off", icon: EventIcon, roles: ["employee", "manager", "admin"] },
   { name: "Pay Summary", href: "/payroll", icon: MoneyIcon, roles: ["employee", "manager", "admin"] },
   { name: "Notifications", href: "/notifications", icon: NotificationsIcon, roles: ["employee", "manager", "admin"], badge: true },
 ];

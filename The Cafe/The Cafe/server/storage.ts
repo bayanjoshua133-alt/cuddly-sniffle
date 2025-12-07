@@ -64,6 +64,7 @@ export interface IStorage {
   getTimeOffRequest(id: string): Promise<TimeOffRequest | undefined>;
   updateTimeOffRequest(id: string, request: Partial<InsertTimeOffRequest>): Promise<TimeOffRequest | undefined>;
   getTimeOffRequestsByUser(userId: string): Promise<TimeOffRequest[]>;
+  deleteTimeOffRequest(id: string): Promise<boolean>;
 
   // Notifications
   createNotification(notification: InsertNotification): Promise<Notification>;
@@ -509,6 +510,10 @@ export class MemStorage implements IStorage {
 
   async getTimeOffRequestsByUser(userId: string): Promise<TimeOffRequest[]> {
     return Array.from(this.timeOffRequests.values()).filter(request => request.userId === userId);
+  }
+
+  async deleteTimeOffRequest(id: string): Promise<boolean> {
+    return this.timeOffRequests.delete(id);
   }
 
   async createNotification(insertNotification: InsertNotification): Promise<Notification> {

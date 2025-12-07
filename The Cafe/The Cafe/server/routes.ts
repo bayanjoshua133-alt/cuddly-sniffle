@@ -2117,6 +2117,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ request });
   });
 
+
+  // Update time off request (employee can edit pending requests)
+  app.put("/api/time-off-requests/:id", requireAuth, async (req, res) => {
+    const { id } = req.params;
+    const { type, startDate, endDate, reason } = req.body;
+    const userId = req.user!.id;
+
+    // Fetch the request to verify ownership
+    const existingRequest = await storage.getTimeOffRequest(id);
+    if (!existingRequest) {
+      return res.status(404).json({ message: "Time off request not found" });
+    }
+
+    // Only allow editing own requests or if manager
+    if (existingRequest.userId !== userId && req.user!.role !== 'manager') {
+      return res.status(403).json({ message: "Unauthorized" });
+    }
+
+    // Don't allow editing approved/rejected requests
+    if (existingRequest.status !== 'pending') {
+      return res.status(400).json({ message: "Cannot edit approved or rejected requests" });
+    }
+
+    const updated = await storage.updateTimeOffRequest(id, {
+      type,
+      startDate,
+      endDate,
+      reason,
+    });
+
+    res.json({ request: updated });
+  });
+
+  // Delete time off request (employee can delete pending requests)
+  app.delete("/api/time-off-requests/:id", requireAuth, async (req, res) => {
+    const { id } = req.params;
+    const userId = req.user!.id;
+
+    // Fetch the request to verify ownership
+    const existingRequest = await storage.getTimeOffRequest(id);
+    if (!existingRequest) {
+      return res.status(404).json({ message: "Time off request not found" });
+    }
+
+    // Only allow deleting own requests or if manager
+    if (existingRequest.userId !== userId && req.user!.role !== 'manager') {
+      return res.status(403).json({ message: "Unauthorized" });
+    }
+
+    // Don't allow deleting approved/rejected requests
+    if (existingRequest.status !== 'pending') {
+      return res.status(400).json({ message: "Cannot delete approved or rejected requests" });
+    }
+
+    await storage.deleteTimeOffRequest(id);
+    res.json({ message: "Request deleted successfully" });
+  });
   // Notification routes
   app.get("/api/notifications", requireAuth, async (req, res) => {
     const userId = req.user!.id;

@@ -29,6 +29,7 @@ import MuiShiftTrading from "@/pages/mui-shift-trading";
 import MuiBranches from "@/pages/mui-branches";
 import MuiReports from "@/pages/mui-reports";
 import MuiLogin from "@/pages/mui-login";
+import MuiTimeOff from "@/pages/mui-time-off";
 import MuiDeductionSettings from "@/pages/mui-deduction-settings";
 import MuiPayrollManagement from "@/pages/mui-payroll-management";
 import MuiAdminDeductionRates from "@/pages/mui-admin-deduction-rates";
@@ -258,6 +259,15 @@ function DesktopRouter({ authState }: { authState: { isAuthenticated: boolean; u
       </Route>
 
       {/* Personal Payroll View - MUI */}
+
+      {/* Time Off Management - MUI */}
+      <Route path="/time-off">
+        <DesktopLayout>
+          <ErrorBoundary>
+            <MuiTimeOff />
+          </ErrorBoundary>
+        </DesktopLayout>
+      </Route>
       <Route path="/payroll">
         <DesktopLayout>
           <MuiPayroll />

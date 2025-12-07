@@ -446,6 +446,12 @@ export class DatabaseStorage implements IStorage {
     return result as TimeOffRequest[];
   }
 
+
+  async deleteTimeOffRequest(id: string): Promise<boolean> {
+    const result = await db.delete(timeOffRequests)
+      .where(eq(timeOffRequests.id, id));
+    return result.changes > 0;
+  }
   // Notifications
   async createNotification(notification: InsertNotification): Promise<Notification> {
     const id = randomUUID();
