@@ -106,16 +106,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Sessions will be maintained in memory and cookies will handle persistence across requests
   const sessionConfig: any = {
     secret: process.env.SESSION_SECRET || 'cafe-default-secret-key-2024',
-    resave: false,
-    saveUninitialized: false,
+    resave: true, // Force session to be saved even if unmodified (important for production)
+    saveUninitialized: true, // Save uninitialized session (important for first-time requests)
     name: 'cafe-session',
     proxy: process.env.NODE_ENV === 'production', // Trust X-Forwarded-* headers on Render
     cookie: {
       secure: process.env.NODE_ENV === 'production', // HTTPS only in production
       httpOnly: true, // Prevent JavaScript access (security)
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Cross-site cookies in production
+      sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'lax', // Use lax for better compatibility
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
-      path: '/'
+      path: '/',
+      domain: undefined // Let the browser handle domain
     }
   };
 
