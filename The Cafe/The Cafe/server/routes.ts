@@ -102,7 +102,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
   // Session configuration (trust proxy is set in index.ts)
-  // Use PostgreSQL session store in production for persistence
+  // Use a simple but robust session configuration
   const sessionConfig: any = {
     secret: process.env.SESSION_SECRET || 'cafe-default-secret-key-2024',
     resave: false,
@@ -111,34 +111,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
     cookie: {
       secure: process.env.NODE_ENV === 'production',
       httpOnly: true,
-      sameSite: 'none',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
-      path: '/'
+      path: '/',
+      domain: process.env.NODE_ENV === 'production' ? undefined : undefined
     }
   };
 
-  // Use PostgreSQL store in production instead of memory store
+  // Try to use PostgreSQL store in production, fallback to memory store
   if (process.env.NODE_ENV === 'production') {
     try {
-      const pgSessionStore = PgSession({ createTableIfMissing: true });
-      sessionConfig.store = new pgSessionStore({
-        conObject: {
-          user: process.env.DB_USER || 'postgres',
-          password: process.env.DB_PASSWORD || '',
-          host: process.env.DB_HOST || 'localhost',
-          port: parseInt(process.env.DB_PORT || '5432'),
-          database: process.env.DB_NAME || 'cafe_db'
-        },
-        tableName: 'session',
-        ttl: 24 * 60 * 60 // 24 hours
-      });
-      console.log('✅ Using PostgreSQL session store for production');
-    } catch (err) {
-      console.warn('⚠️  PostgreSQL session store failed, falling back to memory:', err);
+      // Only attempt to connect if we have database environment variables
+      if (process.env.DB_HOST && process.env.DB_USER) {
+        const pgSessionStore = PgSession({ createTableIfMissing: true });
+        sessionConfig.store = new pgSessionStore({
+          conObject: {
+            user: process.env.DB_USER,
+            password: process.env.DB_PASSWORD,
+            host: process.env.DB_HOST,
+            port: parseInt(process.env.DB_PORT || '5432'),
+            database: process.env.DB_NAME || 'neondb'
+          },
+          tableName: 'session',
+          ttl: 24 * 60 * 60 // 24 hours
+        });
+        console.log('✅ PostgreSQL session store initialized');
+      } else {
+        console.log('⚠️  Missing DB environment variables, using memory store');
+      }
+    } catch (err: any) {
+      console.warn('⚠️  PostgreSQL session store initialization failed:', err.message);
+      console.log('ℹ️  Using in-memory session store as fallback (sessions will be lost on restart)');
     }
   }
 
   app.use(session(sessionConfig));
+
+  // Middleware to ensure session data is persistent and cookies are sent in responses
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    // Touch the session to refresh the cookie expiration
+    if (req.session?.user) {
+      req.session.touch();
+    }
+    
+    // Hook into res.json to ensure cookies are sent
+    const originalJson = res.json.bind(res);
+    res.json = function (data: any) {
+      // If user is authenticated and session exists, ensure we send Set-Cookie header
+      if (req.session?.user) {
+        // Force session to be sent back
+        req.session.save((err) => {
+          if (err) console.error('Error touching session:', err);
+        });
+      }
+      return originalJson(data);
+    };
+    
+    next();
+  });
 
   // Setup check endpoint (no auth required)
   app.get("/api/setup/status", async (req: Request, res: Response) => {
@@ -303,7 +333,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }).parse(req.body);
 
       console.log('Login attempt for username:', username);
-      console.log('Password provided (length):', password.length);
 
       const user = await storage.getUserByUsername(username);
       if (!user) {
@@ -312,8 +341,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       console.log('User found:', user.username);
-      console.log('Stored password hash:', user.password.substring(0, 20) + '...');
-      console.log('Is bcrypt hash:', user.password.startsWith('$2b$') || user.password.startsWith('$2a$'));
 
       // Compare password with bcrypt
       const isPasswordValid = await bcrypt.compare(password, user.password);
@@ -321,7 +348,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (!isPasswordValid) {
         console.log('Invalid password for user:', username);
-        console.log('Trying to compare:', password, 'with hash:', user.password.substring(0, 30));
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
@@ -335,18 +361,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       req.session.user = authUser;
 
-      // Save the session
-      req.session.save((err) => {
-        if (err) {
-          console.error('Session save error:', err);
-          return res.status(500).json({ message: 'Failed to save session' });
-        }
-
-        // Remove password from response
-        const { password: _, ...userWithoutPassword } = user;
-        res.json({
-          user: userWithoutPassword
+      // Save the session and wait for it to complete
+      await new Promise<void>((resolve, reject) => {
+        req.session.save((err) => {
+          if (err) {
+            console.error('Session save error:', err);
+            reject(err);
+          } else {
+            console.log('✅ Session saved successfully for user:', username);
+            resolve();
+          }
         });
+      });
+
+      // Ensure cookies are sent in response
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+
+      // Remove password from response
+      const { password: _, ...userWithoutPassword } = user;
+      res.json({
+        user: userWithoutPassword
       });
     } catch (error) {
       console.error('Login error:', error);
@@ -363,8 +398,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ message: 'Failed to log out' });
       }
       
-      // Clear the session cookie
-      res.clearCookie('connect.sid');
+      // Clear the session cookie - use the same name as configured in sessionConfig
+      res.clearCookie('cafe-session', { path: '/' });
       res.json({ message: "Logged out successfully" });
     });
   });
