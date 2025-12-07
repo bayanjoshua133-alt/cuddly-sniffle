@@ -111,8 +111,8 @@ export default function MobileShiftTrading() {
     },
   });
 
-  const availableTrades: ShiftTrade[] = availableData?.trades || [];
-  const myTrades: ShiftTrade[] = myTradesData?.trades || [];
+  const availableTrades: ShiftTrade[] = (availableData?.trades || []).filter(t => t?.shift?.startTime && t?.shift?.endTime);
+  const myTrades: ShiftTrade[] = (myTradesData?.trades || []).filter(t => t?.shift?.startTime && t?.shift?.endTime);
 
   const getStatusConfig = (status: string) => {
     const configs: Record<string, { variant: any; icon: any; color: string }> = {
@@ -149,97 +149,110 @@ export default function MobileShiftTrading() {
     const StatusIcon = statusConfig.icon;
     
     // Safely parse dates with null checks
-    if (!trade.shift?.startTime || !trade.shift?.endTime) {
+    if (!trade?.shift?.startTime || !trade?.shift?.endTime) {
+      console.warn('Invalid shift data:', trade);
       return null;
     }
-    const shiftDate = parseISO(trade.shift.startTime);
-    const endTime = parseISO(trade.shift.endTime);
+    
+    try {
+      const shiftDate = parseISO(trade.shift.startTime);
+      const endTime = parseISO(trade.shift.endTime);
+      
+      // Validate dates are valid
+      if (isNaN(shiftDate.getTime()) || isNaN(endTime.getTime())) {
+        console.warn('Invalid date format:', trade.shift);
+        return null;
+      }
 
-    return (
-      <motion.div key={trade.id} variants={itemVariants}>
-        <Card className={`border-0 shadow-md bg-card/80 backdrop-blur overflow-hidden ${
-          trade.urgency === 'urgent' ? 'ring-2 ring-red-500/30' : ''
-        }`}>
-          <CardContent className="p-5">
-            <div className="flex items-start gap-4">
-              {/* Left side - Avatar/Icon */}
-              <div className={`w-14 h-14 rounded-2xl ${urgencyConfig.bg} flex items-center justify-center shrink-0`}>
-                {type === 'available' ? (
-                  <span className="text-xl font-bold text-muted-foreground">
-                    {trade.fromUser.firstName[0]}{trade.fromUser.lastName[0]}
-                  </span>
-                ) : (
-                  <ArrowRightLeft className={`h-7 w-7 ${urgencyConfig.color}`} />
-                )}
-              </div>
-
-              {/* Content */}
-              <div className="flex-1 min-w-0">
-                {/* Header */}
-                <div className="flex items-start justify-between gap-2 mb-2">
-                  <div>
-                    <h4 className="font-bold text-lg">{trade.shift.position}</h4>
-                    {type === 'available' && (
-                      <p className="text-base text-muted-foreground flex items-center gap-1">
-                        <User className="h-4 w-4" />
-                        {trade.fromUser.firstName} {trade.fromUser.lastName}
-                      </p>
-                    )}
-                  </div>
-                  {type === 'my' ? (
-                    <Badge variant={statusConfig.variant} className="flex items-center gap-1 px-3 py-1">
-                      <StatusIcon className="h-3.5 w-3.5" />
-                      {trade.status.charAt(0).toUpperCase() + trade.status.slice(1)}
-                    </Badge>
+      return (
+        <motion.div key={trade.id} variants={itemVariants}>
+          <Card className={`border-0 shadow-md bg-card/80 backdrop-blur overflow-hidden ${
+            trade.urgency === 'urgent' ? 'ring-2 ring-red-500/30' : ''
+          }`}>
+            <CardContent className="p-5">
+              <div className="flex items-start gap-4">
+                {/* Left side - Avatar/Icon */}
+                <div className={`w-14 h-14 rounded-2xl ${urgencyConfig.bg} flex items-center justify-center shrink-0`}>
+                  {type === 'available' ? (
+                    <span className="text-xl font-bold text-muted-foreground">
+                      {trade.fromUser?.firstName?.[0]}{trade.fromUser?.lastName?.[0]}
+                    </span>
                   ) : (
-                    <Badge variant={urgencyConfig.variant} className="flex items-center gap-1 px-3 py-1">
-                      <UrgencyIcon className="h-3.5 w-3.5" />
-                      {trade.urgency.charAt(0).toUpperCase() + trade.urgency.slice(1)}
-                    </Badge>
+                    <ArrowRightLeft className={`h-7 w-7 ${urgencyConfig.color}`} />
                   )}
                 </div>
 
-                {/* Time Info */}
-                <div className="flex items-center gap-2 text-base mb-3 bg-muted/50 rounded-lg p-3">
-                  <Clock className="h-5 w-5 text-primary" />
-                  <div>
-                    <p className="font-semibold">{format(shiftDate, "EEEE, MMM d")}</p>
-                    <p className="text-muted-foreground">
-                      {format(shiftDate, "h:mm a")} - {format(endTime, "h:mm a")}
-                    </p>
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                  {/* Header */}
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div>
+                      <h4 className="font-bold text-lg">{trade.shift.position}</h4>
+                      {type === 'available' && trade.fromUser && (
+                        <p className="text-base text-muted-foreground flex items-center gap-1">
+                          <User className="h-4 w-4" />
+                          {trade.fromUser.firstName} {trade.fromUser.lastName}
+                        </p>
+                      )}
+                    </div>
+                    {type === 'my' ? (
+                      <Badge variant={statusConfig.variant} className="flex items-center gap-1 px-3 py-1">
+                        <StatusIcon className="h-3.5 w-3.5" />
+                        {trade.status.charAt(0).toUpperCase() + trade.status.slice(1)}
+                      </Badge>
+                    ) : (
+                      <Badge variant={urgencyConfig.variant} className="flex items-center gap-1 px-3 py-1">
+                        <UrgencyIcon className="h-3.5 w-3.5" />
+                        {trade.urgency.charAt(0).toUpperCase() + trade.urgency.slice(1)}
+                      </Badge>
+                    )}
                   </div>
+
+                  {/* Time Info */}
+                  <div className="flex items-center gap-2 text-base mb-3 bg-muted/50 rounded-lg p-3">
+                    <Clock className="h-5 w-5 text-primary" />
+                    <div>
+                      <p className="font-semibold">{format(shiftDate, "EEEE, MMM d")}</p>
+                      <p className="text-muted-foreground">
+                        {format(shiftDate, "h:mm a")} - {format(endTime, "h:mm a")}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Reason */}
+                  <p className="text-base text-muted-foreground mb-4 line-clamp-2">{trade.reason}</p>
+
+                  {/* Action Button */}
+                  {type === "available" ? (
+                    <Button
+                      className="w-full h-14 text-lg font-semibold"
+                      onClick={() => takeShiftMutation.mutate(trade.id)}
+                      disabled={takeShiftMutation.isPending}
+                    >
+                      <HandMetal className="h-5 w-5 mr-2" />
+                      Take This Shift
+                    </Button>
+                  ) : trade.status === "pending" ? (
+                    <Button
+                      variant="destructive"
+                      className="w-full h-14 text-lg font-semibold"
+                      onClick={() => cancelTradeMutation.mutate(trade.id)}
+                      disabled={cancelTradeMutation.isPending}
+                    >
+                      <X className="h-5 w-5 mr-2" />
+                      Cancel Trade
+                    </Button>
+                  ) : null}
                 </div>
-
-                {/* Reason */}
-                <p className="text-base text-muted-foreground mb-4 line-clamp-2">{trade.reason}</p>
-
-                {/* Action Button */}
-                {type === "available" ? (
-                  <Button
-                    className="w-full h-14 text-lg font-semibold"
-                    onClick={() => takeShiftMutation.mutate(trade.id)}
-                    disabled={takeShiftMutation.isPending}
-                  >
-                    <HandMetal className="h-5 w-5 mr-2" />
-                    Take This Shift
-                  </Button>
-                ) : trade.status === "pending" ? (
-                  <Button
-                    variant="destructive"
-                    className="w-full h-14 text-lg font-semibold"
-                    onClick={() => cancelTradeMutation.mutate(trade.id)}
-                    disabled={cancelTradeMutation.isPending}
-                  >
-                    <X className="h-5 w-5 mr-2" />
-                    Cancel Trade
-                  </Button>
-                ) : null}
               </div>
-            </div>
-          </CardContent>
-        </Card>
-      </motion.div>
-    );
+            </CardContent>
+          </Card>
+        </motion.div>
+      );
+    } catch (error) {
+      console.error('Error rendering shift card:', error, trade);
+      return null;
+    }
   };
 
   return (

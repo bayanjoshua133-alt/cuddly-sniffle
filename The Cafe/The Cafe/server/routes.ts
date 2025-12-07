@@ -137,7 +137,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/setup/status", async (req: Request, res: Response) => {
     try {
       const isComplete = await storage.isSetupComplete();
-      res.json({ isSetupComplete: isComplete });
+      const isMobileServer = process.env.MOBILE_SERVER === 'true';
+      res.json({ 
+        isSetupComplete: isComplete,
+        isMobileServer: isMobileServer // Send mobile server info to client for Render deployment
+      });
     } catch (error) {
       console.error('Setup status check error:', error);
       res.status(500).json({ message: 'Failed to check setup status' });

@@ -47,12 +47,25 @@ import MobileProfile from "@/pages/mobile-profile";
 import MobileMore from "@/pages/mobile-more";
 import MobileClock from "@/pages/mobile-clock";
 
-// Detect if running on mobile server (port 5001)
+// Detect if running on mobile server or if device is a mobile device
 const isMobileServer = () => {
+  // Check if explicitly on port 5001 (development)
   const port = window.location.port;
   const hostname = window.location.hostname;
   if (port === "5001") return true;
   if (hostname.includes("-5001.") || hostname.includes("-5001-")) return true;
+  
+  // Check if Render deployment indicates mobile via subdomain or query param
+  if (hostname.includes("-mobile") || hostname.includes("mobile.")) return true;
+  if (new URLSearchParams(window.location.search).get("mobile") === "true") return true;
+  
+  // Check User-Agent for mobile devices (fallback for production)
+  if (typeof navigator !== "undefined") {
+    const userAgent = navigator.userAgent.toLowerCase();
+    const mobileKeywords = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini|windows phone/i;
+    return mobileKeywords.test(userAgent);
+  }
+  
   return false;
 };
 
@@ -517,6 +530,7 @@ function App() {
   const [authState, setLocalAuthState] = useState(getAuthState());
   const [isLoading, setIsLoading] = useState(true);
   const [setupComplete, setSetupComplete] = useState<boolean | null>(null);
+  const [isMobileServerMode, setIsMobileServerMode] = useState<boolean | null>(null);
 
   const checkAuth = useCallback(async () => {
     setIsLoading(true);
@@ -525,6 +539,11 @@ function App() {
       const setupResponse = await apiRequest("GET", "/api/setup/status");
       const setupData = await setupResponse.json();
       setSetupComplete(setupData.isSetupComplete);
+      
+      // Store mobile server mode from server (for Render deployment support)
+      if (setupData.isMobileServer !== undefined) {
+        setIsMobileServerMode(setupData.isMobileServer);
+      }
 
       // If setup complete, verify authentication
       if (setupData.isSetupComplete) {
@@ -591,14 +610,19 @@ function App() {
     );
   }
 
-  // Render appropriate router based on server port
+  // Render appropriate router based on server port or server mode (for Render deployment)
+  // Priority: server mode > port detection > user agent
+  const shouldShowMobile = isMobileServerMode !== null 
+    ? isMobileServerMode 
+    : isMobileServer();
+    
   return (
     <ThemeProvider>
       <MuiThemeProvider>
         <QueryClientProvider client={queryClient}>
           <TooltipProvider>
             <Toaster />
-            {isMobileServer() ? (
+            {shouldShowMobile ? (
               <MobileRouter authState={authState} />
             ) : (
               <DesktopRouter authState={authState} />
