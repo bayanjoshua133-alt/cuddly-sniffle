@@ -1,6 +1,7 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import session, { Session } from "express-session";
+import PgSession from "connect-pg-simple";
 import cors from "cors";
 import { dbStorage } from "./db-storage";
 import { insertShiftSchema, insertShiftTradeSchema, insertTimeOffRequestSchema } from '@shared/schema';
@@ -101,10 +102,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
   // Session configuration (trust proxy is set in index.ts)
-  app.use(session({
+  // Use PostgreSQL session store in production for persistence
+  const sessionConfig: any = {
     secret: process.env.SESSION_SECRET || 'cafe-default-secret-key-2024',
     resave: false,
     saveUninitialized: false,
+    name: 'cafe-session',
     cookie: {
       secure: process.env.NODE_ENV === 'production',
       httpOnly: true,
@@ -112,7 +115,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
       path: '/'
     }
-  }));
+  };
+
+  // Use PostgreSQL store in production instead of memory store
+  if (process.env.NODE_ENV === 'production') {
+    try {
+      const pgSessionStore = PgSession({ createTableIfMissing: true });
+      sessionConfig.store = new pgSessionStore({
+        conObject: {
+          user: process.env.DB_USER || 'postgres',
+          password: process.env.DB_PASSWORD || '',
+          host: process.env.DB_HOST || 'localhost',
+          port: parseInt(process.env.DB_PORT || '5432'),
+          database: process.env.DB_NAME || 'cafe_db'
+        },
+        tableName: 'session',
+        ttl: 24 * 60 * 60 // 24 hours
+      });
+      console.log('✅ Using PostgreSQL session store for production');
+    } catch (err) {
+      console.warn('⚠️  PostgreSQL session store failed, falling back to memory:', err);
+    }
+  }
+
+  app.use(session(sessionConfig));
 
   // Setup check endpoint (no auth required)
   app.get("/api/setup/status", async (req: Request, res: Response) => {
@@ -343,6 +369,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // Check session status (no auth required - used on page load)
+  app.get("/api/auth/status", async (req: Request, res: Response) => {
+    try {
+      if (req.session?.user) {
+        res.json({ 
+          authenticated: true, 
+          user: req.session.user 
+        });
+      } else {
+        res.json({ 
+          authenticated: false, 
+          user: null 
+        });
+      }
+    } catch (error) {
+      console.error('Error in /api/auth/status:', error);
+      res.json({ 
+        authenticated: false, 
+        user: null 
+      });
+    }
+  });
+
   app.get("/api/auth/me", requireAuth, async (req: Request, res: Response) => {
     try {
       if (!req.user) {
@@ -388,7 +437,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     console.log('Found shifts:', shifts.length);
 
-    res.json({ shifts });
+    // Enrich shifts with date property extracted from startTime
+    const enrichedShifts = shifts.map((shift: any) => ({
+      ...shift,
+      date: shift.startTime ? new Date(shift.startTime).toISOString().split('T')[0] : null,
+    }));
+
+    res.json({ shifts: enrichedShifts });
   });
 
   app.get("/api/shifts/branch", requireAuth, requireRole(["manager"]), async (req, res) => {
@@ -1313,6 +1368,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get all shift trades for current user (with enriched data)
+  app.get("/api/shift-trades", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const branchId = req.user!.branchId;
+      
+      // Get all trades for the user (as requester or target)
+      const trades = await storage.getShiftTradesByUser(userId);
+      
+      // Also get pending trades for managers
+      let managerTrades: any[] = [];
+      if (req.user!.role === "manager" || req.user!.role === "admin") {
+        managerTrades = await storage.getPendingShiftTrades(branchId);
+      }
+      
+      // Combine and deduplicate
+      const allTrades = [...trades];
+      for (const trade of managerTrades) {
+        if (!allTrades.find(t => t.id === trade.id)) {
+          allTrades.push(trade);
+        }
+      }
+      
+      // Enrich trades with shift and user data
+      const enrichedTrades = await Promise.all(
+        allTrades.map(async (trade) => {
+          const shift = await storage.getShift(trade.shiftId);
+          const requester = await storage.getUser(trade.fromUserId);
+          const targetUser = trade.toUserId ? await storage.getUser(trade.toUserId) : null;
+          
+          return {
+            ...trade,
+            shift: shift ? {
+              date: shift.startTime ? new Date(shift.startTime).toISOString().split('T')[0] : null,
+              startTime: shift.startTime ? new Date(shift.startTime).toISOString() : null,
+              endTime: shift.endTime ? new Date(shift.endTime).toISOString() : null,
+            } : null,
+            requester: requester ? {
+              firstName: requester.firstName || "",
+              lastName: requester.lastName || "",
+            } : null,
+            targetUser: targetUser ? {
+              firstName: targetUser.firstName || "",
+              lastName: targetUser.lastName || "",
+            } : null,
+            createdAt: trade.requestedAt || trade.createdAt || new Date(),
+          };
+        })
+      );
+      
+      res.json({ trades: enrichedTrades });
+    } catch (error: any) {
+      console.error("Get shift trades error:", error);
+      res.status(500).json({ message: error.message || "Failed to fetch shift trades" });
+    }
+  });
+
   app.get("/api/shift-trades/available", requireAuth, async (req, res) => {
     const branchId = req.user!.branchId;
     const userId = req.user!.id;
@@ -1388,6 +1500,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Create trade error:", error);
       res.status(400).json({ message: "Invalid trade data" });
+    }
+  });
+
+  // PATCH endpoint for responding to a trade (accept/reject by target user)
+  app.patch("/api/shift-trades/:id", requireAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+      const userId = req.user!.id;
+
+      const trade = await storage.getShiftTrade(id);
+      if (!trade) {
+        return res.status(404).json({ message: "Trade not found" });
+      }
+
+      // If trade has a specific target user, only they can respond
+      if (trade.toUserId && trade.toUserId !== userId) {
+        return res.status(403).json({ message: "You cannot respond to this trade" });
+      }
+
+      // If trade is open (no toUserId), set current user as target
+      const updateData: any = { status };
+      if (!trade.toUserId && (status === "accepted" || status === "pending")) {
+        updateData.toUserId = userId;
+      }
+
+      const updatedTrade = await storage.updateShiftTrade(id, updateData);
+      
+      res.json({ trade: updatedTrade });
+    } catch (error: any) {
+      console.error("Respond to trade error:", error);
+      res.status(500).json({ message: error.message || "Failed to respond to trade" });
+    }
+  });
+
+  // PATCH endpoint for manager approval of trades
+  app.patch("/api/shift-trades/:id/approve", requireAuth, requireRole(["manager", "admin"]), async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+      const managerId = req.user!.id;
+
+      if (!["approved", "rejected"].includes(status)) {
+        return res.status(400).json({ message: "Invalid status" });
+      }
+
+      const trade = await storage.getShiftTrade(id);
+      if (!trade) {
+        return res.status(404).json({ message: "Trade not found" });
+      }
+
+      if (status === "approved" && !trade.toUserId) {
+        return res.status(400).json({ message: "Cannot approve trade without a target user" });
+      }
+
+      if (status === "approved") {
+        // Update shift ownership
+        await storage.updateShift(trade.shiftId, {
+          userId: trade.toUserId!
+        });
+      }
+
+      const updatedTrade = await storage.updateShiftTrade(id, {
+        status,
+        approvedBy: managerId,
+        approvedAt: new Date()
+      });
+
+      res.json({ trade: updatedTrade });
+    } catch (error: any) {
+      console.error("Manager approve trade error:", error);
+      res.status(500).json({ message: error.message || "Failed to process trade" });
     }
   });
 

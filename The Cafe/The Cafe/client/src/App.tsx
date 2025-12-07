@@ -555,13 +555,18 @@ function App() {
         setIsMobileServerMode(setupData.isMobileServer);
       }
 
-      // If setup complete, verify authentication
+      // If setup complete, verify authentication using status endpoint
       if (setupData.isSetupComplete) {
         try {
-          const authResponse = await apiRequest("GET", "/api/auth/me");
+          const authResponse = await apiRequest("GET", "/api/auth/status");
           const authData = await authResponse.json();
-          setAuthState({ user: authData.user, isAuthenticated: true });
-        } catch {
+          if (authData.authenticated && authData.user) {
+            setAuthState({ user: authData.user, isAuthenticated: true });
+          } else {
+            setAuthState({ user: null, isAuthenticated: false });
+          }
+        } catch (error) {
+          console.warn('Auth status check failed:', error);
           setAuthState({ user: null, isAuthenticated: false });
         }
       }
