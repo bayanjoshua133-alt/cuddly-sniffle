@@ -1440,12 +1440,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       t.fromUserId !== userId
     );
 
-    // Get shift and user details
+    // Get shift and user details with enriched shift data
     const tradesWithDetails = await Promise.all(
       filteredTrades.map(async (trade) => {
         const shift = await storage.getShift(trade.shiftId);
         const fromUser = await storage.getUser(trade.fromUserId);
-        return { ...trade, shift, fromUser };
+        return { 
+          ...trade, 
+          shift: shift ? {
+            ...shift,
+            date: shift.startTime ? new Date(shift.startTime).toISOString().split('T')[0] : null,
+            startTime: shift.startTime ? new Date(shift.startTime).toISOString() : null,
+            endTime: shift.endTime ? new Date(shift.endTime).toISOString() : null,
+          } : null,
+          fromUser 
+        };
       })
     );
     
@@ -1462,7 +1471,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const shift = await storage.getShift(trade.shiftId);
         const fromUser = await storage.getUser(trade.fromUserId);
         const toUser = trade.toUserId ? await storage.getUser(trade.toUserId) : null;
-        return { ...trade, shift, fromUser, toUser };
+        return { 
+          ...trade, 
+          shift: shift ? {
+            ...shift,
+            date: shift.startTime ? new Date(shift.startTime).toISOString().split('T')[0] : null,
+            startTime: shift.startTime ? new Date(shift.startTime).toISOString() : null,
+            endTime: shift.endTime ? new Date(shift.endTime).toISOString() : null,
+          } : null,
+          fromUser, 
+          toUser 
+        };
       })
     );
     
