@@ -17,14 +17,18 @@ import bcrypt from "bcrypt";
 import { format } from "date-fns";
 import crypto from "crypto";
 import { validateShiftTimes, calculatePeriodPay, calculateShiftPay, buildPayrollEntryBreakdownPayload } from "./payroll-utils";
-import { Pool } from "@neondatabase/serverless";
+import { Pool, neonConfig } from "@neondatabase/serverless";
+import ws from "ws";
+
+// Configure Neon WebSocket for serverless connection pooling
+neonConfig.webSocketConstructor = ws;
 
 // Use database storage instead of in-memory storage
 const storage = dbStorage;
 
-// Create PostgreSQL pool for session store
+// Create PostgreSQL pool for session store with proper Neon configuration
 const pgPool = new Pool({ 
-  connectionString: process.env.DATABASE_URL || 'postgresql://localhost/cafe'
+  connectionString: process.env.DATABASE_URL
 });
 
 // Type for authenticated user
@@ -117,19 +121,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       createTableIfMissing: true,
       ttl: 24 * 60 * 60, // 24 hours in seconds
       disableTouch: false, // Allow touch to refresh session
+      schemaName: 'public',
+      pruneSessionInterval: 60 * 60, // Prune expired sessions hourly
     }),
     secret: process.env.SESSION_SECRET || 'cafe-default-secret-key-2024',
-    resave: false,
-    saveUninitialized: false,
-    name: 'cafe-session',
-    proxy: process.env.NODE_ENV === 'production',
+    resave: false, // Don't save unless modified
+    saveUninitialized: false, // Don't create empty sessions
+    name: 'cafe-session', // Custom session cookie name
+    proxy: process.env.NODE_ENV === 'production', // Trust X-Forwarded-* headers on Render
     cookie: {
-      secure: process.env.NODE_ENV === 'production',
-      httpOnly: true,
-      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+      httpOnly: true, // Prevent JavaScript access for security
+      sameSite: 'lax', // CSRF protection
       maxAge: 24 * 60 * 60 * 1000, // 24 hours in milliseconds
-      path: '/'
-    }
+      path: '/', // Cookie available to entire app
+      domain: undefined, // Let browser handle domain
+    },
+    rolling: true, // Roll session on each response to extend expiration
   };
 
   // Use PostgreSQL session store
