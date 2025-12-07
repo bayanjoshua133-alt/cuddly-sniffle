@@ -51,19 +51,23 @@ app.use(cors({
 
 // Add debugging headers for cookie issues
 app.use((req, res, next) => {
+  // Intercept res.setHeader to log all headers being set
+  const originalSetHeader = res.setHeader.bind(res);
+  res.setHeader = function(name: string, value: string | string[] | number) {
+    if (name.toLowerCase() === 'set-cookie') {
+      console.log(`🍪 [SET-COOKIE]`, value);
+    }
+    return originalSetHeader(name, value);
+  };
+  
   // Log incoming cookies
-  if (req.cookies && Object.keys(req.cookies).length > 0) {
-    console.log(`🍪 Cookies received:`, req.cookies);
+  if (req.headers.cookie) {
+    console.log(`🍪 [RECEIVED COOKIES]`, req.headers.cookie);
   }
   
   // Log session info
-  if (req.session) {
-    console.log(`📝 Session ID: ${req.sessionID}, User: ${(req.session as any).user?.username || 'none'}`);
-  }
-  
-  // Ensure proper headers for HTTPS
-  if (process.env.NODE_ENV === 'production') {
-    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  if (req.session && (req.session as any).user) {
+    console.log(`📝 [SESSION] ID: ${req.sessionID}, User: ${(req.session as any).user.username}`);
   }
   
   next();

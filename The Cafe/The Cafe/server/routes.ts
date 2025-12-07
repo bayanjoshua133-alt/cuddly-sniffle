@@ -102,71 +102,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
   // Session configuration (trust proxy is set in index.ts)
-  // Use a simple but robust session configuration
+  // Use simple but robust in-memory session store
+  // Sessions will be maintained in memory and cookies will handle persistence across requests
   const sessionConfig: any = {
     secret: process.env.SESSION_SECRET || 'cafe-default-secret-key-2024',
     resave: false,
     saveUninitialized: false,
     name: 'cafe-session',
+    proxy: process.env.NODE_ENV === 'production', // Trust X-Forwarded-* headers on Render
     cookie: {
-      secure: process.env.NODE_ENV === 'production',
-      httpOnly: true,
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+      httpOnly: true, // Prevent JavaScript access (security)
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Cross-site cookies in production
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
-      path: '/',
-      domain: process.env.NODE_ENV === 'production' ? undefined : undefined
+      path: '/'
     }
   };
 
-  // Try to use PostgreSQL store in production, fallback to memory store
-  if (process.env.NODE_ENV === 'production') {
-    try {
-      // Only attempt to connect if we have database environment variables
-      if (process.env.DB_HOST && process.env.DB_USER) {
-        const pgSessionStore = PgSession({ createTableIfMissing: true });
-        sessionConfig.store = new pgSessionStore({
-          conObject: {
-            user: process.env.DB_USER,
-            password: process.env.DB_PASSWORD,
-            host: process.env.DB_HOST,
-            port: parseInt(process.env.DB_PORT || '5432'),
-            database: process.env.DB_NAME || 'neondb'
-          },
-          tableName: 'session',
-          ttl: 24 * 60 * 60 // 24 hours
-        });
-        console.log('✅ PostgreSQL session store initialized');
-      } else {
-        console.log('⚠️  Missing DB environment variables, using memory store');
-      }
-    } catch (err: any) {
-      console.warn('⚠️  PostgreSQL session store initialization failed:', err.message);
-      console.log('ℹ️  Using in-memory session store as fallback (sessions will be lost on restart)');
-    }
-  }
-
+  // Use in-memory store (simple and reliable)
+  // For production scale, implement Redis session store separately
   app.use(session(sessionConfig));
 
-  // Middleware to ensure session data is persistent and cookies are sent in responses
+  // Middleware: Ensure session is always touched and saved
   app.use((req: Request, res: Response, next: NextFunction) => {
-    // Touch the session to refresh the cookie expiration
+    // Touch session to refresh expiration
     if (req.session?.user) {
       req.session.touch();
     }
-    
-    // Hook into res.json to ensure cookies are sent
-    const originalJson = res.json.bind(res);
-    res.json = function (data: any) {
-      // If user is authenticated and session exists, ensure we send Set-Cookie header
-      if (req.session?.user) {
-        // Force session to be sent back
-        req.session.save((err) => {
-          if (err) console.error('Error touching session:', err);
-        });
-      }
-      return originalJson(data);
-    };
-    
     next();
   });
 
@@ -332,22 +294,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         password: z.string().min(1),
       }).parse(req.body);
 
-      console.log('Login attempt for username:', username);
-
       const user = await storage.getUserByUsername(username);
       if (!user) {
-        console.log('User not found:', username);
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
-      console.log('User found:', user.username);
-
       // Compare password with bcrypt
       const isPasswordValid = await bcrypt.compare(password, user.password);
-      console.log('Password valid:', isPasswordValid);
-
       if (!isPasswordValid) {
-        console.log('Invalid password for user:', username);
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
@@ -359,32 +313,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
         branchId: user.branchId
       };
 
+      // Assign to session
       req.session.user = authUser;
 
-      // Save the session and wait for it to complete
-      await new Promise<void>((resolve, reject) => {
+      // Wait for session to be saved before responding
+      // This ensures the Set-Cookie header is included in the response
+      return new Promise<void>((resolve) => {
         req.session.save((err) => {
           if (err) {
-            console.error('Session save error:', err);
-            reject(err);
+            console.error('❌ Session save error:', err);
+            res.status(500).json({ message: 'Failed to create session' });
           } else {
-            console.log('✅ Session saved successfully for user:', username);
-            resolve();
+            console.log('✅ Session saved for user:', username);
+            
+            // Remove password from response
+            const { password: _, ...userWithoutPassword } = user;
+            
+            // Set cache control headers
+            res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+            res.setHeader('Pragma', 'no-cache');
+            res.setHeader('Expires', '0');
+            
+            res.json({
+              user: userWithoutPassword,
+              authenticated: true
+            });
           }
+          resolve();
         });
       });
-
-      // Ensure cookies are sent in response
-      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
-      res.setHeader('Pragma', 'no-cache');
-
-      // Remove password from response
-      const { password: _, ...userWithoutPassword } = user;
-      res.json({
-        user: userWithoutPassword
-      });
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('❌ Login error:', error);
       res.status(400).json({
         message: error instanceof Error ? error.message : "Invalid request data"
       });
@@ -405,21 +364,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Check session status (no auth required - used on page load)
+  // This endpoint checks if a session exists and returns the user data
   app.get("/api/auth/status", async (req: Request, res: Response) => {
     try {
       if (req.session?.user) {
+        console.log(`✅ [AUTH STATUS] Session found for user: ${req.session.user.username}`);
         res.json({ 
           authenticated: true, 
           user: req.session.user 
         });
       } else {
+        console.log(`⚠️  [AUTH STATUS] No session found`);
         res.json({ 
           authenticated: false, 
           user: null 
         });
       }
     } catch (error) {
-      console.error('Error in /api/auth/status:', error);
+      console.error('❌ [AUTH STATUS] Error:', error);
       res.json({ 
         authenticated: false, 
         user: null 
