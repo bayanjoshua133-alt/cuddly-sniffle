@@ -110,6 +110,7 @@ export default function MuiShiftTrading() {
     shiftId: "",
     targetUserId: "",
     reason: "",
+    urgency: "normal" as "low" | "normal" | "urgent",
   });
 
   // Fetch shift trades with real-time updates
@@ -167,7 +168,7 @@ export default function MuiShiftTrading() {
       console.log("✅ Shift trade request created successfully");
       toast({ title: "Trade request sent" });
       setCreateDialogOpen(false);
-      setFormData({ shiftId: "", targetUserId: "", reason: "" });
+      setFormData({ shiftId: "", targetUserId: "", reason: "", urgency: "normal" });
     },
     onError: (error: any) => {
       console.error("❌ Failed to create trade:", error);
@@ -648,14 +649,27 @@ export default function MuiShiftTrading() {
                 </Select>
               </FormControl>
 
+              <FormControl fullWidth>
+                <InputLabel>Urgency Level</InputLabel>
+                <Select
+                  value={formData.urgency}
+                  label="Urgency Level"
+                  onChange={(e) => setFormData({ ...formData, urgency: e.target.value as "low" | "normal" | "urgent" })}
+                >
+                  <MenuItem value="low">Low</MenuItem>
+                  <MenuItem value="normal">Normal</MenuItem>
+                  <MenuItem value="urgent">Urgent</MenuItem>
+                </Select>
+              </FormControl>
+
               <TextField
-                label="Reason"
+                label="Reason for Trade"
                 multiline
-                rows={3}
+                rows={4}
+                fullWidth
                 value={formData.reason}
                 onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
-                fullWidth
-                placeholder="Why do you want to trade this shift?"
+                placeholder="Why are you requesting this shift trade?"
               />
             </Stack>
           </DialogContent>
@@ -664,7 +678,7 @@ export default function MuiShiftTrading() {
             <Button
               variant="contained"
               onClick={() => createTrade.mutate(formData)}
-              disabled={!formData.shiftId || !formData.targetUserId || createTrade.isPending}
+              disabled={!formData.shiftId || !formData.targetUserId || !formData.reason || createTrade.isPending}
             >
               {createTrade.isPending ? "Sending..." : "Send Request"}
             </Button>

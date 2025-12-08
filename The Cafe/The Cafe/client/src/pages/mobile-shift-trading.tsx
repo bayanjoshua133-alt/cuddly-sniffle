@@ -49,6 +49,7 @@ export default function MobileShiftTrading() {
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [requestFormData, setRequestFormData] = useState({
     reason: "",
+    urgency: "normal" as "low" | "normal" | "urgent",
   });
 
   // Fetch available shifts with real-time updates
@@ -411,6 +412,21 @@ export default function MobileShiftTrading() {
 
               <div className="space-y-3">
                 <label className="block text-sm font-semibold">
+                  Urgency Level
+                </label>
+                <select
+                  value={requestFormData.urgency}
+                  onChange={(e) => setRequestFormData({ ...requestFormData, urgency: e.target.value as "low" | "normal" | "urgent" })}
+                  className="w-full px-4 py-3 rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  <option value="low">Low Priority</option>
+                  <option value="normal">Normal Priority</option>
+                  <option value="urgent">Urgent</option>
+                </select>
+              </div>
+
+              <div className="space-y-3">
+                <label className="block text-sm font-semibold">
                   Reason for Trade
                 </label>
                 <textarea
@@ -428,7 +444,7 @@ export default function MobileShiftTrading() {
                   className="flex-1 h-12 text-base font-semibold"
                   onClick={() => {
                     setShowRequestModal(false);
-                    setRequestFormData({ reason: "" });
+                    setRequestFormData({ reason: "", urgency: "normal" });
                   }}
                 >
                   Cancel
@@ -442,7 +458,7 @@ export default function MobileShiftTrading() {
                         description: "Please select a shift from the available shifts tab",
                       });
                       setShowRequestModal(false);
-                      setRequestFormData({ reason: "" });
+                      setRequestFormData({ reason: "", urgency: "normal" });
                       setActiveTab("available");
                     } else {
                       toast({
