@@ -97,7 +97,7 @@ export default function MuiSchedule() {
   const queryClient = useQueryClient();
 
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [viewMode, setViewMode] = useState<ViewMode>('week');
+  const [viewMode, setViewMode] = useState<ViewMode>('schedule');
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   // Time preset definitions
   const timePresets = {
