@@ -4,7 +4,6 @@ import { isManager, getCurrentUser } from "@/lib/auth";
 import { getInitials } from "@/lib/utils";
 import { useRealtime } from "@/hooks/use-realtime";
 import { ResourceTimelineScheduler } from "@/components/schedule/resource-timeline-scheduler";
-import { WeekDragDropScheduler } from "@/components/schedule/week-drag-drop-scheduler";
 import { MonthDragDropScheduler } from "@/components/schedule/month-drag-drop-scheduler";
 import {
   format,
@@ -91,7 +90,7 @@ interface Employee {
   role?: string;
 }
 
-type ViewMode = 'week' | 'month' | 'schedule';
+type ViewMode = 'schedule' | 'month';
 
 export default function MuiSchedule() {
   const currentUser = getCurrentUser();
@@ -492,7 +491,7 @@ export default function MuiSchedule() {
           </Stack>
 
           <Typography variant="h6" fontWeight={600} color="text.primary">
-            {viewMode === 'week' || viewMode === 'schedule'
+            {viewMode === 'schedule'
               ? `${format(dateRange.start, "MMM d")} - ${format(dateRange.end, "MMM d, yyyy")}`
               : format(selectedDate, "MMMM yyyy")
             }
@@ -520,13 +519,10 @@ export default function MuiSchedule() {
               }
             }}
           >
-            <ToggleButton value="week" title="Card view">
-              Week
-            </ToggleButton>
-            <ToggleButton value="schedule" title="Drag & drop scheduling">
+            <ToggleButton value="schedule" title="Resource timeline - drag to assign shifts">
               Schedule
             </ToggleButton>
-            <ToggleButton value="month">
+            <ToggleButton value="month" title="Month overview">
               Month
             </ToggleButton>
           </ToggleButtonGroup>
@@ -547,7 +543,7 @@ export default function MuiSchedule() {
         </Alert>
       )}
 
-      {/* Drag & Drop Schedule View */}
+      {/* Drag & Drop Schedule View - Primary */}
       {!isLoading && !isError && viewMode === 'schedule' && (
         <Box sx={{ mb: 3 }}>
           <ResourceTimelineScheduler
@@ -560,20 +556,7 @@ export default function MuiSchedule() {
         </Box>
       )}
 
-      {/* Drag & Drop Week View */}
-      {!isLoading && !isError && viewMode === 'week' && (
-        <Box sx={{ mb: 3 }}>
-          <WeekDragDropScheduler
-            shifts={shifts}
-            employees={employees}
-            weekStart={weekStart}
-            onShiftUpdated={() => refetch()}
-            isManager={isManagerRole}
-          />
-        </Box>
-      )}
-
-      {/* Drag & Drop Month View */}
+      {/* Drag & Drop Month View - Overview */}
       {!isLoading && !isError && viewMode === 'month' && (
         <Box sx={{ mb: 3 }}>
           <MonthDragDropScheduler
