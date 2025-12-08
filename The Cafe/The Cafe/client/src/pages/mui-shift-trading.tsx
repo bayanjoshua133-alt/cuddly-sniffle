@@ -5,6 +5,7 @@ import { format, parseISO } from "date-fns";
 import { apiRequest } from "@/lib/queryClient";
 import { getInitials } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { useRealtime } from "@/hooks/use-realtime";
 
 // MUI Components
 import Box from "@mui/material/Box";
@@ -111,6 +112,12 @@ export default function MuiShiftTrading() {
     targetUserId: "",
     reason: "",
     urgency: "normal" as "low" | "normal" | "urgent",
+  });
+
+  // Enable real-time updates via WebSocket
+  useRealtime({
+    enabled: true,
+    queryKeys: ["shift-trades", "my-shifts"],
   });
 
   // Fetch shift trades with real-time updates
