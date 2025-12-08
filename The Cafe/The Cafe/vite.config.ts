@@ -29,48 +29,8 @@ export default defineConfig({
         main: path.resolve(__dirname, "client", "index.html"),
       },
       output: {
-        // CRITICAL FIX: Prevent React duplication error
-        // React MUST be singleton - check it FIRST and return immediately
-        manualChunks(id: string) {
-          // ✅ React MUST return first - prevents fallthrough to catch-all
-          if (id.includes('node_modules/react') || 
-              id.includes('node_modules/react-dom') ||
-              id.includes('node_modules/react-router') ||
-              id.includes('node_modules/@react')) {
-            return 'vendor-react';
-          }
-          
-          // MUI chunks (large library)
-          if (id.includes('@mui/material') || id.includes('@mui/icons-material') || id.includes('@mui/x-')) {
-            return 'vendor-mui';
-          }
-          
-          // Query and state management
-          if (id.includes('@tanstack/react-query')) {
-            return 'vendor-query';
-          }
-          
-          // Data visualization and UI libraries
-          if (id.includes('recharts') || id.includes('framer-motion') || id.includes('lucide-react')) {
-            return 'vendor-ui-libs';
-          }
-          
-          // Radix UI components
-          if (id.includes('@radix-ui')) {
-            return 'vendor-radix-ui';
-          }
-          
-          // PDF generation libraries
-          if (id.includes('jspdf') || id.includes('pdf-lib')) {
-            return 'vendor-pdf';
-          }
-          
-          // Catch-all for other vendors (React already handled above)
-          if (id.includes('node_modules')) {
-            return 'vendor-other';
-          }
-        },
-        // Optimize chunk naming for better caching
+        // Let Vite handle automatic chunking - NO manual chunks to avoid duplication
+        // Vite's automatic splitting ensures React is singleton
         entryFileNames: 'assets/[name]-[hash].js',
         chunkFileNames: 'assets/[name]-[hash].js',
         assetFileNames: 'assets/[name]-[hash][extname]',
