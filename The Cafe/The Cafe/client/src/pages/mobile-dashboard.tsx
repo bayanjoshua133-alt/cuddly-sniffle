@@ -695,7 +695,7 @@ export default function MobileDashboard() {
                   <div className="flex-1 min-w-0">
                     <p className="text-emerald-100 text-xs sm:text-base mb-1">Latest Payroll</p>
                     <h3 className="text-lg sm:text-2xl font-bold truncate">
-                      {latestPayroll.createdAt ? format(parseISO(latestPayroll.createdAt), 'MMM d, yyyy') : 'N/A'}
+                      {latestPayroll?.createdAt ? format(parseISO(latestPayroll.createdAt), 'MMM d, yyyy') : 'N/A'}
                     </h3>
                   </div>
                   <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-white/20 flex items-center justify-center flex-shrink-0">
@@ -706,13 +706,13 @@ export default function MobileDashboard() {
                   <div className="bg-white/10 rounded-lg sm:rounded-xl p-3 sm:p-4">
                     <p className="text-emerald-100 text-xs sm:text-sm mb-1">Hours</p>
                     <p className="text-lg sm:text-2xl font-bold">
-                      {parseFloat(String(latestPayroll.totalHours)).toFixed(1)}h
+                      {latestPayroll?.totalHours ? parseFloat(String(latestPayroll.totalHours)).toFixed(1) : '0'}h
                     </p>
                   </div>
                   <div className="bg-white/10 rounded-lg sm:rounded-xl p-3 sm:p-4">
                     <p className="text-emerald-100 text-xs sm:text-sm mb-1">Gross Pay</p>
                     <p className="text-lg sm:text-2xl font-bold truncate">
-                      ₱{parseFloat(String(latestPayroll.grossPay)).toLocaleString()}
+                      ₱{latestPayroll?.grossPay ? parseFloat(String(latestPayroll.grossPay)).toLocaleString() : '0'}
                     </p>
                   </div>
                 </div>
@@ -720,11 +720,11 @@ export default function MobileDashboard() {
                   <div className="flex-1 min-w-0">
                     <p className="text-emerald-100 text-xs sm:text-sm">Net Pay</p>
                     <p className="text-2xl sm:text-4xl font-bold truncate">
-                      ₱{parseFloat(String(latestPayroll.netPay)).toLocaleString()}
+                      ₱{latestPayroll?.netPay ? parseFloat(String(latestPayroll.netPay)).toLocaleString() : '0'}
                     </p>
                   </div>
                   <Badge className="bg-white/20 text-white border-0 text-xs sm:text-base px-2 sm:px-4 py-1 sm:py-2 flex-shrink-0">
-                    {(latestPayroll.status ? latestPayroll.status.charAt(0).toUpperCase() + latestPayroll.status.slice(1) : "Unknown")}
+                    {(latestPayroll?.status ? latestPayroll.status.charAt(0).toUpperCase() + latestPayroll.status.slice(1) : "Unknown")}
                   </Badge>
                 </div>
                 <Button

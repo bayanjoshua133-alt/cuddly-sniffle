@@ -435,14 +435,14 @@ export default function MobilePayroll() {
               <div className="text-center p-5 bg-emerald-50 dark:bg-emerald-950/30 rounded-xl">
                 <p className="text-3xl font-bold text-emerald-600">
                   ₱{payrollEntries.reduce((sum, entry) =>
-                    sum + parseFloat(String(entry.netPay)), 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                    sum + (entry?.netPay ? parseFloat(String(entry.netPay)) : 0), 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
                 </p>
                 <p className="text-base text-muted-foreground mt-2">Total Earned</p>
               </div>
               <div className="text-center p-5 bg-violet-50 dark:bg-violet-950/30 rounded-xl">
                 <p className="text-3xl font-bold text-violet-600">
                   {payrollEntries.reduce((sum, entry) =>
-                    sum + parseFloat(String(entry.totalHours)), 0).toFixed(1)}h
+                    sum + (entry?.totalHours ? parseFloat(String(entry.totalHours)) : 0), 0).toFixed(1)}h
                 </p>
                 <p className="text-base text-muted-foreground mt-2">Hours Worked</p>
               </div>
@@ -497,13 +497,13 @@ export default function MobilePayroll() {
                     <div className="p-4 bg-background rounded-xl">
                       <p className="text-base text-muted-foreground">Hours</p>
                       <p className="text-2xl font-bold mt-1">
-                        {parseFloat(String(entry.totalHours)).toFixed(1)}h
+                        {entry?.totalHours ? parseFloat(String(entry.totalHours)).toFixed(1) : '0'}h
                       </p>
                     </div>
                     <div className="p-4 bg-background rounded-xl">
                       <p className="text-base text-muted-foreground">Gross Pay</p>
                       <p className="text-2xl font-bold mt-1">
-                        ₱{parseFloat(String(entry.grossPay)).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                        ₱{entry?.grossPay ? parseFloat(String(entry.grossPay)).toLocaleString('en-PH', { minimumFractionDigits: 2 }) : '0'}
                       </p>
                     </div>
                   </div>
@@ -512,7 +512,7 @@ export default function MobilePayroll() {
                     <div>
                       <p className="text-base text-muted-foreground">Net Pay</p>
                       <p className="text-3xl font-bold text-emerald-600">
-                        ₱{parseFloat(String(entry.netPay)).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                        ₱{entry?.netPay ? parseFloat(String(entry.netPay)).toLocaleString('en-PH', { minimumFractionDigits: 2 }) : '0'}
                       </p>
                     </div>
                     <div className="flex gap-3">
