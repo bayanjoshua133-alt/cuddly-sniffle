@@ -38,7 +38,7 @@ import {
   ChevronRight as ChevronRightIcon,
 } from "@mui/icons-material";
 
-import { WeekShiftPicker } from "./week-shift-picker";
+import { WeekShiftPicker } from "../schedule/week-shift-picker";
 
 interface Employee {
   id: string;
