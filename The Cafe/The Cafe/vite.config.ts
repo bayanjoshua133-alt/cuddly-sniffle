@@ -20,13 +20,7 @@ export default defineConfig({
     sourcemap: false,
     minify: 'terser',
     target: 'esnext',
-    chunkSizeWarningLimit: 800, // Warn if > 800KB
-    terserOptions: {
-      compress: {
-        drop_console: true,
-        drop_debugger: true,
-      },
-    },
+    chunkSizeWarningLimit: 800,
     rollupOptions: {
       output: {
         // Intelligent manual chunking strategy
