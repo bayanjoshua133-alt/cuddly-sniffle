@@ -130,6 +130,12 @@ export default function MuiShiftTrading() {
     refetchInterval: 5000, // Poll every 5 seconds for real-time trade updates
     refetchOnWindowFocus: true,
     refetchIntervalInBackground: true,
+    retry: (failureCount, error: any) => {
+      // Don't retry on 401 (unauthorized) - session expired
+      if (error?.status === 401) return false;
+      // Retry other errors up to 3 times
+      return failureCount < 3;
+    },
   });
 
   // Fetch my shifts (for creating trade requests) with real-time updates
@@ -142,6 +148,12 @@ export default function MuiShiftTrading() {
     refetchInterval: 5000, // Poll every 5 seconds for real-time schedule updates
     refetchOnWindowFocus: true,
     refetchIntervalInBackground: true,
+    retry: (failureCount, error: any) => {
+      // Don't retry on 401 (unauthorized) - session expired
+      if (error?.status === 401) return false;
+      // Retry other errors up to 3 times
+      return failureCount < 3;
+    },
   });
 
   // Fetch employees (for selecting trade target)
@@ -153,6 +165,12 @@ export default function MuiShiftTrading() {
     },
     refetchInterval: 30000, // Employee list doesn't change often
     refetchOnWindowFocus: true,
+    retry: (failureCount, error: any) => {
+      // Don't retry on 401 (unauthorized) - session expired
+      if (error?.status === 401) return false;
+      // Retry other errors up to 3 times
+      return failureCount < 3;
+    },
   });
 
   const trades: ShiftTrade[] = tradesResponse?.trades || [];

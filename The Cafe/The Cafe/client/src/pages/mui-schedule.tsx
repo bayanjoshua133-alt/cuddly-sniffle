@@ -149,7 +149,7 @@ export default function MuiSchedule() {
   const allDays = eachDayOfInterval({ start: dateRange.start, end: dateRange.end });
 
   // Fetch employees for managers with real-time updates
-  const { data: employeesData } = useQuery({
+  const { data: employeesData, error: employeesError } = useQuery({
     queryKey: ["employees"],
     queryFn: async () => {
       const response = await apiRequest("GET", "/api/employees");
@@ -159,6 +159,12 @@ export default function MuiSchedule() {
     refetchInterval: 5000, // Poll every 5 seconds for real-time updates
     refetchOnWindowFocus: true,
     refetchIntervalInBackground: true,
+    retry: (failureCount, error: any) => {
+      // Don't retry on 401 (unauthorized) - session expired
+      if (error?.status === 401) return false;
+      // Retry other errors up to 3 times
+      return failureCount < 3;
+    },
   });
 
   // API returns {employees: []} structure
@@ -182,6 +188,12 @@ export default function MuiSchedule() {
     refetchInterval: 5000, // Poll every 5 seconds for real-time updates
     refetchOnWindowFocus: true,
     refetchIntervalInBackground: true, // Keep polling even when tab is not focused
+    retry: (failureCount, error: any) => {
+      // Don't retry on 401 (unauthorized) - session expired
+      if (error?.status === 401) return false;
+      // Retry other errors up to 3 times
+      return failureCount < 3;
+    },
   });
 
   const shifts: Shift[] = shiftsData?.shifts || [];
