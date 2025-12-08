@@ -631,22 +631,57 @@ function App() {
     ? isMobileServerMode 
     : isMobileServer();
     
-  return (
-    <ThemeProvider>
-      <MuiThemeProvider>
-        <QueryClientProvider client={queryClient}>
-          <TooltipProvider>
-            <Toaster />
-            {shouldShowMobile ? (
-              <MobileRouter authState={authState} />
-            ) : (
-              <DesktopRouter authState={authState} />
-            )}
-          </TooltipProvider>
-        </QueryClientProvider>
-      </MuiThemeProvider>
-    </ThemeProvider>
-  );
+  try {
+    return (
+      <ThemeProvider>
+        <MuiThemeProvider>
+          <QueryClientProvider client={queryClient}>
+            <TooltipProvider>
+              <Toaster />
+              {shouldShowMobile ? (
+                <MobileRouter authState={authState} />
+              ) : (
+                <DesktopRouter authState={authState} />
+              )}
+            </TooltipProvider>
+          </QueryClientProvider>
+        </MuiThemeProvider>
+      </ThemeProvider>
+    );
+  } catch (error) {
+    console.error("App rendering error:", error);
+    // Fallback UI when app crashes
+    return (
+      <Box
+        sx={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          bgcolor: "#1a1a1a",
+        }}
+      >
+        <Box sx={{ textAlign: "center", color: "#fff", maxWidth: 500 }}>
+          <Typography variant="h5" sx={{ mb: 2 }}>
+            Application Error
+          </Typography>
+          <Typography color="error" sx={{ mb: 2, fontSize: "14px" }}>
+            {(error as Error)?.message || "Unknown error occurred"}
+          </Typography>
+          <Typography sx={{ color: "#999", fontSize: "12px" }}>
+            Please check your browser console for more details. Try refreshing the page.
+          </Typography>
+          <Button
+            sx={{ mt: 3 }}
+            onClick={() => window.location.reload()}
+            variant="contained"
+          >
+            Refresh Page
+          </Button>
+        </Box>
+      </Box>
+    );
+  }
 }
 
 export default App;
