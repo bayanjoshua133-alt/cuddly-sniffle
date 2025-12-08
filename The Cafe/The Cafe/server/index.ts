@@ -184,8 +184,10 @@ app.use((req, res, next) => {
   // setting up all the other routes so the catch-all route
   // doesn't interfere with the other routes
   if (app.get("env") === "development") {
+    console.log("🔧 Using Vite dev server for frontend...");
     await setupVite(app, server);
   } else {
+    console.log("📦 Serving static frontend files from dist/public...");
     serveStatic(app);
   }
 
