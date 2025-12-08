@@ -336,6 +336,60 @@ export default function MuiEmployees() {
     },
   });
 
+  // Toggle employee status (activate/deactivate)
+  const toggleEmployeeStatus = useMutation({
+    mutationFn: async ({ id, isActive }: { id: string; isActive: boolean }) => {
+      console.log(`Toggling employee ${id} to isActive=${isActive}`);
+      const response = await apiRequest("PATCH", `/api/employees/${id}/status`, { isActive });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to update employee status");
+      }
+      return response.json();
+    },
+    onSuccess: (data, { isActive }) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/hours/all-employees"] });
+      const action = isActive ? "activated" : "deactivated";
+      toast({ title: "Success", description: `Employee ${action} successfully` });
+      // Update current employee if viewing
+      if (currentEmployee) {
+        setCurrentEmployee({ ...currentEmployee, isActive });
+      }
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  // Bulk activate/deactivate employees
+  const bulkToggleStatus = useMutation({
+    mutationFn: async ({ ids, isActive }: { ids: string[]; isActive: boolean }) => {
+      console.log(`Bulk toggling ${ids.length} employees to isActive=${isActive}`);
+      const promises = ids.map(id =>
+        apiRequest("PATCH", `/api/employees/${id}/status`, { isActive })
+      );
+      const results = await Promise.all(promises);
+      
+      for (const result of results) {
+        if (!result.ok) {
+          const error = await result.json();
+          throw new Error(error.message || "Failed to update employee status");
+        }
+      }
+      
+      return results;
+    },
+    onSuccess: (data, { isActive, ids }) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/hours/all-employees"] });
+      const action = isActive ? "activated" : "deactivated";
+      toast({ title: "Success", description: `${ids.length} employees ${action} successfully` });
+      setSelectedEmployees([]);
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
   // Handlers
   const handleOpenAddDialog = () => {
     setIsEditing(false);
@@ -732,11 +786,25 @@ export default function MuiEmployees() {
             <Collapse in={selectedEmployees.length > 0}>
               <Box sx={{ display: "flex", alignItems: "center", gap: 2, mt: 2, pt: 2, borderTop: 1, borderColor: "divider" }}>
                 <Chip label={`${selectedEmployees.length} selected`} color="primary" variant="outlined" />
-                <Button size="small" variant="outlined" color="success" startIcon={<CheckCircleIcon />}>
-                  Activate
+                <Button
+                  size="small"
+                  variant="outlined"
+                  color="success"
+                  startIcon={<CheckCircleIcon />}
+                  onClick={() => bulkToggleStatus.mutate({ ids: selectedEmployees, isActive: true })}
+                  disabled={bulkToggleStatus.isPending}
+                >
+                  {bulkToggleStatus.isPending ? "..." : "Activate"}
                 </Button>
-                <Button size="small" variant="outlined" color="error" startIcon={<CancelIcon />}>
-                  Deactivate
+                <Button
+                  size="small"
+                  variant="outlined"
+                  color="error"
+                  startIcon={<CancelIcon />}
+                  onClick={() => bulkToggleStatus.mutate({ ids: selectedEmployees, isActive: false })}
+                  disabled={bulkToggleStatus.isPending}
+                >
+                  {bulkToggleStatus.isPending ? "..." : "Deactivate"}
                 </Button>
               </Box>
             </Collapse>
@@ -871,6 +939,37 @@ export default function MuiEmployees() {
                               </Typography>
                             </Grid>
                           </Grid>
+
+                          <Divider sx={{ my: 2 }} />
+
+                          {/* Activate/Deactivate Buttons */}
+                          <Stack direction="row" spacing={1}>
+                            {employee.isActive ? (
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                color="error"
+                                fullWidth
+                                startIcon={<CancelIcon />}
+                                onClick={() => toggleEmployeeStatus.mutate({ id: employee.id, isActive: false })}
+                                disabled={toggleEmployeeStatus.isPending}
+                              >
+                                {toggleEmployeeStatus.isPending ? "..." : "Deactivate"}
+                              </Button>
+                            ) : (
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                color="success"
+                                fullWidth
+                                startIcon={<CheckCircleIcon />}
+                                onClick={() => toggleEmployeeStatus.mutate({ id: employee.id, isActive: true })}
+                                disabled={toggleEmployeeStatus.isPending}
+                              >
+                                {toggleEmployeeStatus.isPending ? "..." : "Activate"}
+                              </Button>
+                            )}
+                          </Stack>
                         </CardContent>
                       </Card>
                     </Grid>

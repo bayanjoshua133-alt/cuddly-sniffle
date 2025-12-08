@@ -438,6 +438,41 @@ router.put('/api/employees/:id/deductions', requireAuth, requireRole(['manager']
   }
 });
 
+// Toggle employee status (activate/deactivate) - Manager/Admin only
+router.patch('/api/employees/:id/status', requireAuth, requireRole(['manager']), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { isActive } = req.body;
+
+    if (typeof isActive !== 'boolean') {
+      return res.status(400).json({ message: 'isActive must be a boolean' });
+    }
+
+    // Get the existing employee
+    const existingEmployee = await storage.getUser(id);
+    if (!existingEmployee) {
+      return res.status(404).json({ message: 'Employee not found' });
+    }
+
+    // Update the employee status
+    const updatedEmployee = await storage.updateUser(id, { isActive });
+
+    if (!updatedEmployee) {
+      return res.status(500).json({ message: 'Failed to update employee status' });
+    }
+
+    console.log(`Employee ${id} status updated to isActive=${isActive}`);
+
+    // Don't send back the password
+    const { password, ...result } = updatedEmployee;
+
+    res.json(result);
+  } catch (error) {
+    console.error('Error updating employee status:', error);
+    res.status(500).json({ message: 'Failed to update employee status' });
+  }
+});
+
 // Delete employee (Manager/Admin only)
 router.delete('/api/employees/:id', requireAuth, requireRole(['manager']), async (req, res) => {
   try {
