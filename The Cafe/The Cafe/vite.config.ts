@@ -29,10 +29,14 @@ export default defineConfig({
         main: path.resolve(__dirname, "client", "index.html"),
       },
       output: {
-        // Intelligent manual chunking strategy
+        // CRITICAL FIX: Prevent React duplication error
+        // React MUST be singleton - check it FIRST and return immediately
         manualChunks(id: string) {
-          // Framework chunks
-          if (id.includes('node_modules/react') || id.includes('node_modules/react-dom')) {
+          // ✅ React MUST return first - prevents fallthrough to catch-all
+          if (id.includes('node_modules/react') || 
+              id.includes('node_modules/react-dom') ||
+              id.includes('node_modules/react-router') ||
+              id.includes('node_modules/@react')) {
             return 'vendor-react';
           }
           
@@ -61,7 +65,7 @@ export default defineConfig({
             return 'vendor-pdf';
           }
           
-          // Other utilities
+          // Catch-all for other vendors (React already handled above)
           if (id.includes('node_modules')) {
             return 'vendor-other';
           }
