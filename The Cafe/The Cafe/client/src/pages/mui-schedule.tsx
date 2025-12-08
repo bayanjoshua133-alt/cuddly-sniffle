@@ -296,16 +296,6 @@ export default function MuiSchedule() {
     createShiftMutation.mutate(formData);
   };
 
-  // Handle employee selection - also set position
-  const handleEmployeeSelect = (employeeId: string) => {
-    const selectedEmployee = employees.find(emp => emp.id === employeeId);
-    setFormData({
-      ...formData,
-      userId: employeeId,
-      position: selectedEmployee?.position || "Staff",
-    });
-  };
-
   return (
     <Box sx={{ p: 3, minHeight: "100vh", bgcolor: "background.default" }}>
       {/* Header */}
