@@ -105,3 +105,16 @@ export function getPayPeriodRange(): { start: Date; end: Date } {
   
   return { start, end };
 }
+
+// Safe string capitalization - prevents "Cannot read properties of undefined" errors
+export function capitalizeFirstLetter(str: string | null | undefined): string {
+  if (!str) return "";
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+// Safe initials generation - prevents errors on undefined names
+export function getInitials(firstName: string | null | undefined, lastName: string | null | undefined): string {
+  const first = firstName?.charAt(0)?.toUpperCase() || "";
+  const last = lastName?.charAt(0)?.toUpperCase() || "";
+  return first + last;
+}

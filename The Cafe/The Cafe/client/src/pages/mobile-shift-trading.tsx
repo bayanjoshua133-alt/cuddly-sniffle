@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { apiRequest } from "@/lib/queryClient";
+import { capitalizeFirstLetter } from "@/lib/utils";
 import { getCurrentUser } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import MuiMobileHeader from "@/components/mui/mui-mobile-header";
@@ -208,12 +209,12 @@ export default function MobileShiftTrading() {
                     {type === 'my' ? (
                       <Badge variant={statusConfig.variant} className="flex items-center gap-1 px-3 py-1">
                         <StatusIcon className="h-3.5 w-3.5" />
-                        {(trade.status ? trade.status.charAt(0).toUpperCase() + trade.status.slice(1) : "Unknown")}
+                        {capitalizeFirstLetter(trade.status)}
                       </Badge>
                     ) : (
                       <Badge variant={urgencyConfig.variant} className="flex items-center gap-1 px-3 py-1">
                         <UrgencyIcon className="h-3.5 w-3.5" />
-                        {(trade.urgency ? trade.urgency.charAt(0).toUpperCase() + trade.urgency.slice(1) : "Unknown")}
+                        {capitalizeFirstLetter(trade.urgency)}
                       </Badge>
                     )}
                   </div>

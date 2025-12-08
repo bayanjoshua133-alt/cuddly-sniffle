@@ -4,6 +4,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { Link } from "wouter";
+import { getInitials } from "@/lib/utils";
 import { StatCard, InfoCard, UserCard, EmptyState, ActionButtons } from "@/components/mui/cards";
 
 // MUI Components
@@ -443,7 +444,7 @@ function ManagerDashboard({
                     key={shift.id}
                     name={`${shift.user?.firstName || ""} ${shift.user?.lastName || ""}`}
                     subtitle={shift.position}
-                    initials={`${shift.user?.firstName?.charAt(0) || ""}${shift.user?.lastName?.charAt(0) || ""}`}
+                    initials={getInitials(shift.user?.firstName, shift.user?.lastName)}
                     action={
                       <Box sx={{ textAlign: "right" }}>
                         <Typography variant="body2" sx={{ fontWeight: 600, fontFamily: "monospace" }}>
@@ -504,8 +505,7 @@ function ManagerDashboard({
                             fontSize: "0.8rem",
                           }}
                         >
-                          {request.user?.firstName?.charAt(0)}
-                          {request.user?.lastName?.charAt(0)}
+                          {getInitials(request.user?.firstName, request.user?.lastName)}
                         </Avatar>
                         <Box sx={{ flex: 1, minWidth: 0 }}>
                           <Typography variant="body2" sx={{ fontWeight: 600 }} noWrap>

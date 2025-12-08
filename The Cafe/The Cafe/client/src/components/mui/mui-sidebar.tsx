@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { getCurrentUser, isManager, isAdmin, setAuthState } from "@/lib/auth";
-import { getInitials } from "@/lib/utils";
+import { getInitials, capitalizeFirstLetter } from "@/lib/utils";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
@@ -377,7 +377,7 @@ export default function MuiSidebar() {
                   {currentUser?.firstName} {currentUser?.lastName}
                 </Typography>
                 <Chip
-                  label={(currentUser?.role ? currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1) : "Employee")}
+                  label={capitalizeFirstLetter(currentUser?.role || "employee")}
                   size="small"
                   color={getRoleColor(currentUser?.role || "employee") as any}
                   sx={{

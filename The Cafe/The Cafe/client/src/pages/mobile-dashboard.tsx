@@ -31,6 +31,7 @@ import {
 import { format, isToday, isTomorrow, parseISO, differenceInHours } from "date-fns";
 import { motion } from "framer-motion";
 import { apiRequest } from "@/lib/queryClient";
+import { capitalizeFirstLetter } from "@/lib/utils";
 import { getCurrentUser, getAuthState } from "@/lib/auth";
 import { useLocation } from "wouter";
 import MuiMobileHeader from "@/components/mui/mui-mobile-header";
@@ -724,7 +725,7 @@ export default function MobileDashboard() {
                     </p>
                   </div>
                   <Badge className="bg-white/20 text-white border-0 text-xs sm:text-base px-2 sm:px-4 py-1 sm:py-2 flex-shrink-0">
-                    {(latestPayroll?.status ? latestPayroll.status.charAt(0).toUpperCase() + latestPayroll.status.slice(1) : "Unknown")}
+                    {capitalizeFirstLetter(latestPayroll?.status)}
                   </Badge>
                 </div>
                 <Button

@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback } from "react";
+import { getInitials } from "@/lib/utils";
 import {
   DataGrid,
   GridColDef,
@@ -198,7 +199,7 @@ export function EmployeeDataGrid({
                 fontWeight: 600,
               }}
             >
-              {params.row.firstName?.charAt(0)}{params.row.lastName?.charAt(0)}
+              {getInitials(params.row.firstName, params.row.lastName)}
             </Avatar>
             <Box>
               <Box sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 0.5 }}>

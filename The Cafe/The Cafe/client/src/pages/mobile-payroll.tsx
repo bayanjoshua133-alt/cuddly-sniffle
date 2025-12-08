@@ -8,6 +8,7 @@ import { DollarSign, Clock, Download, Eye, FileText, TrendingUp, Loader2 } from 
 import { format, parseISO, subDays } from "date-fns";
 import { motion } from "framer-motion";
 import { apiRequest, apiBlobRequest } from "@/lib/queryClient";
+import { capitalizeFirstLetter } from "@/lib/utils";
 import { getCurrentUser, getAuthState } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
@@ -489,7 +490,7 @@ export default function MobilePayroll() {
                       }
                       className="text-base px-4 py-1"
                     >
-                      {(entry.status ? entry.status.charAt(0).toUpperCase() + entry.status.slice(1) : "Unknown")}
+                      {capitalizeFirstLetter(entry.status)}
                     </Badge>
                   </div>
 

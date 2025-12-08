@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { isManager, getCurrentUser } from "@/lib/auth";
 import { format, parseISO } from "date-fns";
 import { apiRequest } from "@/lib/queryClient";
+import { getInitials } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
 // MUI Components
@@ -261,7 +262,7 @@ export default function MuiShiftTrading() {
                 </Typography>
                 <Stack direction="row" alignItems="center" spacing={1} sx={{ mt: 1 }}>
                   <Avatar sx={{ width: 32, height: 32, bgcolor: "secondary.main", fontSize: "0.875rem" }}>
-                    {trade.requester?.firstName?.charAt(0)}
+                    {getInitials(trade.requester?.firstName, trade.requester?.lastName)}
                   </Avatar>
                   <Typography fontWeight={500}>
                     {trade.requester?.firstName} {trade.requester?.lastName}
@@ -279,7 +280,7 @@ export default function MuiShiftTrading() {
                 </Typography>
                 <Stack direction="row" alignItems="center" spacing={1} sx={{ mt: 1 }}>
                   <Avatar sx={{ width: 32, height: 32, bgcolor: "info.main", fontSize: "0.875rem" }}>
-                    {trade.targetUser?.firstName?.charAt(0)}
+                    {getInitials(trade.targetUser?.firstName, trade.targetUser?.lastName)}
                   </Avatar>
                   <Typography fontWeight={500}>
                     {trade.targetUser?.firstName} {trade.targetUser?.lastName}

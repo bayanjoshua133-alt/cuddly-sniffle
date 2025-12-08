@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { isManager, getCurrentUser } from "@/lib/auth";
+import { getInitials } from "@/lib/utils";
 import {
   format,
   addDays,
@@ -687,7 +688,7 @@ export default function MuiSchedule() {
                     <MenuItem key={emp.id} value={emp.id}>
                       <Stack direction="row" alignItems="center" spacing={2}>
                         <Avatar sx={{ width: 32, height: 32, bgcolor: "primary.main" }}>
-                          {emp.firstName?.charAt(0)}{emp.lastName?.charAt(0)}
+                          {getInitials(emp.firstName, emp.lastName)}
                         </Avatar>
                         <Box>
                           <Typography variant="body1">

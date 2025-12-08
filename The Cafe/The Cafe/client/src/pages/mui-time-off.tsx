@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format, parseISO, differenceInDays } from "date-fns";
 import { getCurrentUser, isManager } from "@/lib/auth";
 import { apiRequest } from "@/lib/queryClient";
+import { capitalizeFirstLetter } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
 // MUI Components
@@ -490,7 +491,7 @@ export default function MuiTimeOff() {
                         <TableCell align="center">
                           <Chip
                             icon={getStatusIcon(request.status)}
-                            label={(request.status ? request.status.charAt(0).toUpperCase() + request.status.slice(1) : "Unknown")}
+                            label={capitalizeFirstLetter(request.status)}
                             color={getStatusColor(request.status)}
                             variant="outlined"
                             size="small"
