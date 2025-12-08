@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { isManager, getCurrentUser } from "@/lib/auth";
 import { getInitials } from "@/lib/utils";
 import { useRealtime } from "@/hooks/use-realtime";
+import { DragDropScheduler } from "@/components/schedule/drag-drop-scheduler";
 import {
   format,
   addDays,
@@ -59,6 +60,8 @@ import WbTwilightIcon from "@mui/icons-material/WbTwilight";
 import NightsStayIcon from "@mui/icons-material/NightsStay";
 import DeleteIcon from "@mui/icons-material/Delete";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
+import ViewWeekIcon from "@mui/icons-material/ViewWeek";
+import ViewDayIcon from "@mui/icons-material/ViewDay";
 import ToggleButton from "@mui/material/ToggleButton";
 import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 
@@ -86,7 +89,7 @@ interface Employee {
   role?: string;
 }
 
-type ViewMode = 'week' | 'month';
+type ViewMode = 'week' | 'month' | 'schedule';
 
 export default function MuiSchedule() {
   const currentUser = getCurrentUser();
@@ -465,7 +468,7 @@ export default function MuiSchedule() {
           </Stack>
 
           <Typography variant="h6" fontWeight={600} color="text.primary">
-            {viewMode === 'week' 
+            {viewMode === 'week' || viewMode === 'schedule'
               ? `${format(dateRange.start, "MMM d")} - ${format(dateRange.end, "MMM d, yyyy")}`
               : format(selectedDate, "MMMM yyyy")
             }
@@ -493,8 +496,11 @@ export default function MuiSchedule() {
               }
             }}
           >
-            <ToggleButton value="week">
+            <ToggleButton value="week" title="Card view">
               Week
+            </ToggleButton>
+            <ToggleButton value="schedule" title="Drag & drop scheduling">
+              Schedule
             </ToggleButton>
             <ToggleButton value="month">
               Month
@@ -517,8 +523,21 @@ export default function MuiSchedule() {
         </Alert>
       )}
 
-      {/* Calendar View */}
-      {!isLoading && !isError && (
+      {/* Drag & Drop Schedule View */}
+      {!isLoading && !isError && viewMode === 'schedule' && (
+        <Box sx={{ mb: 3 }}>
+          <DragDropScheduler
+            shifts={shifts}
+            employees={employees}
+            weekStart={weekStart}
+            onShiftUpdated={() => refetch()}
+            isManager={isManagerRole}
+          />
+        </Box>
+      )}
+
+      {/* Traditional Calendar View */}
+      {!isLoading && !isError && (viewMode === 'week' || viewMode === 'month') && (
         <Box
           sx={{
             display: "grid",
