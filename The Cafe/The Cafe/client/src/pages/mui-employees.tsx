@@ -90,6 +90,7 @@ import {
   Refresh as RefreshIcon,
   Download as DownloadIcon,
   Upload as UploadIcon,
+  Schedule as ScheduleIcon,
 } from "@mui/icons-material";
 
 // MUI X Data Grid
@@ -102,6 +103,9 @@ import {
   GridToolbar,
   GridActionsCellItem,
 } from "@mui/x-data-grid";
+
+// Custom Components
+import { EmployeeShiftModal } from "@/components/employees/employee-shift-modal";
 
 // Types
 interface Employee {
@@ -179,6 +183,7 @@ export default function MuiEmployees() {
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deductionsDialogOpen, setDeductionsDialogOpen] = useState(false);
+  const [shiftModalOpen, setShiftModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [currentEmployee, setCurrentEmployee] = useState<Employee | null>(null);
   const [formData, setFormData] = useState<EmployeeFormData>(initialFormData);
@@ -629,6 +634,18 @@ export default function MuiEmployees() {
           <Tooltip title="Edit">
             <IconButton size="small" onClick={() => handleOpenEditDialog(params.row)}>
               <EditIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Manage Shifts">
+            <IconButton
+              size="small"
+              color="primary"
+              onClick={() => {
+                setCurrentEmployee(params.row);
+                setShiftModalOpen(true);
+              }}
+            >
+              <ScheduleIcon fontSize="small" />
             </IconButton>
           </Tooltip>
           <Tooltip title="Deductions">
@@ -1379,6 +1396,17 @@ export default function MuiEmployees() {
             </DialogActions>
           </form>
         </Dialog>
+
+        {/* Employee Shift Modal */}
+        <EmployeeShiftModal
+          open={shiftModalOpen}
+          onClose={() => {
+            setShiftModalOpen(false);
+            setCurrentEmployee(null);
+          }}
+          employee={currentEmployee}
+          branchId={currentEmployee?.branchId || ""}
+        />
       </Box>
     </>
   );

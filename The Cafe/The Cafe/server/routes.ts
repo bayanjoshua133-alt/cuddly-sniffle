@@ -544,6 +544,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // DELETE shift
+  app.delete("/api/shifts/:id", requireAuth, requireRole(["manager"]), async (req, res) => {
+    try {
+      const { id } = req.params;
+      const shift = await storage.getShift(id);
+
+      if (!shift) {
+        return res.status(404).json({ message: "Shift not found" });
+      }
+
+      // Verify the shift belongs to the manager's branch
+      if (shift.branchId !== req.user!.branchId) {
+        return res.status(403).json({ message: "Cannot delete shift from another branch" });
+      }
+
+      const result = await storage.deleteShift(id);
+
+      if (!result) {
+        return res.status(500).json({ message: "Failed to delete shift" });
+      }
+
+      // TODO: Broadcast shift deletion to connected clients when websocket is available
+      // realtimeManager.broadcastShiftDeleted(id);
+
+      res.json({ message: "Shift deleted successfully", shiftId: id });
+    } catch (error) {
+      console.error('Delete shift error:', error);
+      res.status(500).json({ message: "Failed to delete shift" });
+    }
+  });
+
   // Manager clock in for employee
   app.post("/api/shifts/:id/clock-in", requireAuth, requireRole(["manager"]), async (req, res) => {
     try {

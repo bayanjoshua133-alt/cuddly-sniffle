@@ -724,18 +724,54 @@ export default function MuiSchedule() {
               </Select>
             </FormControl>
 
-            {/* Date Selection */}
-            <TextField
-              label="Shift Date"
-              type="date"
-              value={formData.date}
-              onChange={(e) =>
-                setFormData({ ...formData, date: e.target.value })
-              }
-              InputLabelProps={{ shrink: true }}
-              fullWidth
-              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-            />
+            {/* Date Selection - Week Grid */}
+            <Box>
+              <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5 }}>
+                Select Date
+              </Typography>
+              <Stack 
+                direction="row" 
+                spacing={1} 
+                sx={{ 
+                  flexWrap: 'wrap',
+                  gap: 1,
+                }}
+              >
+                {Array.from({ length: 7 }, (_, i) => {
+                  const date = addDays(startOfWeek(new Date(), { weekStartsOn: 1 }), i);
+                  const dateStr = format(date, "yyyy-MM-dd");
+                  const dayName = format(date, "EEE");
+                  const isSelected = formData.date === dateStr;
+                  return (
+                    <Button
+                      key={dateStr}
+                      onClick={() => setFormData({ ...formData, date: dateStr })}
+                      variant={isSelected ? "contained" : "outlined"}
+                      sx={{
+                        flex: 1,
+                        minWidth: 80,
+                        borderRadius: 2,
+                        py: 1.5,
+                        flexDirection: 'column',
+                        gap: 0.5,
+                        textTransform: 'none',
+                        fontWeight: isSelected ? 600 : 500,
+                        borderColor: isSelected ? 'primary.main' : 'divider',
+                        bgcolor: isSelected ? 'primary.main' : 'transparent',
+                        color: isSelected ? 'white' : 'text.primary',
+                        '&:hover': {
+                          bgcolor: isSelected ? 'primary.dark' : 'action.hover',
+                          borderColor: 'primary.main',
+                        },
+                      }}
+                    >
+                      <Typography variant="caption" fontWeight={600}>{dayName}</Typography>
+                      <Typography variant="caption">{format(date, "MMM d")}</Typography>
+                    </Button>
+                  );
+                })}
+              </Stack>
+            </Box>
 
             {/* Shift Time Presets */}
             <Box>
