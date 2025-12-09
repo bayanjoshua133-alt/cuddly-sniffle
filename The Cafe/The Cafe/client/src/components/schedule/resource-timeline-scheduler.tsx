@@ -371,12 +371,16 @@ export function ResourceTimelineScheduler({
               <Box
                 key={`${employee.id}-${dayIdx}`}
                 onDragOver={handleDragOver}
-                onDrop={() => {
-                  // Find an available hour slot for this employee on this day
-                  const existingShifts = getShiftsForEmployee(employee.id).filter((s) =>
-                    isSameDay(parseISO(s.startTime), day)
-                  );
-                  const hour = existingShifts.length > 0 ? 14 : 6; // Default to 6 AM or stagger
+                onDrop={(e: React.DragEvent) => {
+                  // Get the drop position within the cell
+                  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                  const dropY = e.clientY - rect.top;
+                  const cellHeight = rect.height;
+                  
+                  // Calculate which hour slot was dropped on (6 AM to 10 PM = 17 hours)
+                  const hourSlot = Math.floor((dropY / cellHeight) * 17) + 6;
+                  const hour = Math.min(Math.max(hourSlot, 6), 22); // Constrain to 6-22
+                  
                   handleDrop(employee.id, dayIdx, hour);
                 }}
                 sx={{
