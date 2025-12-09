@@ -141,17 +141,26 @@ export function ResourceTimelineScheduler({
       newStartTime: string;
       newEndTime: string;
     }) => {
+      console.log('🔄 [Mutation] Sending PUT to /api/shifts/' + shiftId, {
+        startTime: newStartTime,
+        endTime: newEndTime,
+      });
       const response = await apiRequest("PUT", `/api/shifts/${shiftId}`, {
         startTime: newStartTime,
         endTime: newEndTime,
       });
+      console.log('📨 [Mutation] Response status:', response.status);
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('❌ [Mutation] Error response:', errorData);
         throw new Error(errorData.message || "Failed to update shift");
       }
-      return response.json();
+      const data = await response.json();
+      console.log('✅ [Mutation] Success response:', data);
+      return data;
     },
     onSuccess: () => {
+      console.log('🎉 [Mutation] onSuccess - Invalidating queries');
       queryClient.invalidateQueries({ queryKey: ["shifts"] });
       setUndoSnackOpen(true);
       onShiftUpdated?.();
@@ -216,31 +225,56 @@ export function ResourceTimelineScheduler({
   };
 
   const handleDragStart = (shift: Shift, employeeId: string) => {
-    if (!isManager) return;
+    if (!isManager) {
+      console.log('❌ [Drag] Not a manager, drag disabled');
+      return;
+    }
+    console.log('🎯 [Drag Start] Shift:', shift.id, 'Employee:', employeeId, shift);
     setDraggedShift(shift);
     const startHour = parseISO(shift.startTime).getHours();
     setDragSource({ employeeId, hour: startHour });
+    console.log('✅ [Drag Start] Set drag source:', { employeeId, hour: startHour });
   };
 
   const handleDragOver = (e: React.DragEvent) => {
+    console.log('📍 [Drag Over] Position:', { x: e.clientY, y: e.clientY });
+    console.log('📍 [Drag Over] dataTransfer.effectAllowed:', e.dataTransfer.effectAllowed);
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
+    console.log('✅ [Drag Over] dropEffect set to "move"');
   };
 
   const handleDrop = (employeeId: string, dayIdx: number, hour: number) => {
-    if (!draggedShift || !dragSource || !isManager) return;
+    console.log('🎪 [Drop] Attempting drop on employee:', employeeId, 'day:', dayIdx, 'hour:', hour);
+    console.log('🎪 [Drop] draggedShift:', draggedShift?.id, 'dragSource:', dragSource, 'isManager:', isManager);
+    
+    if (!draggedShift) {
+      console.log('❌ [Drop] No draggedShift, aborting');
+      return;
+    }
+    if (!dragSource) {
+      console.log('❌ [Drop] No dragSource, aborting');
+      return;
+    }
+    if (!isManager) {
+      console.log('❌ [Drop] Not a manager, aborting');
+      return;
+    }
 
     const shift = draggedShift;
     const oldStart = parseISO(shift.startTime);
     const oldEnd = parseISO(shift.endTime);
     const duration = oldEnd.getTime() - oldStart.getTime();
+    console.log('⏱️ [Drop] Duration:', duration / (1000 * 60), 'minutes');
 
     const newStart = new Date(weekDays[dayIdx]);
     newStart.setHours(hour, 0, 0, 0);
 
     const newEnd = new Date(newStart.getTime() + duration);
+    console.log('📅 [Drop] New times:', newStart.toISOString(), '-', newEnd.toISOString());
 
     if (newEnd.getDate() > newStart.getDate() + 1) {
+      console.log('❌ [Drop] Shift exceeds day boundary');
       alert("Shift duration exceeds day boundary");
       setDraggedShift(null);
       setDragSource(null);
@@ -252,6 +286,7 @@ export function ResourceTimelineScheduler({
       newStartTime: newStart.toISOString(),
       newEndTime: newEnd.toISOString(),
     });
+    console.log('🚀 [Drop] Mutation sent for shift:', shift.id);
 
     setDraggedShift(null);
     setDragSource(null);
@@ -372,14 +407,22 @@ export function ResourceTimelineScheduler({
                 key={`${employee.id}-${dayIdx}`}
                 onDragOver={handleDragOver}
                 onDrop={(e: React.DragEvent) => {
+                  console.log('🎯 [Drop Handler] Drop event fired');
+                  e.preventDefault();
+                  e.stopPropagation();
+                  
                   // Get the drop position within the cell
                   const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
                   const dropY = e.clientY - rect.top;
                   const cellHeight = rect.height;
                   
+                  console.log('📏 [Drop Handler] Drop Y:', dropY, 'Cell Height:', cellHeight);
+                  
                   // Calculate which hour slot was dropped on (6 AM to 10 PM = 17 hours)
                   const hourSlot = Math.floor((dropY / cellHeight) * 17) + 6;
                   const hour = Math.min(Math.max(hourSlot, 6), 22); // Constrain to 6-22
+                  
+                  console.log('⏰ [Drop Handler] Calculated hour:', hour);
                   
                   handleDrop(employee.id, dayIdx, hour);
                 }}

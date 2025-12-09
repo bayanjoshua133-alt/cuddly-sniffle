@@ -555,13 +555,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/shifts/:id", requireAuth, requireRole(["manager"]), async (req, res) => {
     try {
       const { id } = req.params;
+      console.log('🔧 [PUT /api/shifts/:id] Request for shift:', id);
+      console.log('🔧 [PUT /api/shifts/:id] Body:', req.body);
+      
       const updateData = insertShiftSchema.partial().parse(req.body);
+      console.log('✅ [PUT /api/shifts/:id] Parsed data:', updateData);
 
       // Get the existing shift first to validate changes
       const existingShift = await storage.getShift(id);
       if (!existingShift) {
+        console.log('❌ [PUT /api/shifts/:id] Shift not found:', id);
         return res.status(404).json({ message: "Shift not found" });
       }
+      console.log('📍 [PUT /api/shifts/:id] Found existing shift:', existingShift);
 
       // Determine the new shift times (use existing if not provided)
       const newStartTime = updateData.startTime ? new Date(updateData.startTime) : new Date(existingShift.startTime);
@@ -572,6 +578,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (updateData.startTime && updateData.endTime) {
         const timeError = validateShiftTimes(updateData.startTime, updateData.endTime);
         if (timeError) {
+          console.log('❌ [PUT /api/shifts/:id] Time validation error:', timeError);
           return res.status(400).json({ message: timeError });
         }
       }
@@ -581,6 +588,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const overlappingShift = await storage.checkShiftOverlap(newUserId, newStartTime, newEndTime, id);
         
         if (overlappingShift) {
+          console.log('❌ [PUT /api/shifts/:id] Overlap detected:', overlappingShift);
           const existingStart = new Date(overlappingShift.startTime);
           const existingEnd = new Date(overlappingShift.endTime);
           return res.status(409).json({
@@ -592,14 +600,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const shift = await storage.updateShift(id, updateData);
+      console.log('✅ [PUT /api/shifts/:id] Updated shift:', shift);
 
       if (!shift) {
+        console.log('❌ [PUT /api/shifts/:id] Update returned null');
         return res.status(404).json({ message: "Shift not found" });
       }
 
       res.json({ shift });
     } catch (error) {
-      console.error('Update shift error:', error);
+      console.error('❌ [PUT /api/shifts/:id] Error:', error);
       res.status(400).json({ message: "Invalid shift data" });
     }
   });
