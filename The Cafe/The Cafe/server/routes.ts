@@ -467,27 +467,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.get("/api/shifts/branch", requireAuth, requireRole(["manager"]), async (req, res) => {
-    const { startDate, endDate } = req.query;
-    const branchId = req.user!.branchId;
+    try {
+      const { startDate, endDate } = req.query;
+      const branchId = req.user!.branchId;
+      
+      console.log('📡 [GET /api/shifts/branch] Request from manager:', req.user!.username);
+      console.log('📍 Branch ID:', branchId);
+      console.log('📅 Date range:', startDate, 'to', endDate);
 
-    const shifts = await storage.getShiftsByBranch(
-      branchId,
-      startDate ? new Date(startDate as string) : undefined,
-      endDate ? new Date(endDate as string) : undefined
-    );
+      const shifts = await storage.getShiftsByBranch(
+        branchId,
+        startDate ? new Date(startDate as string) : undefined,
+        endDate ? new Date(endDate as string) : undefined
+      );
+      
+      console.log('📊 [GET /api/shifts/branch] Found shifts in DB:', shifts.length);
 
-    // Get user details for each shift and filter out inactive employees
-    const shiftsWithUsers = await Promise.all(
-      shifts.map(async (shift) => {
-        const user = await storage.getUser(shift.userId);
-        return { ...shift, user };
-      })
-    );
+      // Get user details for each shift and filter out inactive employees
+      const shiftsWithUsers = await Promise.all(
+        shifts.map(async (shift) => {
+          const user = await storage.getUser(shift.userId);
+          return { ...shift, user };
+        })
+      );
 
-    // Filter out shifts for inactive employees
-    const activeShifts = shiftsWithUsers.filter(shift => shift.user?.isActive);
+      // Filter out shifts for inactive employees
+      const activeShifts = shiftsWithUsers.filter(shift => shift.user?.isActive);
+      
+      console.log('✅ [GET /api/shifts/branch] Returning shifts:', activeShifts.length);
+      if (activeShifts.length > 0) {
+        console.log('   Sample:', activeShifts[0].user?.firstName, activeShifts[0].user?.lastName);
+      }
 
-    res.json({ shifts: activeShifts });
+      res.json({ shifts: activeShifts });
+    } catch (error) {
+      console.error('❌ [GET /api/shifts/branch] Error:', error);
+      res.status(500).json({ message: 'Failed to fetch shifts' });
+    }
   });
 
   app.post("/api/shifts", requireAuth, requireRole(["manager"]), async (req, res) => {

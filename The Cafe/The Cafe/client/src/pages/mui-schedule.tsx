@@ -189,8 +189,17 @@ export default function MuiSchedule() {
       const endpoint = isManagerRole
         ? `/api/shifts/branch?startDate=${dateRange.start.toISOString()}&endDate=${dateRange.end.toISOString()}`
         : `/api/shifts?startDate=${dateRange.start.toISOString()}&endDate=${dateRange.end.toISOString()}`;
+      
+      console.log('📡 [Schedule] Fetching shifts from:', endpoint);
+      console.log('👤 [Schedule] Is manager:', isManagerRole, 'Current user:', currentUser?.id);
+      
       const response = await apiRequest("GET", endpoint);
-      return response.json();
+      const json = await response.json();
+      
+      console.log('✅ [Schedule] Shifts API response:', json);
+      console.log('📊 [Schedule] Total shifts returned:', json.shifts?.length || 0);
+      
+      return json;
     },
     refetchInterval: 5000, // Poll every 5 seconds for real-time updates
     refetchOnWindowFocus: true,
@@ -204,6 +213,9 @@ export default function MuiSchedule() {
   });
 
   const shifts: Shift[] = shiftsData?.shifts || [];
+  
+  // Log shift updates
+  console.log('📦 [Schedule] Shifts in state:', shifts.length, shifts.slice(0, 1).map(s => ({ id: s.id, user: s.user?.firstName })));
 
   // Create shift mutation
   const createShiftMutation = useMutation({
