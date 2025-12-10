@@ -49,7 +49,7 @@ if (!root) {
 }
 
 try {
-  // StrictMode removed entirely to prevent conflicts with legacy react-big-schedule / react-dnd
+  // App render
   createRoot(root).render(<App />);
 } catch (error) {
   console.error("Failed to render app:", error);
