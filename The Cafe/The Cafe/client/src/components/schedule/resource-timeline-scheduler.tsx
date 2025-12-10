@@ -1,7 +1,19 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, type ReactNode } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { format, parseISO, isSameDay, addDays, startOfWeek } from "date-fns";
 import { apiRequest } from "@/lib/queryClient";
+import {
+  DndContext,
+  DragOverlay,
+  useDraggable,
+  useDroppable,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragStartEvent,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import { CSS } from "@dnd-kit/utilities";
 import {
   Box,
   Typography,
@@ -27,6 +39,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  Tooltip,
 } from "@mui/material";
 import {
   DeleteOutline as DeleteIcon,
@@ -90,8 +103,17 @@ export function ResourceTimelineScheduler({
   isManager,
 }: ResourceTimelineSchedulerProps) {
   const queryClient = useQueryClient();
-  const [draggedShift, setDraggedShift] = useState<Shift | null>(null);
-  const [dragSource, setDragSource] = useState<{ employeeId: string; hour: number } | null>(null);
+  const [activeShift, setActiveShift] = useState<Shift | null>(null);
+  const [activeDragData, setActiveDragData] = useState<{ shift: Shift; employeeId: string } | null>(null);
+
+  // @dnd-kit sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // 8px movement before drag starts
+      },
+    })
+  );
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [shiftToDelete, setShiftToDelete] = useState<Shift | null>(null);
   const [editDrawerOpen, setEditDrawerOpen] = useState(false);
@@ -224,60 +246,45 @@ export function ResourceTimelineScheduler({
     setShiftToEdit(null);
   };
 
-  const handleDragStart = (shift: Shift, employeeId: string) => {
-    if (!isManager) {
-      console.log('❌ [Drag] Not a manager, drag disabled');
-      return;
-    }
-    console.log('🎯 [Drag Start] Shift:', shift.id, 'Employee:', employeeId, shift);
-    setDraggedShift(shift);
-    const startHour = parseISO(shift.startTime).getHours();
-    setDragSource({ employeeId, hour: startHour });
-    console.log('✅ [Drag Start] Set drag source:', { employeeId, hour: startHour });
+  // @dnd-kit drag start handler
+  const handleDragStart = (event: DragStartEvent) => {
+    if (!isManager) return;
+    const { shift, employeeId } = event.active.data.current as { shift: Shift; employeeId: string };
+    console.log('🎯 [DND-KIT] Drag Start:', shift.id);
+    setActiveShift(shift);
+    setActiveDragData({ shift, employeeId });
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
-    console.log('📍 [Drag Over] Position:', { x: e.clientY, y: e.clientY });
-    console.log('📍 [Drag Over] dataTransfer.effectAllowed:', e.dataTransfer.effectAllowed);
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-    console.log('✅ [Drag Over] dropEffect set to "move"');
-  };
+  // @dnd-kit drag end handler
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    console.log('🎪 [DND-KIT] Drag End - active:', active.id, 'over:', over?.id);
 
-  const handleDrop = (employeeId: string, dayIdx: number, hour: number) => {
-    console.log('🎪 [Drop] Attempting drop on employee:', employeeId, 'day:', dayIdx, 'hour:', hour);
-    console.log('🎪 [Drop] draggedShift:', draggedShift?.id, 'dragSource:', dragSource, 'isManager:', isManager);
-    
-    if (!draggedShift) {
-      console.log('❌ [Drop] No draggedShift, aborting');
-      return;
-    }
-    if (!dragSource) {
-      console.log('❌ [Drop] No dragSource, aborting');
-      return;
-    }
-    if (!isManager) {
-      console.log('❌ [Drop] Not a manager, aborting');
-      return;
-    }
+    setActiveShift(null);
+    setActiveDragData(null);
 
-    const shift = draggedShift;
+    if (!over || !isManager) return;
+
+    const dragData = active.data.current as { shift: Shift; employeeId: string };
+    const dropData = over.data.current as { employeeId: string; dayIdx: number };
+
+    if (!dragData || !dropData) return;
+
+    const shift = dragData.shift;
     const oldStart = parseISO(shift.startTime);
     const oldEnd = parseISO(shift.endTime);
     const duration = oldEnd.getTime() - oldStart.getTime();
-    console.log('⏱️ [Drop] Duration:', duration / (1000 * 60), 'minutes');
 
-    const newStart = new Date(weekDays[dayIdx]);
-    newStart.setHours(hour, 0, 0, 0);
+    // Calculate new start time based on drop target day
+    const newStart = new Date(weekDays[dropData.dayIdx]);
+    newStart.setHours(oldStart.getHours(), oldStart.getMinutes(), 0, 0);
 
     const newEnd = new Date(newStart.getTime() + duration);
-    console.log('📅 [Drop] New times:', newStart.toISOString(), '-', newEnd.toISOString());
+    console.log('📅 [DND-KIT] New times:', newStart.toISOString(), '-', newEnd.toISOString());
 
-    if (newEnd.getDate() > newStart.getDate() + 1) {
-      console.log('❌ [Drop] Shift exceeds day boundary');
-      alert("Shift duration exceeds day boundary");
-      setDraggedShift(null);
-      setDragSource(null);
+    // Only update if something changed
+    if (dropData.employeeId === dragData.employeeId && isSameDay(oldStart, weekDays[dropData.dayIdx])) {
+      console.log('🔄 [DND-KIT] No change, same position');
       return;
     }
 
@@ -286,10 +293,6 @@ export function ResourceTimelineScheduler({
       newStartTime: newStart.toISOString(),
       newEndTime: newEnd.toISOString(),
     });
-    console.log('🚀 [Drop] Mutation sent for shift:', shift.id);
-
-    setDraggedShift(null);
-    setDragSource(null);
   };
 
   const handleDeleteClick = (shift: Shift) => {
@@ -303,7 +306,102 @@ export function ResourceTimelineScheduler({
     }
   };
 
+  // Draggable Shift Card component
+  const DraggableShiftCard = ({ shift, employeeId, color }: { shift: Shift; employeeId: string; color: string }) => {
+    const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+      id: shift.id,
+      data: { shift, employeeId },
+      disabled: !isManager,
+    });
+
+    const startDate = parseISO(shift.startTime);
+    const endDate = parseISO(shift.endTime);
+
+    const style = transform ? {
+      transform: CSS.Translate.toString(transform),
+    } : undefined;
+
+    return (
+      <Card
+        ref={setNodeRef}
+        style={style}
+        {...listeners}
+        {...attributes}
+        sx={{
+          p: 1,
+          bgcolor: "white",
+          borderLeft: `3px solid ${color}`,
+          cursor: isManager ? "grab" : "default",
+          "&:active": isManager ? { cursor: "grabbing" } : {},
+          transition: isDragging ? "none" : "all 0.2s ease",
+          opacity: isDragging ? 0.5 : 1,
+          border: "1px solid",
+          borderColor: "divider",
+          boxShadow: isDragging ? "0 8px 20px 0 rgba(0, 0, 0, 0.25)" : "0 1px 2px 0 rgba(0, 0, 0, 0.1)",
+          "&:hover": isManager
+            ? { boxShadow: "0 4px 12px 0 rgba(0, 0, 0, 0.15)", transform: "translateY(-1px)" }
+            : { boxShadow: "0 2px 6px 0 rgba(0, 0, 0, 0.1)" },
+          minHeight: "auto",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          zIndex: isDragging ? 1000 : 1,
+        }}
+      >
+        <Box>
+          <Typography variant="caption" fontWeight={700} color="text.primary" sx={{ display: "block", lineHeight: 1.2 }}>
+            {format(startDate, "h:mm a")} - {format(endDate, "h:mm a")}
+          </Typography>
+        </Box>
+        {isManager && (
+          <Stack direction="row" spacing={0} sx={{ flexShrink: 0 }}>
+            <IconButton size="small" onClick={(e) => { e.stopPropagation(); handleEditClick(shift); }}
+              sx={{ color: "text.secondary", padding: "2px", "&:hover": { color: "primary.main" } }}>
+              <EditIcon sx={{ fontSize: 12 }} />
+            </IconButton>
+            <IconButton size="small" onClick={(e) => { e.stopPropagation(); handleDeleteClick(shift); }}
+              sx={{ color: "text.secondary", padding: "2px", "&:hover": { color: "error.main" } }}>
+              <DeleteIcon sx={{ fontSize: 12 }} />
+            </IconButton>
+          </Stack>
+        )}
+      </Card>
+    );
+  };
+
+  // Droppable Day Cell component
+  const DroppableDayCell = ({ employeeId, dayIdx, day, children }: {
+    employeeId: string; dayIdx: number; day: Date; children: ReactNode;
+  }) => {
+    const { isOver, setNodeRef } = useDroppable({
+      id: `${employeeId}-${dayIdx}`,
+      data: { employeeId, dayIdx },
+    });
+
+    return (
+      <Box
+        ref={setNodeRef}
+        sx={{
+          minHeight: "100px",
+          p: 1,
+          borderRight: dayIdx < 6 ? "1px solid" : "none",
+          borderColor: "divider",
+          display: "flex",
+          flexDirection: "column",
+          gap: 1,
+          cursor: isManager ? "default" : "default",
+          position: "relative",
+          bgcolor: isOver ? "rgba(46, 125, 50, 0.1)" : "transparent",
+          transition: "background-color 0.2s ease",
+        }}
+      >
+        {children}
+      </Box>
+    );
+  };
+
   return (
+    <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
     <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
       {/* Header with Days */}
       <Paper
@@ -327,7 +425,7 @@ export function ResourceTimelineScheduler({
         </Box>
 
         {/* Day headers */}
-        {weekDays.map((day, idx) => {
+        {weekDays.map((day: Date, idx: number) => {
           const isToday = isSameDay(day, new Date());
           return (
             <Box
@@ -401,128 +499,26 @@ export function ResourceTimelineScheduler({
               )}
             </Box>
 
-            {/* Day Columns */}
-            {weekDays.map((day, dayIdx) => (
-              <Box
+            {/* Day Columns - using @dnd-kit DroppableDayCell */}
+            {weekDays.map((day: Date, dayIdx: number) => (
+              <DroppableDayCell
                 key={`${employee.id}-${dayIdx}`}
-                onDragOver={handleDragOver}
-                onDrop={(e: React.DragEvent) => {
-                  console.log('🎯 [Drop Handler] Drop event fired');
-                  e.preventDefault();
-                  e.stopPropagation();
-                  
-                  // Get the drop position within the cell
-                  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                  const dropY = e.clientY - rect.top;
-                  const cellHeight = rect.height;
-                  
-                  console.log('📏 [Drop Handler] Drop Y:', dropY, 'Cell Height:', cellHeight);
-                  
-                  // Calculate which hour slot was dropped on (6 AM to 10 PM = 17 hours)
-                  const hourSlot = Math.floor((dropY / cellHeight) * 17) + 6;
-                  const hour = Math.min(Math.max(hourSlot, 6), 22); // Constrain to 6-22
-                  
-                  console.log('⏰ [Drop Handler] Calculated hour:', hour);
-                  
-                  handleDrop(employee.id, dayIdx, hour);
-                }}
-                sx={{
-                  minHeight: "100px",
-                  p: 1,
-                  borderRight: dayIdx < 6 ? "1px solid" : "none",
-                  borderColor: "divider",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 1,
-                  cursor: isManager ? "drop" : "default",
-                  position: "relative",
-                }}
+                employeeId={employee.id}
+                dayIdx={dayIdx}
+                day={day}
               >
                 {/* Show shifts for this employee on this day */}
                 {getShiftsForEmployee(employee.id)
                   .filter((shift) => isSameDay(parseISO(shift.startTime), day))
-                  .map((shift) => {
-                    const startDate = parseISO(shift.startTime);
-                    const endDate = parseISO(shift.endTime);
-                    const color = getColorByRole(employee.role);
-
-                    return (
-                      <Card
-                        key={shift.id}
-                        draggable={isManager}
-                        onDragStart={() => handleDragStart(shift, employee.id)}
-                        sx={{
-                          p: 1,
-                          bgcolor: "white",
-                          borderLeft: `3px solid ${color}`,
-                          cursor: isManager ? "grab" : "default",
-                          "&:active": isManager ? { cursor: "grabbing" } : {},
-                          transition: "all 0.2s ease",
-                          opacity: draggedShift?.id === shift.id ? 0.5 : 1,
-                          border: "1px solid",
-                          borderColor: "divider",
-                          boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.1)",
-                          "&:hover": isManager
-                            ? {
-                                boxShadow: "0 4px 12px 0 rgba(0, 0, 0, 0.15)",
-                                transform: "translateY(-1px)",
-                              }
-                            : {
-                                boxShadow: "0 2px 6px 0 rgba(0, 0, 0, 0.1)",
-                              },
-                          minHeight: "auto",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                        }}
-                      >
-                        <Box>
-                          <Typography
-                            variant="caption"
-                            fontWeight={700}
-                            color="text.primary"
-                            sx={{ display: "block", lineHeight: 1.2 }}
-                          >
-                            {format(startDate, "h:mm a")} - {format(endDate, "h:mm a")}
-                          </Typography>
-                        </Box>
-
-                        {isManager && (
-                          <Stack direction="row" spacing={0} sx={{ flexShrink: 0 }}>
-                            <IconButton
-                              size="small"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleEditClick(shift);
-                              }}
-                              sx={{
-                                color: "text.secondary",
-                                padding: "2px",
-                                "&:hover": { color: "primary.main" },
-                              }}
-                            >
-                              <EditIcon sx={{ fontSize: 12 }} />
-                            </IconButton>
-                            <IconButton
-                              size="small"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteClick(shift);
-                              }}
-                              sx={{
-                                color: "text.secondary",
-                                padding: "2px",
-                                "&:hover": { color: "error.main" },
-                              }}
-                            >
-                              <DeleteIcon sx={{ fontSize: 12 }} />
-                            </IconButton>
-                          </Stack>
-                        )}
-                      </Card>
-                    );
-                  })}
-              </Box>
+                  .map((shift) => (
+                    <DraggableShiftCard
+                      key={shift.id}
+                      shift={shift}
+                      employeeId={employee.id}
+                      color={getColorByRole(employee.role)}
+                    />
+                  ))}
+              </DroppableDayCell>
             ))}
           </Box>
         ))}
@@ -725,9 +721,28 @@ export function ResourceTimelineScheduler({
           }}
         />
       </Tooltip>
+
+      {/* DragOverlay for visual feedback during drag */}
+      <DragOverlay>
+        {activeShift && (
+          <Card
+            sx={{
+              p: 1,
+              bgcolor: "primary.main",
+              color: "white",
+              borderRadius: 2,
+              boxShadow: "0 8px 20px 0 rgba(0, 0, 0, 0.3)",
+              minWidth: 120,
+            }}
+          >
+            <Typography variant="caption" fontWeight={700}>
+              {format(parseISO(activeShift.startTime), "h:mm a")} -{" "}
+              {format(parseISO(activeShift.endTime), "h:mm a")}
+            </Typography>
+          </Card>
+        )}
+      </DragOverlay>
     </Box>
+    </DndContext>
   );
 }
-
-// Add Tooltip import
-import { Tooltip } from "@mui/material";
