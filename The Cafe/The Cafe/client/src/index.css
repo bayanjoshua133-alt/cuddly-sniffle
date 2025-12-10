@@ -1187,3 +1187,93 @@ html {
   @apply text-muted-foreground max-w-sm;
 }
 
+
+/* =========================================
+   GLOBAL NO-BORDER OVERRIDES
+   Targets: HTML Tables, MUI DataGrid, FullCalendar
+   Safe for Dark Mode
+   ========================================= */
+
+/* --- 1. Standard HTML Tables --- */
+table, thead, tbody, tfoot, tr, th, td {
+  border: none !important;
+  border-collapse: collapse !important;
+  outline: none !important;
+}
+
+/* --- 2. MUI DataGrid (v5+) --- */
+.MuiDataGrid-root {
+  border: none !important;
+}
+
+.MuiDataGrid-root .MuiDataGrid-main,
+.MuiDataGrid-root .MuiDataGrid-columnHeaders,
+.MuiDataGrid-root .MuiDataGrid-columnHeader,
+.MuiDataGrid-root .MuiDataGrid-row,
+.MuiDataGrid-root .MuiDataGrid-cell,
+.MuiDataGrid-root .MuiDataGrid-footerContainer,
+.MuiDataGrid-root .MuiDataGrid-virtualScrollerContent,
+.MuiDataGrid-root .MuiDataGrid-withBorderColor {
+  border: none !important;
+  border-bottom: none !important;
+  border-top: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Remove Vertical Column Separators */
+.MuiDataGrid-columnSeparator {
+  display: none !important;
+  visibility: hidden !important;
+}
+
+/* --- 3. FullCalendar (v6.1.19) --- */
+/* Override CSS Variables for Borders */
+:root {
+  --fc-border-color: transparent !important;
+  --fc-page-bg-color: transparent !important;
+  --fc-neutral-bg-color: transparent !important;
+  --fc-list-event-hover-bg-color: transparent !important;
+}
+
+/* Theme Standard & ScrollGrid Reset */
+.fc-theme-standard,
+.fc-theme-standard .fc-scrollgrid,
+.fc-theme-standard td,
+.fc-theme-standard th {
+  border: none !important;
+  border-color: transparent !important;
+}
+
+/* Detailed Grid Line Removal (DayGrid & TimeGrid) */
+.fc .fc-scrollgrid-section,
+.fc .fc-scrollgrid-section table,
+.fc .fc-scrollgrid-section > td,
+.fc .fc-daygrid-day,
+.fc .fc-daygrid-day-frame,
+.fc .fc-col-header-cell,
+.fc .fc-timegrid-slot,
+.fc .fc-timegrid-slot-lane,
+.fc .fc-timegrid-axis,
+.fc .fc-timegrid-col,
+.fc .fc-timegrid-divider,
+.fc .fc-day-today {
+  border: none !important;
+  border-style: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+/* Remove specific border on time slots */
+.fc-timegrid-slot {
+  border-bottom: none !important;
+}
+
+/* Ensure background colors don't create fake borders */
+.fc .fc-cell-shaded, 
+.fc .fc-day-other .fc-daygrid-day-top {
+  background: transparent !important;
+}
+
