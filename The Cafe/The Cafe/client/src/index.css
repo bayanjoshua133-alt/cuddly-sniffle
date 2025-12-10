@@ -125,7 +125,7 @@
 
 @layer base {
   * {
-    border: 1px solid hsl(var(--border));
+    /* border: 1px solid hsl(var(--border)); removed globally */ border-color: hsl(var(--border));
   }
 
   html {
@@ -887,7 +887,7 @@ html {
 .stat-modern {
   @apply relative overflow-hidden rounded-2xl p-6;
   background: linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--muted)) 100%);
-  border: 1px solid hsl(var(--border));
+  /* border: 1px solid hsl(var(--border)); removed globally */ border-color: hsl(var(--border));
 }
 
 .stat-modern::before {
