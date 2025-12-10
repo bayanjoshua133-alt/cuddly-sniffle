@@ -1277,3 +1277,27 @@ table, thead, tbody, tfoot, tr, th, td {
   background: transparent !important;
 }
 
+
+/* =========================================
+   DASHBOARD & CARD BORDER REMOVAL
+   Targets: Dashboard cards, metrics, and lists
+   ========================================= */
+
+/* Remove borders from dashboard components */
+.card, .card-glass, .card-glow, .metric-card, .stat-card,
+.mobile-card, .mobile-stat, .mobile-list {
+  border: none !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2); /* Subtle shadow instead */
+}
+
+/* Ensure no borders on list items */
+.mobile-list, .mobile-list-item {
+  border: none !important;
+  border-bottom: none !important;
+}
+
+/* Remove dividers in lists if desired, or keep them minimal */
+.divide-y > :not([hidden]) ~ :not([hidden]) {
+  border-color: transparent !important; /* Hide internal dividers too if 'all over' means these */
+}
+
