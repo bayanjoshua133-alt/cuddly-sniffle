@@ -201,7 +201,7 @@ export default function MuiShiftTrading() {
       }
       
       const isFutureShift = isFuture(shiftDate);
-      console.log('Shift check:', dateToCheck, '→ Future?', isFutureShift);
+
       return isFutureShift;
     } catch (error) {
       console.error('Error parsing shift date:', error);
@@ -209,7 +209,7 @@ export default function MuiShiftTrading() {
     }
   });
   
-  console.log('Total shifts:', myShifts.length, '| Future shifts:', futureShifts.length);
+
 
   // Create trade mutation
   const createTrade = useMutation({
@@ -219,7 +219,7 @@ export default function MuiShiftTrading() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["shift-trades"] });
-      console.log("✅ Shift trade request created successfully");
+
       toast({ title: "Trade request sent" });
       setCreateDialogOpen(false);
       setFormData({ shiftId: "", targetUserId: "", reason: "", urgency: "normal" });
@@ -240,7 +240,7 @@ export default function MuiShiftTrading() {
     },
     onSuccess: (_, { accept }) => {
       queryClient.invalidateQueries({ queryKey: ["shift-trades"] });
-      console.log(`✅ Shift trade ${accept ? "accepted" : "rejected"} successfully`);
+
       toast({ title: accept ? "Trade accepted" : "Trade rejected" });
     },
     onError: (error: any) => {
@@ -259,7 +259,7 @@ export default function MuiShiftTrading() {
     },
     onSuccess: (_, { approve }) => {
       queryClient.invalidateQueries({ queryKey: ["shift-trades"] });
-      console.log(`✅ Shift trade ${approve ? "approved" : "rejected"} by manager`);
+
       toast({ title: approve ? "Trade approved" : "Trade rejected" });
     },
     onError: (error: any) => {

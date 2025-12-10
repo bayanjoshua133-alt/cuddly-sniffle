@@ -209,7 +209,9 @@ function DesktopRouter({ authState }: { authState: { isAuthenticated: boolean; u
       <Route path="/">
         <DesktopLayout>
           <RouteLoader>
-            <MuiDashboard />
+            <ErrorBoundary>
+              <MuiDashboard />
+            </ErrorBoundary>
           </RouteLoader>
         </DesktopLayout>
       </Route>
@@ -217,7 +219,9 @@ function DesktopRouter({ authState }: { authState: { isAuthenticated: boolean; u
       <Route path="/schedule">
         <DesktopLayout>
           <RouteLoader>
-            <MuiSchedule />
+            <ErrorBoundary>
+              <MuiSchedule />
+            </ErrorBoundary>
           </RouteLoader>
         </DesktopLayout>
       </Route>
@@ -245,7 +249,9 @@ function DesktopRouter({ authState }: { authState: { isAuthenticated: boolean; u
       <Route path="/payroll">
         <DesktopLayout>
           <RouteLoader>
-            <MuiPayroll />
+            <ErrorBoundary>
+              <MuiPayroll />
+            </ErrorBoundary>
           </RouteLoader>
         </DesktopLayout>
       </Route>
@@ -253,7 +259,9 @@ function DesktopRouter({ authState }: { authState: { isAuthenticated: boolean; u
       <Route path="/notifications">
         <DesktopLayout>
           <RouteLoader>
-            <MuiNotifications />
+            <ErrorBoundary>
+              <MuiNotifications />
+            </ErrorBoundary>
           </RouteLoader>
         </DesktopLayout>
       </Route>
@@ -261,7 +269,9 @@ function DesktopRouter({ authState }: { authState: { isAuthenticated: boolean; u
       <Route path="/employees">
         <DesktopLayout>
           <RouteLoader>
-            <MuiEmployees />
+            <ErrorBoundary>
+              <MuiEmployees />
+            </ErrorBoundary>
           </RouteLoader>
         </DesktopLayout>
       </Route>
@@ -269,7 +279,9 @@ function DesktopRouter({ authState }: { authState: { isAuthenticated: boolean; u
       <Route path="/payroll-management">
         <DesktopLayout>
           <RouteLoader>
-            <MuiPayrollManagement />
+            <ErrorBoundary>
+              <MuiPayrollManagement />
+            </ErrorBoundary>
           </RouteLoader>
         </DesktopLayout>
       </Route>
@@ -277,7 +289,9 @@ function DesktopRouter({ authState }: { authState: { isAuthenticated: boolean; u
       <Route path="/reports">
         <DesktopLayout>
           <RouteLoader>
-            <MuiReports />
+            <ErrorBoundary>
+              <MuiReports />
+            </ErrorBoundary>
           </RouteLoader>
         </DesktopLayout>
       </Route>
@@ -295,7 +309,9 @@ function DesktopRouter({ authState }: { authState: { isAuthenticated: boolean; u
       <Route path="/deduction-settings">
         <DesktopLayout>
           <RouteLoader>
-            <MuiDeductionSettings />
+            <ErrorBoundary>
+              <MuiDeductionSettings />
+            </ErrorBoundary>
           </RouteLoader>
         </DesktopLayout>
       </Route>
@@ -304,7 +320,9 @@ function DesktopRouter({ authState }: { authState: { isAuthenticated: boolean; u
         <RequireAdmin>
           <DesktopLayout>
             <RouteLoader>
-              <MuiAdminDeductionRates />
+              <ErrorBoundary>
+                <MuiAdminDeductionRates />
+              </ErrorBoundary>
             </RouteLoader>
           </DesktopLayout>
         </RequireAdmin>
@@ -313,7 +331,9 @@ function DesktopRouter({ authState }: { authState: { isAuthenticated: boolean; u
       <Route path="/payslip-demo">
         <DesktopLayout>
           <RouteLoader>
-            <PayslipDemo />
+            <ErrorBoundary>
+              <PayslipDemo />
+            </ErrorBoundary>
           </RouteLoader>
         </DesktopLayout>
       </Route>
@@ -675,12 +695,12 @@ function App() {
               </Route>
 
               {/* Employee namespace - mount MobileRouter */}
-              <Route path="/employee">
+              <Route path="/employee/:rest*">
                 <MobileRouter authState={authState} />
               </Route>
 
-              {/* Desktop root */}
-              <Route path="/">
+              {/* Desktop root - catch all others */}
+              <Route>
                 <DesktopRouter authState={authState} />
               </Route>
             </Switch>
@@ -692,4 +712,3 @@ function App() {
 }
 
 export default App;
-  // Setup not complete

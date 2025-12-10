@@ -83,7 +83,7 @@ export default function MobileShiftTrading() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['mobile-shift-trades-available'] });
       queryClient.invalidateQueries({ queryKey: ['mobile-shift-trades-my'] });
-      console.log("✅ Shift trade request sent successfully");
+
       toast({
         title: "Request Sent! 🎉",
         description: "Your shift trade request has been sent for approval",
@@ -106,7 +106,7 @@ export default function MobileShiftTrading() {
       apiRequest("DELETE", `/api/shift-trades/${tradeId}`, {}),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['mobile-shift-trades-my'] });
-      console.log("✅ Shift trade cancelled successfully");
+
       toast({
         title: "Trade Cancelled",
         description: "Your shift trade has been cancelled",

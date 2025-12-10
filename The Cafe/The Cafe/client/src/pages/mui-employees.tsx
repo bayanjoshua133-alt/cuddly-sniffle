@@ -344,7 +344,7 @@ export default function MuiEmployees() {
   // Toggle employee status (activate/deactivate)
   const toggleEmployeeStatus = useMutation({
     mutationFn: async ({ id, isActive }: { id: string; isActive: boolean }) => {
-      console.log(`Toggling employee ${id} to isActive=${isActive}`);
+
       const response = await apiRequest("PATCH", `/api/employees/${id}/status`, { isActive });
       if (!response.ok) {
         const error = await response.json();
@@ -369,7 +369,7 @@ export default function MuiEmployees() {
   // Bulk activate/deactivate employees
   const bulkToggleStatus = useMutation({
     mutationFn: async ({ ids, isActive }: { ids: string[]; isActive: boolean }) => {
-      console.log(`Bulk toggling ${ids.length} employees to isActive=${isActive}`);
+
       const promises = ids.map(id =>
         apiRequest("PATCH", `/api/employees/${id}/status`, { isActive })
       );

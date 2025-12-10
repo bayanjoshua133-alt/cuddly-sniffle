@@ -366,24 +366,24 @@ export default function MobilePayroll() {
   const handleQuickDownload = async (entry: PayrollEntry) => {
     setIsDownloadingPDF(true);
     try {
-      console.log('[PDF Download] Starting download for entry:', entry.id);
+
       
       // First fetch the payslip data
       const response = await apiRequest('GET', `/api/payroll/payslip/${entry.id}`);
       const data: PayslipResponse = await response.json();
-      console.log('[PDF Download] Got payslip data:', data);
+
       
       const transformedData = transformToPayslipData(data, entry);
-      console.log('[PDF Download] Transformed data:', transformedData);
+
       
       // Then generate PDF using apiBlobRequest
-      console.log('[PDF Download] Requesting PDF generation...');
+
       const blob = await apiBlobRequest('POST', '/api/payslips/generate-pdf', {
         payslip_data: transformedData,
         format: 'pdf',
         include_qr: true
       });
-      console.log('[PDF Download] Got blob, size:', blob.size);
+
       
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
