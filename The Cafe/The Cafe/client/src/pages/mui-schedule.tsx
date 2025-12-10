@@ -81,25 +81,31 @@ export default function SchedulePage() {
   }, [selectedDate]);
 
   // Fetch Employees
-  const { data: employees = [], isLoading: loadingEmployees } = useQuery<Employee[]>({
+  const { data: employeesData, isLoading: loadingEmployees } = useQuery<Employee[]>({
     queryKey: ["employees"],
     queryFn: async () => {
       const res = await apiRequest("GET", "/api/employees");
       return res.json();
     },
   });
+  // Safe default
+  const employees = Array.isArray(employeesData) ? employeesData : [];
 
   // Fetch Shifts
-  const { data: shifts = [], isLoading: loadingShifts } = useQuery<Shift[]>({
+  const { data: shiftsData, isLoading: loadingShifts } = useQuery<Shift[]>({
     queryKey: ["shifts", weekRange.start.toISOString()],
     queryFn: async () => {
       const endpoint = isManagerRole
         ? `/api/shifts/branch?startDate=${weekRange.start.toISOString()}&endDate=${weekRange.end.toISOString()}`
         : `/api/shifts?startDate=${weekRange.start.toISOString()}&endDate=${weekRange.end.toISOString()}`;
       const res = await apiRequest("GET", endpoint);
-      return res.json();
+      const data = await res.json();
+      // Handle potential { shifts: [...] } response structure or direct array
+      return data.shifts || data;
     },
   });
+  // Safe default
+  const shifts = Array.isArray(shiftsData) ? shiftsData : [];
 
   const isLoading = loadingEmployees || loadingShifts;
 
@@ -291,6 +297,15 @@ export default function SchedulePage() {
       setDialogOpen(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" height="calc(100vh - 100px)">
+        <CircularProgress />
+        <Typography sx={{ ml: 2 }}>Loading schedule...</Typography>
+      </Box>
+    );
+  }
 
   return (
     <div style={{ height: 'calc(100vh - 100px)', padding: '24px', display: 'flex', flexDirection: 'column' }}>
