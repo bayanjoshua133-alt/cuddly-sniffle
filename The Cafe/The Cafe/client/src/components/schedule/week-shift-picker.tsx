@@ -266,7 +266,7 @@ export function WeekShiftPicker({
                 const isWeekend = dayInfo.date.getDay() === 0 || dayInfo.date.getDay() === 6;
 
                 return (
-                  <Grid item xs={12} sm={6} md={4} key={dayIndex}>
+                  <Grid size={{ xs: 12, sm: 6, md: 4 }} key={dayIndex}>
                     <Card
                       variant={hasShift ? "outlined" : "elevation"}
                       sx={{

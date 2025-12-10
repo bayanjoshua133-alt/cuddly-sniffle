@@ -304,7 +304,7 @@ export default function ShiftTradingPanel() {
 
           {/* People involved */}
           <Grid container spacing={2}>
-            <Grid item xs={12} sm={5}>
+            <Grid size={{ xs: 12, sm: 5 }}>
               <Paper
                 variant="outlined"
                 sx={{
@@ -329,11 +329,11 @@ export default function ShiftTradingPanel() {
               </Paper>
             </Grid>
 
-            <Grid item xs={12} sm={2} sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Grid size={{ xs: 12, sm: 2 }} sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
               <SwapIcon color="action" />
             </Grid>
 
-            <Grid item xs={12} sm={5}>
+            <Grid size={{ xs: 12, sm: 5 }}>
               <Paper
                 variant="outlined"
                 sx={{
