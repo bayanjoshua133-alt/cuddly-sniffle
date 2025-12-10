@@ -407,12 +407,14 @@ export default function MuiPayrollManagement() {
             size="small"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <Search sx={{ color: "text.secondary", fontSize: 20 }} />
-                </InputAdornment>
-              ),
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search sx={{ color: "text.secondary", fontSize: 20 }} />
+                  </InputAdornment>
+                ),
+              },
             }}
             sx={{
               display: { xs: "none", md: "block" },
