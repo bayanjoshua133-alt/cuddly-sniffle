@@ -1,16 +1,10 @@
-import { useCallback, useMemo, useState, useRef } from 'react';
+import { useState, useCallback, useMemo } from 'react';
+import { DayPilot, DayPilotScheduler } from '@daypilot/daypilot-lite-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, startOfWeek, addDays } from 'date-fns';
 import { apiRequest } from '@/lib/queryClient';
 
-// FullCalendar imports
-import FullCalendar from '@fullcalendar/react';
-import resourceTimelinePlugin from '@fullcalendar/resource-timeline';
-import interactionPlugin from '@fullcalendar/interaction';
-import dayGridPlugin from '@fullcalendar/daygrid';
-import { EventClickArg, EventDropArg, EventResizeDoneArg, DateSelectArg, EventContentArg } from '@fullcalendar/core';
-
-// MUI imports for popup/dialog
+// MUI imports
 import {
   Box,
   Dialog,
@@ -29,7 +23,6 @@ import {
 import {
   Close as CloseIcon,
   Delete as DeleteIcon,
-  Edit as EditIcon,
 } from '@mui/icons-material';
 
 interface Shift {
@@ -53,7 +46,7 @@ interface Employee {
   position?: string;
 }
 
-interface FullCalendarSchedulerProps {
+interface DayPilotSchedulerProps {
   shifts: Shift[];
   employees: Employee[];
   weekStart: Date;
@@ -61,15 +54,15 @@ interface FullCalendarSchedulerProps {
   isManager: boolean;
 }
 
-// Role-based colors matching MUI theme
-const ROLE_COLORS: Record<string, { bg: string; border: string }> = {
-  barista: { bg: '#059669', border: '#047857' },
-  cook: { bg: '#d97706', border: '#b45309' },
-  manager: { bg: '#9333ea', border: '#7c3aed' },
-  default: { bg: '#2e7d32', border: '#1b5e20' }, // Green theme
+// Role-based colors
+const ROLE_COLORS: Record<string, string> = {
+  barista: '#60e81a',
+  cook: '#f1e920',
+  manager: '#e25dd2',
+  default: '#1ac38d',
 };
 
-const getColorByRole = (role?: string) => {
+const getColorByRole = (role?: string): string => {
   if (!role) return ROLE_COLORS.default;
   const key = role.toLowerCase().includes('barista')
     ? 'barista'
@@ -81,20 +74,25 @@ const getColorByRole = (role?: string) => {
   return ROLE_COLORS[key];
 };
 
+// Get shift color based on time (morning = green, afternoon = yellow/orange)
+const getShiftColor = (startTime: string): string => {
+  const hour = parseISO(startTime).getHours();
+  return hour < 12 ? '#60e81a' : '#f1e920'; // Green for morning, Yellow for afternoon
+};
+
 // Get initials from name
-const getInitials = (firstName: string, lastName: string) => {
+const getInitials = (firstName: string, lastName: string): string => {
   return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
 };
 
-export function FullCalendarScheduler({
+export function DayPilotSchedulerComponent({
   shifts,
   employees,
   weekStart,
   onShiftUpdated,
   isManager,
-}: FullCalendarSchedulerProps) {
+}: DayPilotSchedulerProps) {
   const queryClient = useQueryClient();
-  const calendarRef = useRef<FullCalendar>(null);
 
   // Dialog state
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -107,48 +105,55 @@ export function FullCalendarScheduler({
   } | null>(null);
   const [editStartTime, setEditStartTime] = useState('');
   const [editEndTime, setEditEndTime] = useState('');
-  const [notes, setNotes] = useState('');
 
   // Snackbar state
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error'>('success');
 
-  // Convert employees to FullCalendar resources
+  // Calculate week dates
+  const startDate = useMemo(() => {
+    return format(weekStart, 'yyyy-MM-dd');
+  }, [weekStart]);
+
+  // Convert employees to DayPilot resources
   const resources = useMemo(() => {
     return employees.map((emp) => ({
+      name: `${emp.firstName} ${emp.lastName}`,
       id: emp.id,
-      title: `${emp.firstName} ${emp.lastName}`,
-      extendedProps: {
-        role: emp.role || emp.position || 'Employee',
-        initials: getInitials(emp.firstName, emp.lastName),
-        color: getColorByRole(emp.role),
-      },
+      role: emp.role || emp.position || 'Employee',
+      initials: getInitials(emp.firstName, emp.lastName),
+      color: getColorByRole(emp.role),
     }));
   }, [employees]);
 
-  // Convert shifts to FullCalendar events
+  // Convert shifts to DayPilot events
   const events = useMemo(() => {
-    return shifts.map((shift) => {
-      const colors = getColorByRole(shift.user?.role);
-      return {
-        id: shift.id,
-        resourceId: shift.userId,
-        start: shift.startTime,
-        end: shift.endTime,
-        title: `${format(parseISO(shift.startTime), 'h:mm a')} - ${format(parseISO(shift.endTime), 'h:mm a')}`,
-        backgroundColor: colors.bg,
-        borderColor: colors.border,
-        extendedProps: {
-          shift: shift,
-        },
-      };
-    });
+    return shifts.map((shift) => ({
+      id: shift.id,
+      text: `${format(parseISO(shift.startTime), 'h:mm a')} - ${format(parseISO(shift.endTime), 'h:mm a')}`,
+      start: shift.startTime,
+      end: shift.endTime,
+      resource: shift.userId,
+      backColor: getShiftColor(shift.startTime),
+      borderColor: '#00000033',
+      barHidden: true,
+      shift: shift, // Store original shift data
+    }));
   }, [shifts]);
 
   // API Mutations
   const updateShiftMutation = useMutation({
-    mutationFn: async ({ shiftId, startTime, endTime }: { shiftId: string; startTime: string; endTime: string }) => {
-      const response = await apiRequest('PUT', `/api/shifts/${shiftId}`, { startTime, endTime });
+    mutationFn: async ({ shiftId, startTime, endTime, userId }: { 
+      shiftId: string; 
+      startTime: string; 
+      endTime: string;
+      userId?: string;
+    }) => {
+      const body: Record<string, string> = { startTime, endTime };
+      if (userId) body.userId = userId;
+      
+      const response = await apiRequest('PUT', `/api/shifts/${shiftId}`, body);
       if (!response.ok) throw new Error('Failed to update shift');
       return response.json();
     },
@@ -156,11 +161,14 @@ export function FullCalendarScheduler({
       queryClient.invalidateQueries({ queryKey: ['shifts'] });
       onShiftUpdated?.();
       setSnackbarMessage('Shift updated successfully');
+      setSnackbarSeverity('success');
       setSnackbarOpen(true);
     },
     onError: () => {
       setSnackbarMessage('Failed to update shift');
+      setSnackbarSeverity('error');
       setSnackbarOpen(true);
+      queryClient.invalidateQueries({ queryKey: ['shifts'] }); // Refresh to revert UI
     },
   });
 
@@ -174,6 +182,7 @@ export function FullCalendarScheduler({
       queryClient.invalidateQueries({ queryKey: ['shifts'] });
       onShiftUpdated?.();
       setSnackbarMessage('Shift deleted');
+      setSnackbarSeverity('success');
       setSnackbarOpen(true);
     },
   });
@@ -191,88 +200,87 @@ export function FullCalendarScheduler({
       queryClient.invalidateQueries({ queryKey: ['shifts'] });
       onShiftUpdated?.();
       setSnackbarMessage('Shift created successfully');
+      setSnackbarSeverity('success');
       setSnackbarOpen(true);
     },
   });
 
-  // Handle event drop (drag to move)
-  const handleEventDrop = useCallback(
-    (info: EventDropArg) => {
-      if (!isManager) {
-        info.revert();
-        return;
-      }
+  // Event handlers
+  const handleEventMove = useCallback((args: any) => {
+    if (!isManager) {
+      args.preventDefault();
+      return;
+    }
 
-      const shiftId = info.event.id;
-      const newStart = info.event.start;
-      const newEnd = info.event.end;
+    const shiftId = args.e.id();
+    const newStart = args.newStart.toString();
+    const newEnd = args.newEnd.toString();
+    const newResource = args.newResource;
 
-      if (newStart && newEnd) {
-        updateShiftMutation.mutate({
-          shiftId,
-          startTime: newStart.toISOString(),
-          endTime: newEnd.toISOString(),
-        });
-      }
-    },
-    [isManager, updateShiftMutation]
-  );
+    updateShiftMutation.mutate({
+      shiftId,
+      startTime: newStart,
+      endTime: newEnd,
+      userId: newResource,
+    });
+  }, [isManager, updateShiftMutation]);
 
-  // Handle event resize
-  const handleEventResize = useCallback(
-    (info: EventResizeDoneArg) => {
-      if (!isManager) {
-        info.revert();
-        return;
-      }
+  const handleEventResize = useCallback((args: any) => {
+    if (!isManager) {
+      args.preventDefault();
+      return;
+    }
 
-      const shiftId = info.event.id;
-      const newStart = info.event.start;
-      const newEnd = info.event.end;
+    const shiftId = args.e.id();
+    const newStart = args.newStart.toString();
+    const newEnd = args.newEnd.toString();
 
-      if (newStart && newEnd) {
-        updateShiftMutation.mutate({
-          shiftId,
-          startTime: newStart.toISOString(),
-          endTime: newEnd.toISOString(),
-        });
-      }
-    },
-    [isManager, updateShiftMutation]
-  );
+    updateShiftMutation.mutate({
+      shiftId,
+      startTime: newStart,
+      endTime: newEnd,
+    });
+  }, [isManager, updateShiftMutation]);
 
-  // Handle event click (edit)
-  const handleEventClick = useCallback(
-    (info: EventClickArg) => {
-      if (!isManager) return;
+  const handleEventClick = useCallback((args: any) => {
+    if (!isManager) return;
 
-      const shift = info.event.extendedProps.shift as Shift;
-      setSelectedShift(shift);
-      setEditStartTime(format(parseISO(shift.startTime), 'HH:mm'));
-      setEditEndTime(format(parseISO(shift.endTime), 'HH:mm'));
-      setNotes(shift.notes || '');
-      setEditDialogOpen(true);
-    },
-    [isManager]
-  );
+    const eventData = args.e.data;
+    const shift = eventData.shift as Shift;
+    
+    setSelectedShift(shift);
+    setEditStartTime(format(parseISO(shift.startTime), 'HH:mm'));
+    setEditEndTime(format(parseISO(shift.endTime), 'HH:mm'));
+    setEditDialogOpen(true);
+  }, [isManager]);
 
-  // Handle date select (click-to-create)
-  const handleDateSelect = useCallback(
-    (info: DateSelectArg) => {
-      if (!isManager || !info.resource) return;
+  const handleTimeRangeSelected = useCallback((args: any) => {
+    if (!isManager) return;
 
-      setNewShiftData({
-        employeeId: info.resource.id,
-        start: info.start,
-        end: info.end,
-      });
-      setEditStartTime(format(info.start, 'HH:mm'));
-      setEditEndTime(format(info.end, 'HH:mm'));
-      setNotes('');
-      setCreateDialogOpen(true);
-    },
-    [isManager]
-  );
+    const startHour = args.start.getHours();
+    const isMorning = startHour < 12;
+
+    // Snap to morning (7-13) or afternoon (12-18) shift
+    const start = new Date(args.start.toString());
+    const end = new Date(args.start.toString());
+    
+    if (isMorning) {
+      start.setHours(7, 0, 0, 0);
+      end.setHours(13, 0, 0, 0);
+    } else {
+      start.setHours(12, 0, 0, 0);
+      end.setHours(18, 0, 0, 0);
+    }
+
+    setNewShiftData({
+      employeeId: args.resource,
+      start,
+      end,
+    });
+    setEditStartTime(format(start, 'HH:mm'));
+    setEditEndTime(format(end, 'HH:mm'));
+    setCreateDialogOpen(true);
+  }, [isManager]);
 
   // Save edited shift
   const handleSaveEdit = useCallback(() => {
@@ -288,7 +296,6 @@ export function FullCalendarScheduler({
     const newEnd = new Date(startDate);
     newEnd.setHours(endHour, endMin, 0, 0);
 
-    // If end is before start, assume next day
     if (newEnd <= newStart) {
       newEnd.setDate(newEnd.getDate() + 1);
     }
@@ -338,103 +345,100 @@ export function FullCalendarScheduler({
     setSelectedShift(null);
   }, [selectedShift, deleteShiftMutation]);
 
-  // Custom resource rendering with avatar
-  const renderResourceLabel = useCallback((arg: { resource: any }) => {
-    const { initials, role, color } = arg.resource.extendedProps;
-    return (
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: 1, px: 0.5 }}>
-        <Avatar
-          sx={{
-            width: 36,
-            height: 36,
-            bgcolor: color.bg,
-            fontSize: '0.875rem',
-            fontWeight: 600,
-          }}
-        >
-          {initials}
-        </Avatar>
-        <Box>
-          <Typography variant="body2" fontWeight={600} sx={{ lineHeight: 1.2 }}>
-            {arg.resource.title}
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
-            {role}
-          </Typography>
-        </Box>
-      </Box>
-    );
-  }, []);
-
-  // Custom event rendering
-  const renderEventContent = useCallback((eventInfo: EventContentArg) => {
-    return (
-      <Box
-        sx={{
-          px: 1,
-          py: 0.5,
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap',
-          fontSize: '0.75rem',
-          fontWeight: 600,
-        }}
-      >
-        {eventInfo.timeText || eventInfo.event.title}
-      </Box>
-    );
-  }, []);
+  // Scheduler configuration
+  const config = useMemo(() => ({
+    startDate: startDate,
+    days: 7,
+    scale: 'Hour',
+    timeHeaders: [
+      { groupBy: 'Day', format: 'dddd M/d' },
+      { groupBy: 'Hour', format: 'h a' },
+    ],
+    cellWidth: 60,
+    cellHeight: 50,
+    eventHeight: 40,
+    treeEnabled: false,
+    rowHeaderWidth: 200,
+    eventMoveHandling: isManager ? 'Update' : 'Disabled',
+    eventResizeHandling: isManager ? 'Update' : 'Disabled',
+    timeRangeSelectedHandling: isManager ? 'Enabled' : 'Disabled',
+    businessBeginsHour: 6,
+    businessEndsHour: 23,
+    showNonBusiness: false,
+    heightSpec: 'Auto',
+    onEventMoved: handleEventMove,
+    onEventResized: handleEventResize,
+    onEventClick: handleEventClick,
+    onTimeRangeSelected: handleTimeRangeSelected,
+  }), [startDate, isManager, handleEventMove, handleEventResize, handleEventClick, handleTimeRangeSelected]);
 
   return (
-    <Box sx={{ height: '100%', minHeight: 500 }}>
-      <FullCalendar
-        ref={calendarRef}
-        plugins={[resourceTimelinePlugin, interactionPlugin, dayGridPlugin]}
-        initialView="resourceTimelineWeek"
-        initialDate={weekStart}
-        headerToolbar={{
-          left: 'prev,next today',
-          center: 'title',
-          right: 'resourceTimelineWeek,resourceTimelineDay',
+    <Box sx={{ width: '100%' }}>
+      {/* Custom resource header rendering */}
+      <Box sx={{ mb: 2 }}>
+        <Typography variant="h6" fontWeight={600} color="text.primary">
+          Staff Schedule
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          {isManager ? 'Drag shifts to move • Resize to change duration • Click to edit' : 'View only'}
+        </Typography>
+      </Box>
+
+      {/* DayPilot Scheduler */}
+      <Box 
+        sx={{ 
+          border: '1px solid',
+          borderColor: 'divider',
+          borderRadius: 2,
+          overflow: 'hidden',
+          '& .scheduler_default_main': {
+            fontFamily: 'inherit',
+          },
+          '& .scheduler_default_rowheader_inner': {
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            padding: '8px',
+          },
+          '& .scheduler_default_event_inner': {
+            borderRadius: '6px',
+            fontSize: '12px',
+            fontWeight: 600,
+            padding: '4px 8px',
+          },
         }}
-        resources={resources}
-        events={events}
-        resourceAreaHeaderContent="Staff"
-        resourceAreaWidth="220px"
-        slotMinTime="06:00:00"
-        slotMaxTime="23:00:00"
-        slotDuration="01:00:00"
-        snapDuration="00:15:00"
-        editable={isManager}
-        selectable={isManager}
-        selectMirror={true}
-        eventResizableFromStart={true}
-        resourceLabelContent={renderResourceLabel}
-        eventContent={renderEventContent}
-        eventDrop={handleEventDrop}
-        eventResize={handleEventResize}
-        eventClick={handleEventClick}
-        select={handleDateSelect}
-        height="auto"
-        expandRows={true}
-        stickyHeaderDates={true}
-        nowIndicator={true}
-        slotLabelFormat={{
-          hour: 'numeric',
-          minute: '2-digit',
-          meridiem: 'short',
-        }}
-        eventTimeFormat={{
-          hour: 'numeric',
-          minute: '2-digit',
-          meridiem: 'short',
-        }}
-        dayHeaderFormat={{
-          weekday: 'short',
-          month: 'short',
-          day: 'numeric',
-        }}
-      />
+      >
+        <DayPilotScheduler
+          {...config}
+          resources={resources}
+          events={events}
+          onBeforeRowHeaderRender={(args: any) => {
+            const resource = args.row.data;
+            args.row.html = `
+              <div style="display: flex; align-items: center; gap: 10px; padding: 8px;">
+                <div style="
+                  width: 36px; 
+                  height: 36px; 
+                  border-radius: 50%; 
+                  background: ${resource.color}; 
+                  display: flex; 
+                  align-items: center; 
+                  justify-content: center;
+                  color: white;
+                  font-weight: 600;
+                  font-size: 14px;
+                ">
+                  ${resource.initials}
+                </div>
+                <div>
+                  <div style="font-weight: 600; font-size: 14px;">${resource.name}</div>
+                  <div style="font-size: 12px; opacity: 0.7;">${resource.role}</div>
+                </div>
+              </div>
+            `;
+          }}
+        />
+      </Box>
 
       {/* Edit Shift Dialog */}
       <Dialog open={editDialogOpen} onClose={() => setEditDialogOpen(false)} maxWidth="xs" fullWidth>
@@ -552,76 +556,12 @@ export function FullCalendarScheduler({
         onClose={() => setSnackbarOpen(false)}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
       >
-        <Alert onClose={() => setSnackbarOpen(false)} severity="success" sx={{ width: '100%' }}>
+        <Alert onClose={() => setSnackbarOpen(false)} severity={snackbarSeverity} sx={{ width: '100%' }}>
           {snackbarMessage}
         </Alert>
       </Snackbar>
-
-      {/* Custom CSS for FullCalendar */}
-      <style>{`
-        .fc {
-          font-family: inherit;
-        }
-        .fc-theme-standard td, .fc-theme-standard th {
-          border-color: rgba(0, 0, 0, 0.08);
-        }
-        .fc-resource-timeline .fc-resource-area {
-          background: #f8fafc;
-        }
-        .fc-timeline-event {
-          border-radius: 6px !important;
-          cursor: pointer;
-          transition: transform 0.1s, box-shadow 0.1s;
-        }
-        .fc-timeline-event:hover {
-          transform: scale(1.02);
-          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        }
-        .fc-button-primary {
-          background-color: #2e7d32 !important;
-          border-color: #2e7d32 !important;
-        }
-        .fc-button-primary:hover {
-          background-color: #1b5e20 !important;
-          border-color: #1b5e20 !important;
-        }
-        .fc-button-primary:disabled {
-          background-color: #81c784 !important;
-          border-color: #81c784 !important;
-        }
-        .fc .fc-button-primary:not(:disabled).fc-button-active {
-          background-color: #1b5e20 !important;
-          border-color: #1b5e20 !important;
-        }
-        .fc-datagrid-cell-cushion {
-          padding: 4px 8px;
-        }
-        .fc-timeline-slot-label {
-          font-size: 0.75rem;
-          color: #666;
-        }
-        .fc-col-header-cell-cushion {
-          font-weight: 600;
-          padding: 8px;
-        }
-        .fc-h-event {
-          border: none;
-        }
-        .fc-highlight {
-          background: rgba(46, 125, 50, 0.1) !important;
-        }
-        .fc-now-indicator-line {
-          border-color: #f44336;
-          border-width: 2px;
-        }
-        .fc-now-indicator-arrow {
-          border-color: #f44336;
-          border-top-color: transparent;
-          border-bottom-color: transparent;
-        }
-      `}</style>
     </Box>
   );
 }
 
-export default FullCalendarScheduler;
+export default DayPilotSchedulerComponent;
