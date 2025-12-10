@@ -253,7 +253,7 @@ export default function MuiReports() {
                 label="From"
                 value={dateRange.start}
                 onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
-                InputLabelProps={{ shrink: true }}
+                slotProps={{ inputLabel: { shrink: true } }}
               />
               <Typography color="text.secondary">to</Typography>
               <TextField
@@ -262,7 +262,7 @@ export default function MuiReports() {
                 label="To"
                 value={dateRange.end}
                 onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
-                InputLabelProps={{ shrink: true }}
+                slotProps={{ inputLabel: { shrink: true } }}
               />
             </Stack>
           </Stack>

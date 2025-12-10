@@ -762,7 +762,7 @@ export default function MuiSchedule() {
                     setSelectedTimePreset(null);
                     setFormData({ ...formData, startTime: e.target.value });
                   }}
-                  InputLabelProps={{ shrink: true }}
+                  slotProps={{ inputLabel: { shrink: true } }}
                   fullWidth
                   sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
                 />
@@ -774,7 +774,7 @@ export default function MuiSchedule() {
                     setSelectedTimePreset(null);
                     setFormData({ ...formData, endTime: e.target.value });
                   }}
-                  InputLabelProps={{ shrink: true }}
+                  slotProps={{ inputLabel: { shrink: true } }}
                   fullWidth
                   sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
                 />

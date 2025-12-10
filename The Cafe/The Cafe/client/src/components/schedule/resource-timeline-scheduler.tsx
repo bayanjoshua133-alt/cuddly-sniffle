@@ -647,7 +647,7 @@ export function ResourceTimelineScheduler({
                   value={editStartTime}
                   onChange={(e) => setEditStartTime(e.target.value)}
                   fullWidth
-                  InputLabelProps={{ shrink: true }}
+                  slotProps={{ inputLabel: { shrink: true } }}
                   inputProps={{ step: 900 }}
                 />
                 <TextField
@@ -656,7 +656,7 @@ export function ResourceTimelineScheduler({
                   value={editEndTime}
                   onChange={(e) => setEditEndTime(e.target.value)}
                   fullWidth
-                  InputLabelProps={{ shrink: true }}
+                  slotProps={{ inputLabel: { shrink: true } }}
                   inputProps={{ step: 900 }}
                 />
               </Stack>
