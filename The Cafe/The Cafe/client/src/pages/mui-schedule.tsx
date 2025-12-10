@@ -1,84 +1,52 @@
-import { useState, useMemo } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { isManager, getCurrentUser } from "@/lib/auth";
-import { getInitials } from "@/lib/utils";
-import { useRealtime } from "@/hooks/use-realtime";
-import { DayPilotSchedulerComponent } from "@/components/schedule/daypilot-scheduler";
-import { MonthDragDropScheduler } from "@/components/schedule/month-drag-drop-scheduler";
+import { useState, useMemo } from 'react';
+import { Scheduler } from '@daypilot/daypilot-lite-react';
+import '@daypilot/daypilot-lite-react/styles/daypilot.css';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { apiRequest } from '@/lib/queryClient';
+import { isManager } from '@/lib/auth';
 import {
   format,
-  addDays,
-  addWeeks,
-  addMonths,
-  subDays,
-  subWeeks,
-  subMonths,
   startOfWeek,
   endOfWeek,
-  startOfMonth,
-  endOfMonth,
-  eachDayOfInterval,
-  isSameDay,
   parseISO,
-} from "date-fns";
-import { apiRequest } from "@/lib/queryClient";
+} from 'date-fns';
 
-// MUI Components
-import Box from "@mui/material/Box";
-import Typography from "@mui/material/Typography";
-import Button from "@mui/material/Button";
-import Card from "@mui/material/Card";
-import CardContent from "@mui/material/CardContent";
-import IconButton from "@mui/material/IconButton";
-import Paper from "@mui/material/Paper";
-import Stack from "@mui/material/Stack";
-import Chip from "@mui/material/Chip";
-import Dialog from "@mui/material/Dialog";
-import DialogTitle from "@mui/material/DialogTitle";
-import DialogContent from "@mui/material/DialogContent";
-import DialogActions from "@mui/material/DialogActions";
-import TextField from "@mui/material/TextField";
-import Select from "@mui/material/Select";
-import MenuItem from "@mui/material/MenuItem";
-import FormControl from "@mui/material/FormControl";
-import InputLabel from "@mui/material/InputLabel";
-import CircularProgress from "@mui/material/CircularProgress";
-import Alert from "@mui/material/Alert";
-import Divider from "@mui/material/Divider";
-import Avatar from "@mui/material/Avatar";
+// MUI components
+import {
+  Box,
+  Typography,
+  Avatar,
+  Stack,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  IconButton,
+  Alert,
+  CircularProgress,
+  TextField,
+} from '@mui/material';
+import {
+  ChevronLeft as ChevronLeftIcon,
+  ChevronRight as ChevronRightIcon,
+  Today as TodayIcon,
+  Refresh as RefreshIcon,
+  Close as CloseIcon,
+  Delete as DeleteIcon,
+} from '@mui/icons-material';
 
-// MUI Icons
-import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
-import ChevronRightIcon from "@mui/icons-material/ChevronRight";
-import TodayIcon from "@mui/icons-material/Today";
-import AddIcon from "@mui/icons-material/Add";
-import RefreshIcon from "@mui/icons-material/Refresh";
-import AccessTimeIcon from "@mui/icons-material/AccessTime";
-import PersonIcon from "@mui/icons-material/Person";
-import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
-import WbSunnyIcon from "@mui/icons-material/WbSunny";
-import WbTwilightIcon from "@mui/icons-material/WbTwilight";
-import NightsStayIcon from "@mui/icons-material/NightsStay";
-import DeleteIcon from "@mui/icons-material/Delete";
-import MoreVertIcon from "@mui/icons-material/MoreVert";
-import ViewWeekIcon from "@mui/icons-material/ViewWeek";
-import ViewDayIcon from "@mui/icons-material/ViewDay";
-import ToggleButton from "@mui/material/ToggleButton";
-import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
-
-// Types
 interface Shift {
   id: string;
   userId: string;
-  branchId: string;
-  date: string;
+  startDate: string; // The API returns startTime, but we might map it. Let's assume standard Shift interface.
   startTime: string;
   endTime: string;
   status: string;
-  notes?: string;
   user?: {
     firstName: string;
     lastName: string;
+    role?: string;
   };
 }
 
@@ -86,805 +54,308 @@ interface Employee {
   id: string;
   firstName: string;
   lastName: string;
-  position: string;
   role?: string;
+  position?: string;
 }
 
-type ViewMode = 'schedule' | 'month';
-
-export default function MuiSchedule() {
-  const currentUser = getCurrentUser();
-  const isManagerRole = isManager();
+export default function SchedulePage() {
   const queryClient = useQueryClient();
+  const isManagerRole = isManager();
+  const [selectedDate, setSelectedDate] = useState(new Date());
 
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [viewMode, setViewMode] = useState<ViewMode>('schedule');
-  const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  // Time preset definitions
-  const timePresets = {
-    morning: { label: "Morning", startTime: "06:00", endTime: "14:00", icon: WbSunnyIcon },
-    afternoon: { label: "Afternoon", startTime: "14:00", endTime: "22:00", icon: WbTwilightIcon },
-    night: { label: "Night", startTime: "22:00", endTime: "06:00", icon: NightsStayIcon },
-  };
-
-  const [selectedTimePreset, setSelectedTimePreset] = useState<string | null>("morning");
-  const [selectedDates, setSelectedDates] = useState<Set<string>>(new Set([format(new Date(), "yyyy-MM-dd")]));
+  // Edit/Create Dialog State
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
-    userId: "",
-    position: "",
-    date: format(new Date(), "yyyy-MM-dd"),
-    startTime: "06:00",
-    endTime: "14:00",
-    notes: "",
+    employeeId: '',
+    shiftDate: '',
+    startTime: '09:00',
+    endTime: '17:00',
   });
-  const [createError, setCreateError] = useState<string | null>(null);
 
-  // Handle time preset selection
-  const handleTimePresetChange = (
-    _event: React.MouseEvent<HTMLElement>,
-    newPreset: string | null,
-  ) => {
-    if (newPreset !== null) {
-      setSelectedTimePreset(newPreset);
-      const preset = timePresets[newPreset as keyof typeof timePresets];
-      setFormData(prev => ({
-        ...prev,
-        startTime: preset.startTime,
-        endTime: preset.endTime,
-      }));
-    }
-  };
+  // Calculate week range for API
+  const weekRange = useMemo(() => {
+    const start = startOfWeek(selectedDate, { weekStartsOn: 1 });
+    const end = endOfWeek(selectedDate, { weekStartsOn: 1 });
+    return { start, end };
+  }, [selectedDate]);
 
-  // Calculate date range based on view mode
-  const dateRange = useMemo(() => {
-    if (viewMode === 'week') {
-      return {
-        start: startOfWeek(selectedDate, { weekStartsOn: 0 }),
-        end: endOfWeek(selectedDate, { weekStartsOn: 0 }),
-      };
-    } else {
-      return {
-        start: startOfMonth(selectedDate),
-        end: endOfMonth(selectedDate),
-      };
-    }
-  }, [selectedDate, viewMode]);
-
-  // For backward compatibility
-  const weekStart = startOfWeek(selectedDate, { weekStartsOn: 0 });
-  const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 0 });
-  const allDays = eachDayOfInterval({ start: dateRange.start, end: dateRange.end });
-
-  // Fetch employees for managers with real-time updates
-  const { data: employeesData, error: employeesError } = useQuery({
-    queryKey: ["employees"],
+  // Fetch Employees
+  const { data: employees = [], isLoading: loadingEmployees } = useQuery<Employee[]>({
+    queryKey: ['employees'],
     queryFn: async () => {
-      const response = await apiRequest("GET", "/api/employees");
-      return response.json();
-    },
-    enabled: isManagerRole,
-    refetchInterval: 5000, // Poll every 5 seconds for real-time updates
-    refetchOnWindowFocus: true,
-    refetchIntervalInBackground: true,
-    retry: (failureCount, error: any) => {
-      // Don't retry on 401 (unauthorized) - session expired
-      if (error?.status === 401) return false;
-      // Retry other errors up to 3 times
-      return failureCount < 3;
+      const res = await apiRequest('GET', '/api/employees');
+      return res.json();
     },
   });
 
-  // API returns {employees: []} structure
-  const employees: Employee[] = employeesData?.employees || [];
-
-  // Fetch shifts
-  const {
-    data: shiftsData,
-    isLoading,
-    isError,
-    refetch,
-  } = useQuery({
-    queryKey: ["shifts", dateRange.start.toISOString(), dateRange.end.toISOString()],
+  // Fetch Shifts
+  const { data: shifts = [], isLoading: loadingShifts } = useQuery<Shift[]>({
+    queryKey: ['shifts', weekRange.start.toISOString()],
     queryFn: async () => {
       const endpoint = isManagerRole
-        ? `/api/shifts/branch?startDate=${dateRange.start.toISOString()}&endDate=${dateRange.end.toISOString()}`
-        : `/api/shifts?startDate=${dateRange.start.toISOString()}&endDate=${dateRange.end.toISOString()}`;
-      
-
-      
-      const response = await apiRequest("GET", endpoint);
-      const json = await response.json();
-      
-
-      
-      return json;
-    },
-    refetchInterval: 5000, // Poll every 5 seconds for real-time updates
-    refetchOnWindowFocus: true,
-    refetchIntervalInBackground: true, // Keep polling even when tab is not focused
-    retry: (failureCount, error: any) => {
-      // Don't retry on 401 (unauthorized) - session expired
-      if (error?.status === 401) return false;
-      // Retry other errors up to 3 times
-      return failureCount < 3;
+        ? `/api/shifts/branch?startDate=${weekRange.start.toISOString()}&endDate=${weekRange.end.toISOString()}`
+        : `/api/shifts?startDate=${weekRange.start.toISOString()}&endDate=${weekRange.end.toISOString()}`;
+      const res = await apiRequest('GET', endpoint);
+      return res.json();
     },
   });
 
-  const shifts: Shift[] = shiftsData?.shifts || [];
-  
-  // Log shift updates
+  // Mutations
+  const updateShiftMutation = useMutation({
+    mutationFn: async (data: { id: string; startTime: string; endTime: string; userId?: string }) => {
+      const payload: any = { startTime: data.startTime, endTime: data.endTime };
+      if (data.userId) payload.userId = data.userId;
+      const res = await apiRequest('PUT', `/api/shifts/${data.id}`, payload);
+      if (!res.ok) throw new Error('Failed');
+      return res.json();
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['shifts'] }),
+  });
 
-
-  // Create shift mutation
   const createShiftMutation = useMutation({
-    mutationFn: async (data: typeof formData) => {
-      // Combine date with time to create full ISO datetime strings
-      const startDateTime = new Date(`${data.date}T${data.startTime}:00`);
-      let endDateTime = new Date(`${data.date}T${data.endTime}:00`);
-      
-      // If end time is before start time (e.g., night shift 22:00-06:00), add a day
-      if (endDateTime <= startDateTime) {
-        endDateTime = addDays(endDateTime, 1);
-      }
-      
-      // Client-side validation: Check for overlapping times on the same employee
-      const selectedEmployee = employees.find(emp => emp.id === data.userId);
-      
-      // Check for overlapping times (but allow multiple shifts on same day as long as times don't overlap)
-      const overlappingShifts = shifts.filter(shift => {
-        if (shift.userId !== data.userId) return false;
-        const shiftStart = parseISO(shift.startTime);
-        const shiftEnd = parseISO(shift.endTime);
-        // Check if new shift overlaps with existing shift
-        return startDateTime < shiftEnd && endDateTime > shiftStart;
+    mutationFn: async (data: { userId: string; startTime: string; endTime: string }) => {
+      const res = await apiRequest('POST', '/api/shifts', {
+        ...data,
+        status: 'scheduled',
       });
-
-      if (overlappingShifts.length > 0) {
-        const shift = overlappingShifts[0];
-        const start = format(parseISO(shift.startTime), 'MMM d, HH:mm');
-        const end = format(parseISO(shift.endTime), 'HH:mm');
-        throw new Error(`Time conflict! ${selectedEmployee?.firstName || 'Employee'} already has a shift from ${start} to ${end}.`);
-      }
-
-      const response = await apiRequest("POST", "/api/shifts", {
-        userId: data.userId,
-        branchId: currentUser?.branchId,
-        position: data.position || "Staff",
-        startTime: startDateTime.toISOString(),
-        endTime: endDateTime.toISOString(),
-        status: "scheduled",
-        notes: data.notes || undefined,
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to create shift");
-      }
-      
-      return response.json();
+      if (!res.ok) throw new Error('Failed');
+      return res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["shifts"] });
-      setCreateDialogOpen(false);
-      setCreateError(null);
-      setFormData({
-        userId: "",
-        position: "",
-        date: format(new Date(), "yyyy-MM-dd"),
-        startTime: "06:00",
-        endTime: "14:00",
-        notes: "",
-      });
-      setSelectedTimePreset("morning");
-    },
-    onError: (error: Error) => {
-      setCreateError(error.message);
-    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['shifts'] }),
   });
-
-  // Delete shift state and mutation
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [shiftToDelete, setShiftToDelete] = useState<Shift | null>(null);
 
   const deleteShiftMutation = useMutation({
-    mutationFn: async (shiftId: string) => {
-      const response = await apiRequest("DELETE", `/api/shifts/${shiftId}`);
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to delete shift");
-      }
-      return response.json();
+    mutationFn: async (id: string) => {
+      const res = await apiRequest('DELETE', `/api/shifts/${id}`);
+      if (!res.ok) throw new Error('Failed');
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["shifts"] });
-      setDeleteDialogOpen(false);
-      setShiftToDelete(null);
-    },
-    onError: (error: Error) => {
-      console.error("Delete shift error:", error);
+      setDialogOpen(false);
+      queryClient.invalidateQueries({ queryKey: ['shifts'] });
     },
   });
 
-  const handleDeleteShift = (shift: Shift) => {
-    setShiftToDelete(shift);
-    setDeleteDialogOpen(true);
-  };
+  // Prepare DayPilot Data
+  const resources = employees.map(emp => ({
+    name: `${emp.firstName} ${emp.lastName}`,
+    id: emp.id,
+    role: emp.role || emp.position,
+    html: `
+      <div style="display:flex; align-items:center; gap:8px;">
+        <div style="width:30px; height:30px; border-radius:50%; background:${
+          (emp.role || emp.position)?.toLowerCase().includes('barista') ? '#e25dd2' : 
+          (emp.role || emp.position)?.toLowerCase().includes('cook') ? '#f1e920' : '#60e81a'
+        }; display:flex; justify-content:center; align-items:center; color:white; font-size:12px; font-weight:bold;">
+          ${emp.firstName[0]}${emp.lastName[0]}
+        </div>
+        <div>
+          <div style="font-weight:bold">${emp.firstName} ${emp.lastName}</div>
+          <div style="font-size:11px; opacity:0.7">${emp.role || emp.position || 'Staff'}</div>
+        </div>
+      </div>
+    `
+  }));
 
-  const confirmDeleteShift = () => {
-    if (shiftToDelete) {
-      deleteShiftMutation.mutate(shiftToDelete.id);
-    }
-  };
-
-  // Helper to get shifts for a specific day
-  const getShiftsForDay = (day: Date): Shift[] => {
-    return shifts.filter((shift) => {
-      const shiftDate = parseISO(shift.startTime);
-      return isSameDay(shiftDate, day);
-    });
-  };
-
-  // Enable real-time updates
-  useRealtime({
-    enabled: isManagerRole,
-    queryKeys: ["employees", "shifts"],
+  const events = shifts.map(shift => {
+    const isMorning = new Date(shift.startTime).getHours() < 12;
+    return {
+      id: shift.id,
+      text: `${format(parseISO(shift.startTime), 'h:mm a')} - ${format(parseISO(shift.endTime), 'h:mm a')}`,
+      start: shift.startTime,
+      end: shift.endTime,
+      resource: shift.userId,
+      backColor: isMorning ? '#60e81a' : '#f1e920',
+      borderColor: '#00000033',
+      moveDisabled: !isManagerRole,
+      resizeDisabled: !isManagerRole,
+      clickDisabled: !isManagerRole,
+    };
   });
 
-  // Handle employee selection
-  const handleEmployeeSelect = (employeeId: string) => {
-    const selectedEmployee = employees.find(emp => emp.id === employeeId);
-    setFormData(prev => ({
-      ...prev,
-      userId: employeeId,
-      position: selectedEmployee?.position || "",
-    }));
-  };
+  const config = {
+    viewType: "Resources",
+    startDate: format(weekRange.start, "yyyy-MM-dd"),
+    days: 7,
+    scale: "Hour",
+    timeHeaders: [
+      { groupBy: "Day", format: "dddd M/d" }, 
+      { groupBy: "Hour", format: "h a" }
+    ],
+    businessBeginsHour: 6,
+    businessEndsHour: 23,
+    cellWidth: 60,
+    resources,
+    events,
+    eventMoveHandling: "Update",
+    eventResizeHandling: "Update",
+    timeRangeSelectedHandling: isManagerRole ? "Enabled" : "Disabled",
+    
+    // Handlers
+    onTimeRangeSelected: async (args: any) => {
+      if (!isManagerRole) return;
+      const startHour = args.start.getHours();
+      const isMorning = startHour < 12;
+      
+      const start = new Date(args.start.toString());
+      const end = new Date(args.start.toString());
+      
+      // Auto-snap logic
+      if (isMorning) {
+        start.setHours(7, 0, 0, 0);
+        end.setHours(13, 0, 0, 0);
+      } else {
+        start.setHours(12, 0, 0, 0);
+        end.setHours(18, 0, 0, 0);
+      }
+      
+      await createShiftMutation.mutateAsync({
+        userId: args.resource,
+        startTime: start.toISOString(),
+        endTime: end.toISOString()
+      });
+      // Clear selection
+      args.control.clearSelection();
+    },
+    
+    onEventMoved: (args: any) => {
+      if (!isManagerRole) { args.preventDefault(); return; }
+      updateShiftMutation.mutate({
+        id: args.e.id(),
+        userId: args.newResource,
+        startTime: args.newStart.toString(),
+        endTime: args.newEnd.toString()
+      });
+    },
+    
+    onEventResized: (args: any) => {
+      if (!isManagerRole) { args.preventDefault(); return; }
+      updateShiftMutation.mutate({
+        id: args.e.id(),
+        startTime: args.newStart.toString(),
+        endTime: args.newEnd.toString()
+      });
+    },
 
-  // Navigation handlers
-  const navigatePrevious = () => {
-    if (viewMode === 'week') {
-      setSelectedDate(subWeeks(selectedDate, 1));
-    } else {
-      setSelectedDate(subMonths(selectedDate, 1));
+    onEventClick: (args: any) => {
+      if (!isManagerRole) return;
+      const shift = shifts.find(s => s.id === args.e.id());
+      if (shift) {
+        setSelectedEventId(shift.id);
+        const d = parseISO(shift.startTime);
+        setFormData({
+          employeeId: shift.userId,
+          shiftDate: format(d, 'yyyy-MM-dd'),
+          startTime: format(d, 'HH:mm'),
+          endTime: format(parseISO(shift.endTime), 'HH:mm'),
+        });
+        setDialogOpen(true);
+      }
     }
   };
-  
-  const navigateNext = () => {
-    if (viewMode === 'week') {
-      setSelectedDate(addWeeks(selectedDate, 1));
-    } else {
-      setSelectedDate(addMonths(selectedDate, 1));
+
+  const handleDateChange = (days: number) => {
+    const newDate = new Date(selectedDate);
+    newDate.setDate(newDate.getDate() + days);
+    setSelectedDate(newDate);
+  };
+
+  const handleSaveDialog = () => {
+    if (selectedEventId) {
+      const start = new Date(`${formData.shiftDate}T${formData.startTime}`);
+      const end = new Date(`${formData.shiftDate}T${formData.endTime}`);
+      updateShiftMutation.mutate({
+        id: selectedEventId,
+        startTime: start.toISOString(),
+        endTime: end.toISOString()
+      });
+      setDialogOpen(false);
     }
   };
-  
-  const goToToday = () => setSelectedDate(new Date());
 
-  // Handle form submission
-  const handleCreateShift = () => {
-    if (!formData.userId || selectedDates.size === 0) return;
-    setCreateError(null);
-    
-    // Create shift for each selected date
-    Array.from(selectedDates).forEach(dateStr => {
-      createShiftMutation.mutate({
-        ...formData,
-        date: dateStr,
-      });
-    });
-    
-    // Reset after creation
-    setTimeout(() => {
-      setCreateDialogOpen(false);
-      setSelectedDates(new Set([format(new Date(), "yyyy-MM-dd")]));
-      setFormData({
-        userId: "",
-        position: "",
-        date: format(new Date(), "yyyy-MM-dd"),
-        startTime: "06:00",
-        endTime: "14:00",
-        notes: "",
-      });
-    }, 500);
-  };
+  const isLoading = loadingEmployees || loadingShifts;
 
   return (
-    <Box sx={{ p: 3, minHeight: "100vh", bgcolor: "background.default" }}>
+    <Box sx={{ p: 3, height: 'calc(100vh - 100px)', display: 'flex', flexDirection: 'column' }}>
       {/* Header */}
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          mb: 3,
-          flexWrap: "wrap",
-          gap: 2,
-        }}
-      >
-        <Box>
-          <Typography variant="h4" fontWeight={700} color="text.primary">
-            Schedule
+      <Stack direction="row" alignItems="center" justifyContent="space-between" mb={2}>
+        <Stack direction="row" alignItems="center" spacing={2}>
+          <Typography variant="h5" fontWeight="bold">Schedule</Typography>
+          <Stack direction="row" alignItems="center" spacing={1} bgcolor="background.paper" p={0.5} borderRadius={2} border={1} borderColor="divider">
+            <IconButton size="small" onClick={() => handleDateChange(-7)}><ChevronLeftIcon /></IconButton>
+            <IconButton size="small" onClick={() => setSelectedDate(new Date())}><TodayIcon fontSize="small" /></IconButton>
+            <IconButton size="small" onClick={() => handleDateChange(7)}><ChevronRightIcon /></IconButton>
+          </Stack>
+          <Typography variant="subtitle1" fontWeight={500}>
+            {format(weekRange.start, 'MMM d')} - {format(weekRange.end, 'MMM d, yyyy')}
           </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Manage shifts and schedules
-          </Typography>
-        </Box>
-
-        <Stack direction="row" spacing={1}>
-          <IconButton 
-            onClick={() => refetch()} 
-            size="small"
-            sx={{ 
-              bgcolor: 'grey.100', 
-              '&:hover': { bgcolor: 'grey.200' } 
-            }}
-          >
-            <RefreshIcon />
-          </IconButton>
-          {isManagerRole && (
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={() => setCreateDialogOpen(true)}
-              sx={{ 
-                borderRadius: 2,
-                px: 2.5,
-                fontWeight: 600,
-                textTransform: 'none',
-              }}
-            >
-              Add Shift
-            </Button>
-          )}
         </Stack>
+        <Button 
+          startIcon={<RefreshIcon />} 
+          variant="outlined" 
+          size="small" 
+          onClick={() => queryClient.invalidateQueries({ queryKey: ['shifts'] })}
+        >
+          Refresh
+        </Button>
+      </Stack>
+
+      {/* Main Scheduler Area */}
+      <Box sx={{ flexGrow: 1, position: 'relative', border: '1px solid #e0e0e0', borderRadius: 2, overflow: 'hidden' }}>
+        {isLoading ? (
+          <Box display="flex" justifyContent="center" alignItems="center" height="100%">
+            <CircularProgress />
+          </Box>
+        ) : (
+          <Scheduler {...config} />
+        )}
       </Box>
 
-      {/* Navigation */}
-      <Paper 
-        sx={{ 
-          p: 2, 
-          mb: 3, 
-          borderRadius: 3,
-          boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-        }}
-      >
-        <Stack
-          direction="row"
-          alignItems="center"
-          justifyContent="space-between"
-          flexWrap="wrap"
-          gap={2}
-        >
-          <Stack direction="row" spacing={1} alignItems="center">
-            <IconButton 
-              onClick={navigatePrevious}
-              sx={{ 
-                bgcolor: 'grey.100', 
-                '&:hover': { bgcolor: 'grey.200' } 
-              }}
-            >
-              <ChevronLeftIcon />
-            </IconButton>
-            <Button
-              variant="outlined"
-              startIcon={<TodayIcon />}
-              onClick={goToToday}
-              size="small"
-              sx={{ 
-                borderRadius: 2,
-                textTransform: 'none',
-                fontWeight: 500,
-              }}
-            >
-              Today
-            </Button>
-            <IconButton 
-              onClick={navigateNext}
-              sx={{ 
-                bgcolor: 'grey.100', 
-                '&:hover': { bgcolor: 'grey.200' } 
-              }}
-            >
-              <ChevronRightIcon />
-            </IconButton>
+      {/* Edit Dialog */}
+      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          Edit Shift
+          <IconButton size="small" onClick={() => setDialogOpen(false)}><CloseIcon /></IconButton>
+        </DialogTitle>
+        <DialogContent dividers>
+          <Stack spacing={2} mt={1}>
+            <TextField
+              label="Date"
+              type="date"
+              value={formData.shiftDate}
+              onChange={e => setFormData({...formData, shiftDate: e.target.value})}
+              fullWidth
+            />
+            <Stack direction="row" spacing={2}>
+              <TextField
+                label="Start Time"
+                type="time"
+                value={formData.startTime}
+                onChange={e => setFormData({...formData, startTime: e.target.value})}
+                fullWidth
+              />
+              <TextField
+                label="End Time"
+                type="time"
+                value={formData.endTime}
+                onChange={e => setFormData({...formData, endTime: e.target.value})}
+                fullWidth
+              />
+            </Stack>
           </Stack>
-
-          <Typography variant="h6" fontWeight={600} color="text.primary">
-            {viewMode === 'schedule'
-              ? `${format(dateRange.start, "MMM d")} - ${format(dateRange.end, "MMM d, yyyy")}`
-              : format(selectedDate, "MMMM yyyy")
-            }
-          </Typography>
-
-          <ToggleButtonGroup
-            value={viewMode}
-            exclusive
-            onChange={(_, newMode) => newMode && setViewMode(newMode)}
-            size="small"
-            sx={{
-              '& .MuiToggleButton-root': {
-                px: 2.5,
-                py: 0.75,
-                textTransform: 'none',
-                fontWeight: 500,
-                borderRadius: 2,
-                '&.Mui-selected': {
-                  bgcolor: 'primary.main',
-                  color: 'white',
-                  '&:hover': {
-                    bgcolor: 'primary.dark',
-                  }
-                }
-              }
+        </DialogContent>
+        <DialogActions sx={{ justifyContent: 'space-between', px: 3, pb: 2 }}>
+          <Button 
+            color="error" 
+            startIcon={<DeleteIcon />} 
+            onClick={() => {
+              if(selectedEventId && confirm('Delete this shift?')) deleteShiftMutation.mutate(selectedEventId);
             }}
           >
-            <ToggleButton value="schedule" title="Resource timeline - drag to assign shifts">
-              Schedule
-            </ToggleButton>
-            <ToggleButton value="month" title="Month overview">
-              Month
-            </ToggleButton>
-          </ToggleButtonGroup>
-        </Stack>
-      </Paper>
-
-      {/* Loading State */}
-      {isLoading && (
-        <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
-          <CircularProgress />
-        </Box>
-      )}
-
-      {/* Error State */}
-      {isError && (
-        <Alert severity="error" sx={{ mb: 3 }}>
-          Failed to load shifts. Please try again.
-        </Alert>
-      )}
-
-      {/* DayPilot Timeline Scheduler - Primary */}
-      {!isLoading && !isError && viewMode === 'schedule' && (
-        <Box sx={{ mb: 3 }}>
-          <DayPilotSchedulerComponent
-            shifts={shifts}
-            employees={employees}
-            weekStart={weekStart}
-            onShiftUpdated={() => refetch()}
-            isManager={isManagerRole}
-          />
-        </Box>
-      )}
-
-      {/* Drag & Drop Month View - Overview */}
-      {!isLoading && !isError && viewMode === 'month' && (
-        <Box sx={{ mb: 3 }}>
-          <MonthDragDropScheduler
-            shifts={shifts}
-            employees={employees}
-            monthStart={selectedDate}
-            onShiftUpdated={() => refetch()}
-            isManager={isManagerRole}
-          />
-        </Box>
-      )}
-
-      {/* Create Shift Dialog */}
-      <Dialog
-        open={createDialogOpen}
-        onClose={() => setCreateDialogOpen(false)}
-        maxWidth="sm"
-        fullWidth
-        PaperProps={{
-          sx: { borderRadius: 3 }
-        }}
-      >
-        <DialogTitle sx={{ pb: 1 }}>
-          <Stack direction="row" alignItems="center" spacing={1}>
-            <CalendarMonthIcon color="primary" />
-            <Typography variant="h6" fontWeight="bold">Create New Shift</Typography>
-          </Stack>
-        </DialogTitle>
-        <DialogContent>
-          <Stack spacing={3} sx={{ mt: 2 }}>
-            {/* Error Display */}
-            {createError && (
-              <Alert severity="error" onClose={() => setCreateError(null)}>
-                {createError}
-              </Alert>
-            )}
-            
-            {/* Employee Selection */}
-            <FormControl fullWidth>
-              <InputLabel>Select Employee</InputLabel>
-              <Select
-                value={formData.userId}
-                label="Select Employee"
-                onChange={(e) => handleEmployeeSelect(e.target.value)}
-                sx={{ borderRadius: 2 }}
-              >
-                {employees.length === 0 ? (
-                  <MenuItem disabled>
-                    <Typography color="text.secondary">No employees found</Typography>
-                  </MenuItem>
-                ) : (
-                  employees.map((emp) => (
-                    <MenuItem key={emp.id} value={emp.id}>
-                      <Stack direction="row" alignItems="center" spacing={2}>
-                        <Avatar sx={{ width: 32, height: 32, bgcolor: "primary.main" }}>
-                          {getInitials(emp.firstName, emp.lastName)}
-                        </Avatar>
-                        <Box>
-                          <Typography variant="body1">
-                            {emp.firstName} {emp.lastName}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {emp.position || emp.role}
-                          </Typography>
-                        </Box>
-                      </Stack>
-                    </MenuItem>
-                  ))
-                )}
-              </Select>
-            </FormControl>
-
-            {/* Date Selection - Multi-select Week Grid */}
-            <Box>
-              <Box sx={{ mb: 1.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography variant="subtitle2" color="text.secondary">
-                  Select Dates (Click to toggle)
-                </Typography>
-                {selectedDates.size > 0 && (
-                  <Typography variant="caption" color="primary.main" fontWeight={600}>
-                    {selectedDates.size} day{selectedDates.size > 1 ? 's' : ''} selected
-                  </Typography>
-                )}
-              </Box>
-              <Stack 
-                direction="row" 
-                spacing={1} 
-                sx={{ 
-                  flexWrap: 'wrap',
-                  gap: 1,
-                }}
-              >
-                {Array.from({ length: 7 }, (_, i) => {
-                  const date = addDays(startOfWeek(new Date(), { weekStartsOn: 1 }), i);
-                  const dateStr = format(date, "yyyy-MM-dd");
-                  const dayName = format(date, "EEE");
-                  const isSelected = selectedDates.has(dateStr);
-                  return (
-                    <Button
-                      key={dateStr}
-                      onClick={() => {
-                        const newSet = new Set(selectedDates);
-                        if (newSet.has(dateStr)) {
-                          newSet.delete(dateStr);
-                        } else {
-                          newSet.add(dateStr);
-                        }
-                        setSelectedDates(newSet);
-                        setFormData({ ...formData, date: dateStr });
-                      }}
-                      variant={isSelected ? "contained" : "outlined"}
-                      sx={{
-                        flex: 1,
-                        minWidth: 80,
-                        borderRadius: 2,
-                        py: 1.5,
-                        flexDirection: 'column',
-                        gap: 0.5,
-                        textTransform: 'none',
-                        fontWeight: isSelected ? 600 : 500,
-                        borderColor: isSelected ? 'primary.main' : 'divider',
-                        bgcolor: isSelected ? 'primary.main' : 'transparent',
-                        color: isSelected ? 'white' : 'text.primary',
-                        transition: 'all 0.2s ease',
-                        '&:hover': {
-                          bgcolor: isSelected ? 'primary.dark' : 'action.hover',
-                          borderColor: 'primary.main',
-                          transform: 'translateY(-2px)',
-                        },
-                      }}
-                    >
-                      <Typography variant="caption" fontWeight={600}>{dayName}</Typography>
-                      <Typography variant="caption">{format(date, "MMM d")}</Typography>
-                    </Button>
-                  );
-                })}
-              </Stack>
-            </Box>
-
-            {/* Shift Time Presets */}
-            <Box>
-              <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5 }}>
-                Select Shift Time
-              </Typography>
-              <ToggleButtonGroup
-                value={selectedTimePreset}
-                exclusive
-                onChange={handleTimePresetChange}
-                aria-label="shift time preset"
-                fullWidth
-                sx={{ 
-                  gap: 1,
-                  '& .MuiToggleButton-root': {
-                    borderRadius: 2,
-                    border: '1px solid',
-                    borderColor: 'divider',
-                    flex: 1,
-                    py: 1.5,
-                    '&.Mui-selected': {
-                      bgcolor: 'primary.main',
-                      color: 'white',
-                      borderColor: 'primary.main',
-                      '&:hover': {
-                        bgcolor: 'primary.dark',
-                      },
-                    },
-                  }
-                }}
-              >
-                <ToggleButton value="morning">
-                  <Stack alignItems="center" spacing={0.5}>
-                    <WbSunnyIcon />
-                    <Typography variant="caption" fontWeight="bold">Morning</Typography>
-                    <Typography variant="caption" sx={{ opacity: 0.8 }}>6AM - 2PM</Typography>
-                  </Stack>
-                </ToggleButton>
-                <ToggleButton value="afternoon">
-                  <Stack alignItems="center" spacing={0.5}>
-                    <WbTwilightIcon />
-                    <Typography variant="caption" fontWeight="bold">Afternoon</Typography>
-                    <Typography variant="caption" sx={{ opacity: 0.8 }}>2PM - 10PM</Typography>
-                  </Stack>
-                </ToggleButton>
-                <ToggleButton value="night">
-                  <Stack alignItems="center" spacing={0.5}>
-                    <NightsStayIcon />
-                    <Typography variant="caption" fontWeight="bold">Night</Typography>
-                    <Typography variant="caption" sx={{ opacity: 0.8 }}>10PM - 6AM</Typography>
-                  </Stack>
-                </ToggleButton>
-              </ToggleButtonGroup>
-            </Box>
-
-            {/* Custom Time Override */}
-            <Box>
-              <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5 }}>
-                Or set custom time
-              </Typography>
-              <Stack direction="row" spacing={2}>
-                <TextField
-                  label="Start Time"
-                  type="time"
-                  value={formData.startTime}
-                  onChange={(e) => {
-                    setSelectedTimePreset(null);
-                    setFormData({ ...formData, startTime: e.target.value });
-                  }}
-                  slotProps={{ inputLabel: { shrink: true } }}
-                  fullWidth
-                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-                />
-                <TextField
-                  label="End Time"
-                  type="time"
-                  value={formData.endTime}
-                  onChange={(e) => {
-                    setSelectedTimePreset(null);
-                    setFormData({ ...formData, endTime: e.target.value });
-                  }}
-                  slotProps={{ inputLabel: { shrink: true } }}
-                  fullWidth
-                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-                />
-              </Stack>
-            </Box>
-
-            {/* Notes */}
-            <TextField
-              label="Notes (Optional)"
-              multiline
-              rows={2}
-              value={formData.notes}
-              onChange={(e) =>
-                setFormData({ ...formData, notes: e.target.value })
-              }
-              fullWidth
-              placeholder="Add any special instructions or notes..."
-              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-            />
-          </Stack>
-        </DialogContent>
-        <DialogActions sx={{ p: 2.5, pt: 1 }}>
-          <Button 
-            onClick={() => setCreateDialogOpen(false)}
-            sx={{ borderRadius: 2 }}
-          >
-            Cancel
+            Delete
           </Button>
-          <Button
-            variant="contained"
-            onClick={handleCreateShift}
-            disabled={!formData.userId || selectedDates.size === 0 || createShiftMutation.isPending}
-            sx={{ borderRadius: 2, px: 3 }}
-            startIcon={createShiftMutation.isPending ? <CircularProgress size={16} color="inherit" /> : <AddIcon />}
-          >
-            {createShiftMutation.isPending ? "Creating..." : `Create ${selectedDates.size > 1 ? selectedDates.size + ' Shifts' : 'Shift'}`}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Delete Shift Confirmation Dialog */}
-      <Dialog
-        open={deleteDialogOpen}
-        onClose={() => setDeleteDialogOpen(false)}
-        maxWidth="xs"
-        fullWidth
-        PaperProps={{
-          sx: { borderRadius: 3 }
-        }}
-      >
-        <DialogTitle sx={{ pb: 1 }}>
-          <Stack direction="row" alignItems="center" spacing={1}>
-            <DeleteIcon color="error" />
-            <Typography variant="h6" fontWeight="bold">Delete Shift?</Typography>
-          </Stack>
-        </DialogTitle>
-        <DialogContent>
-          {shiftToDelete && (
-            <Box>
-              <Typography variant="body2" color="text.secondary" paragraph>
-                Are you sure you want to delete this shift? This action cannot be undone.
-              </Typography>
-              <Paper
-                variant="outlined"
-                sx={{
-                  p: 2,
-                  borderRadius: 2,
-                  bgcolor: "rgba(211, 47, 47, 0.04)",
-                  borderColor: "rgba(211, 47, 47, 0.2)",
-                }}
-              >
-                <Stack spacing={1}>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary">
-                      Employee
-                    </Typography>
-                    <Typography variant="subtitle2" fontWeight={600}>
-                      {shiftToDelete.user?.firstName} {shiftToDelete.user?.lastName}
-                    </Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary">
-                      Time
-                    </Typography>
-                    <Typography variant="subtitle2" fontWeight={600}>
-                      {format(parseISO(shiftToDelete.startTime), "MMM d, h:mm a")} - {format(parseISO(shiftToDelete.endTime), "h:mm a")}
-                    </Typography>
-                  </Box>
-                </Stack>
-              </Paper>
-            </Box>
-          )}
-        </DialogContent>
-        <DialogActions sx={{ p: 2.5 }}>
-          <Button
-            onClick={() => setDeleteDialogOpen(false)}
-            sx={{ borderRadius: 2 }}
-            disabled={deleteShiftMutation.isPending}
-          >
-            Cancel
-          </Button>
-          <Button
-            variant="contained"
-            color="error"
-            onClick={confirmDeleteShift}
-            disabled={deleteShiftMutation.isPending}
-            startIcon={deleteShiftMutation.isPending ? <CircularProgress size={16} color="inherit" /> : <DeleteIcon />}
-            sx={{ borderRadius: 2 }}
-          >
-            {deleteShiftMutation.isPending ? "Deleting..." : "Delete Shift"}
+          <Button variant="contained" onClick={handleSaveDialog}>
+            Save
           </Button>
         </DialogActions>
       </Dialog>
