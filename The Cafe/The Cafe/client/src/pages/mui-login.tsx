@@ -62,13 +62,12 @@ export default function MuiLogin() {
       const data = await response.json();
       setAuthState({ user: data.user, isAuthenticated: true });
 
-      // Redirect user based on role to single-origin routes
-      if (data.user?.role === 'admin') {
-        setLocation('/admin/dashboard');
-      } else if (data.user?.role === 'manager') {
-        setLocation('/manager/dashboard');
+      // Redirect user based on role to correct routes
+      if (data.user?.role === 'admin' || data.user?.role === 'manager') {
+        // Admin/Manager use DesktopRouter which starts at /
+        setLocation('/');
       } else {
-        // employee -> new namespaced mobile dashboard
+        // Employee -> mobile dashboard namespace
         setLocation('/employee/dashboard');
       }
 
