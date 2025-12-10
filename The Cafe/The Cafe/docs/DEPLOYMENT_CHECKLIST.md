@@ -284,10 +284,12 @@ git push origin main
 ### Partial Rollback
 ```bash
 # Keep RealTimeManager but revert UI changes:
+# If you need to restore the previous pages, check them out from the previous commit.
+# Note: the app now serves the mobile UI under the unified `/employee/*` namespace.
 git checkout HEAD~1 -- client/src/pages/mui-shift-trading.tsx
 git checkout HEAD~1 -- client/src/pages/mobile-shift-trading.tsx
 
-# Update App.tsx to use old pages
+# Update `App.tsx` to point routes back to the old pages if necessary
 git commit -m "rollback: revert shift trading UI changes"
 git push origin main
 ```
@@ -358,14 +360,18 @@ Ctrl+Shift+R (or Cmd+Shift+R on Mac)
 
 ---
 
+
 ## Post-Deployment Checklist
 
 - [ ] **Week 1**: Monitor error logs daily
 - [ ] **Week 1**: Gather user feedback
 - [ ] **Week 2**: Check performance metrics
 - [ ] **Week 2**: Plan any UX improvements
-- [ ] **Week 3**: Remove old pages if no issues found:
+- [ ] **Week 3**: Optional - Remove legacy pages if no issues found:
+  - The mobile pages are now served under the consolidated `/employee/*` routes. Legacy files remain in the tree for a safety window to allow quick rollback.
+  - After 1 release without issues you may remove the legacy pages. Example (optional):
   ```bash
+  # OPTIONAL: only run after thorough testing and approval
   rm client/src/pages/mui-shift-trading.tsx
   rm client/src/pages/mobile-shift-trading.tsx
   ```

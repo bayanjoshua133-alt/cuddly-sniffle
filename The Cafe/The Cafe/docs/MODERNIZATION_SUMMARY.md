@@ -381,8 +381,8 @@ The Cafe/The Cafe/
 │   ├── hooks/
 │   │   └── use-realtime.ts ✨ NEW
 │   └── pages/
-│       ├── mui-shift-trading.tsx (OLD)
-│       └── mobile-shift-trading.tsx (OLD)
+│       ├── mui-shift-trading.tsx (legacy — consolidated into `shift-trading-panel.tsx`)
+│       └── mobile-shift-trading.tsx (legacy — served under `/employee/shift-trading`; optional removal)
 │
 ├── server/
 │   ├── index.ts (needs RealTimeManager)

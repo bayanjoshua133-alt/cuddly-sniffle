@@ -42,7 +42,7 @@ setFormData({ shiftId: "", targetUserId: "", reason: "", urgency: "normal" });
 ---
 
 ### 2. **mobile-shift-trading.tsx** (Mobile Version)
-**File**: `/client/src/pages/mobile-shift-trading.tsx`
+**File**: `/client/src/pages/mobile-shift-trading.tsx` (served under the consolidated `/employee/shift-trading` route in the unified app)
 
 #### Form State (Lines 51-53)
 ```typescript

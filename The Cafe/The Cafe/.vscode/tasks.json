@@ -1,0 +1,23 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "start vite",
+      "type": "shell",
+      "command": "npm run dev",
+      "presentation": { "reveal": "always", "panel": "shared" },
+      "options": { "cwd": "${workspaceFolder}/The Cafe/The Cafe/client" },
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "start prod",
+      "type": "shell",
+      "command": "powershell -NoProfile -Command \"$env:PORT='5000'; $env:NODE_ENV='production'; $env:SESSION_COOKIE_SECURE='false'; node dist/index.js\"",
+      "presentation": { "reveal": "always", "panel": "shared" },
+      "options": { "cwd": "${workspaceFolder}/The Cafe/The Cafe" },
+      "isBackground": true,
+      "problemMatcher": []
+    }
+  ]
+}

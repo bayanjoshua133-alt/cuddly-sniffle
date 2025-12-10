@@ -19,6 +19,7 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: string, user: Partial<InsertUser>): Promise<User | undefined>;
   getUsersByBranch(branchId: string): Promise<User[]>;
+  getEmployees(branchId: string): Promise<User[]>;
 
   // Branches
   getBranch(id: string): Promise<Branch | undefined>;
@@ -46,11 +47,15 @@ export interface IStorage {
   createPayrollPeriod(period: InsertPayrollPeriod): Promise<PayrollPeriod>;
   getPayrollPeriod(id: string): Promise<PayrollPeriod | undefined>;
   getPayrollPeriodsByBranch(branchId: string): Promise<PayrollPeriod[]>;
+  // Convenience alias
+  getPayrollPeriods(branchId: string): Promise<PayrollPeriod[]>;
   updatePayrollPeriod(id: string, period: Partial<InsertPayrollPeriod>): Promise<PayrollPeriod | undefined>;
   getCurrentPayrollPeriod(branchId: string): Promise<PayrollPeriod | undefined>;
   createPayrollEntry(entry: InsertPayrollEntry): Promise<PayrollEntry>;
   getPayrollEntry(id: string): Promise<PayrollEntry | undefined>;
   getPayrollEntriesByUser(userId: string, periodId?: string): Promise<PayrollEntry[]>;
+  // Get entries by payroll period id
+  getPayrollEntriesByPeriod(periodId: string): Promise<PayrollEntry[]>;
   updatePayrollEntry(id: string, entry: Partial<InsertPayrollEntry>): Promise<PayrollEntry | undefined>;
   deletePayrollEntry(id: string): Promise<void>;
 

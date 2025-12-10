@@ -357,12 +357,12 @@ npm install pdf-lib qrcode @types/qrcode
 
 ### 2. Start Server
 ```bash
-npm run dev:mobile
+npm run dev
 ```
 
 ### 3. Test Sample PDF
 ```bash
-curl http://localhost:5001/api/payslips/sample-pdf -o sample.pdf
+curl http://localhost:5000/api/payslips/sample-pdf -o sample.pdf
 ```
 
 ### 4. Run Tests

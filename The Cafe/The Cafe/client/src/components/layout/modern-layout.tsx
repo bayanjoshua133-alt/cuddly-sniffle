@@ -28,7 +28,7 @@ import {
   AssignmentRoundedIcon,
   NotificationsRoundedIcon,
 } from "@mui/icons-material";
-import { useNavigate } from "react-router-dom";
+import { useLocation } from "wouter";
 import { logout } from "@/lib/auth";
 
 interface ModernLayoutProps {
@@ -51,7 +51,7 @@ const DRAWER_OPEN_DURATION = 225;
 export default function ModernLayout({ children }: ModernLayoutProps) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
-  const navigate = useNavigate();
+  const [, navigate] = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
 
@@ -292,7 +292,7 @@ export default function ModernLayout({ children }: ModernLayoutProps) {
         transformOrigin={{ horizontal: "right", vertical: "top" }}
         anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
       >
-        <MenuItem onClick={() => navigate("/profile")}>
+          <MenuItem onClick={() => navigate("/profile")}>
           <SettingsIcon sx={{ mr: 1.5, fontSize: 20 }} />
           <Typography variant="body2">Profile Settings</Typography>
         </MenuItem>

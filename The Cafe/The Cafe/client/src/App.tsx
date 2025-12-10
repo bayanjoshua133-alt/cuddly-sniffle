@@ -1,8 +1,8 @@
+import React, { useEffect, useState, useCallback, Suspense, lazy } from "react";
 import { Route, Switch, Redirect, useLocation } from "wouter";
 import ErrorBoundary from "@/components/layout/error-boundary";
 import { queryClient, apiRequest } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { useEffect, useState, useCallback, Suspense, lazy } from "react";
 import { getAuthState, setAuthState, subscribeToAuth } from "./lib/auth";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -48,28 +48,6 @@ const MobileProfile = lazy(() => import("@/pages/mobile-profile"));
 const MobileMore = lazy(() => import("@/pages/mobile-more"));
 const MobileClock = lazy(() => import("@/pages/mobile-clock"));
 
-// Detect if running on mobile server or if device is a mobile device
-const isMobileServer = () => {
-  // Check if explicitly on port 5001 (development)
-  const port = window.location.port;
-  const hostname = window.location.hostname;
-  if (port === "5001") return true;
-  if (hostname.includes("-5001.") || hostname.includes("-5001-")) return true;
-  
-  // Check if Render deployment indicates mobile via subdomain or query param
-  if (hostname.includes("-mobile") || hostname.includes("mobile.")) return true;
-  if (new URLSearchParams(window.location.search).get("mobile") === "true") return true;
-  
-  // Check User-Agent for mobile devices (fallback for production)
-  if (typeof navigator !== "undefined") {
-    const userAgent = navigator.userAgent.toLowerCase();
-    const mobileKeywords = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini|windows phone/i;
-    return mobileKeywords.test(userAgent);
-  }
-  
-  return false;
-};
-
 // Loading Screen Component (MUI)
 function LoadingScreen() {
   return (
@@ -109,27 +87,14 @@ function LoadingScreen() {
 
 // Lazy-loaded route wrapper with loading fallback
 function RouteLoader({ children }: { children: React.ReactNode }) {
-  return (
-    <Suspense fallback={<LoadingScreen />}>
-      {children}
-    </Suspense>
-  );
+  return <Suspense fallback={<LoadingScreen />}>{children}</Suspense>;
 }
 
 // Desktop Layout with MUI Components
 function DesktopLayout({ children }: { children: React.ReactNode }) {
   return (
     <Box sx={{ display: "flex", minHeight: "100vh", bgcolor: "background.default" }}>
-      {/* Premium Background Effects */}
-      <Box
-        sx={{
-          position: "fixed",
-          inset: 0,
-          pointerEvents: "none",
-          overflow: "hidden",
-          zIndex: 0,
-        }}
-      >
+      <Box sx={{ position: "fixed", inset: 0, pointerEvents: "none", overflow: "hidden", zIndex: 0 }}>
         <Box
           sx={{
             position: "absolute",
@@ -138,8 +103,7 @@ function DesktopLayout({ children }: { children: React.ReactNode }) {
             width: 600,
             height: 600,
             borderRadius: "50%",
-            background: (theme) =>
-              `radial-gradient(circle, ${alpha(theme.palette.primary.main, 0.08)} 0%, transparent 70%)`,
+            background: (theme) => `radial-gradient(circle, ${alpha(theme.palette.primary.main, 0.08)} 0%, transparent 70%)`,
             animation: "pulse 8s ease-in-out infinite",
           }}
         />
@@ -151,8 +115,7 @@ function DesktopLayout({ children }: { children: React.ReactNode }) {
             width: 500,
             height: 500,
             borderRadius: "50%",
-            background: (theme) =>
-              `radial-gradient(circle, ${alpha(theme.palette.secondary.main, 0.06)} 0%, transparent 70%)`,
+            background: (theme) => `radial-gradient(circle, ${alpha(theme.palette.secondary.main, 0.06)} 0%, transparent 70%)`,
             animation: "pulse 10s ease-in-out infinite 2s",
           }}
         />
@@ -164,8 +127,7 @@ function DesktopLayout({ children }: { children: React.ReactNode }) {
             width: 500,
             height: 500,
             borderRadius: "50%",
-            background: (theme) =>
-              `radial-gradient(circle, ${alpha(theme.palette.info.main, 0.06)} 0%, transparent 70%)`,
+            background: (theme) => `radial-gradient(circle, ${alpha(theme.palette.info.main, 0.06)} 0%, transparent 70%)`,
             animation: "pulse 12s ease-in-out infinite 4s",
           }}
         />
@@ -188,8 +150,8 @@ function RequireAdmin({ children }: { children: React.ReactNode }) {
   const [, setLocation] = useLocation();
 
   useEffect(() => {
-    if (isAuthenticated && user && user.role !== 'admin') {
-      setLocation('/');
+    if (isAuthenticated && user && user.role !== "admin") {
+      setLocation("/");
     }
   }, [isAuthenticated, user, setLocation]);
 
@@ -197,7 +159,7 @@ function RequireAdmin({ children }: { children: React.ReactNode }) {
     return <LoadingScreen />;
   }
 
-  if (user.role !== 'admin') {
+  if (user.role !== "admin") {
     return null;
   }
 
@@ -210,8 +172,8 @@ function RequireManagerOrAdmin({ children }: { children: React.ReactNode }) {
   const [, setLocation] = useLocation();
 
   useEffect(() => {
-    if (isAuthenticated && user && user.role !== 'manager' && user.role !== 'admin') {
-      setLocation('/');
+    if (isAuthenticated && user && user.role !== "manager" && user.role !== "admin") {
+      setLocation("/");
     }
   }, [isAuthenticated, user, setLocation]);
 
@@ -219,14 +181,14 @@ function RequireManagerOrAdmin({ children }: { children: React.ReactNode }) {
     return <LoadingScreen />;
   }
 
-  if (user.role !== 'manager' && user.role !== 'admin') {
+  if (user.role !== "manager" && user.role !== "admin") {
     return null;
   }
 
   return <>{children}</>;
 }
 
-// Desktop Router (All authenticated users - Port 5000)
+// Desktop Router (All authenticated users)
 function DesktopRouter({ authState }: { authState: { isAuthenticated: boolean; user: any } }) {
   const { isAuthenticated, user } = authState;
 
@@ -238,14 +200,12 @@ function DesktopRouter({ authState }: { authState: { isAuthenticated: boolean; u
     );
   }
 
-  // Allow all authenticated users on desktop
   if (!user) {
     return <LoadingScreen />;
   }
 
   return (
     <Switch>
-      {/* Dashboard - MUI */}
       <Route path="/">
         <DesktopLayout>
           <RouteLoader>
@@ -254,7 +214,6 @@ function DesktopRouter({ authState }: { authState: { isAuthenticated: boolean; u
         </DesktopLayout>
       </Route>
 
-      {/* Schedule Management - MUI */}
       <Route path="/schedule">
         <DesktopLayout>
           <RouteLoader>
@@ -263,7 +222,6 @@ function DesktopRouter({ authState }: { authState: { isAuthenticated: boolean; u
         </DesktopLayout>
       </Route>
 
-      {/* Shift Trading - MUI */}
       <Route path="/shift-trading">
         <DesktopLayout>
           <RouteLoader>
@@ -274,9 +232,6 @@ function DesktopRouter({ authState }: { authState: { isAuthenticated: boolean; u
         </DesktopLayout>
       </Route>
 
-      {/* Personal Payroll View - MUI */}
-
-      {/* Time Off Management - MUI */}
       <Route path="/time-off">
         <DesktopLayout>
           <RouteLoader>
@@ -286,6 +241,7 @@ function DesktopRouter({ authState }: { authState: { isAuthenticated: boolean; u
           </RouteLoader>
         </DesktopLayout>
       </Route>
+
       <Route path="/payroll">
         <DesktopLayout>
           <RouteLoader>
@@ -294,7 +250,6 @@ function DesktopRouter({ authState }: { authState: { isAuthenticated: boolean; u
         </DesktopLayout>
       </Route>
 
-      {/* Notifications - MUI */}
       <Route path="/notifications">
         <DesktopLayout>
           <RouteLoader>
@@ -303,7 +258,6 @@ function DesktopRouter({ authState }: { authState: { isAuthenticated: boolean; u
         </DesktopLayout>
       </Route>
 
-      {/* Employees Management - MUI */}
       <Route path="/employees">
         <DesktopLayout>
           <RouteLoader>
@@ -312,7 +266,6 @@ function DesktopRouter({ authState }: { authState: { isAuthenticated: boolean; u
         </DesktopLayout>
       </Route>
 
-      {/* Payroll Management (Admin) - MUI */}
       <Route path="/payroll-management">
         <DesktopLayout>
           <RouteLoader>
@@ -321,7 +274,6 @@ function DesktopRouter({ authState }: { authState: { isAuthenticated: boolean; u
         </DesktopLayout>
       </Route>
 
-      {/* Reports & Analytics - MUI */}
       <Route path="/reports">
         <DesktopLayout>
           <RouteLoader>
@@ -330,7 +282,6 @@ function DesktopRouter({ authState }: { authState: { isAuthenticated: boolean; u
         </DesktopLayout>
       </Route>
 
-      {/* Branch Management - MUI */}
       <Route path="/branches">
         <DesktopLayout>
           <RouteLoader>
@@ -341,7 +292,6 @@ function DesktopRouter({ authState }: { authState: { isAuthenticated: boolean; u
         </DesktopLayout>
       </Route>
 
-      {/* Deduction Settings - MUI */}
       <Route path="/deduction-settings">
         <DesktopLayout>
           <RouteLoader>
@@ -350,7 +300,6 @@ function DesktopRouter({ authState }: { authState: { isAuthenticated: boolean; u
         </DesktopLayout>
       </Route>
 
-      {/* Admin Only: Deduction Rates - MUI */}
       <Route path="/admin/deduction-rates">
         <RequireAdmin>
           <DesktopLayout>
@@ -361,7 +310,6 @@ function DesktopRouter({ authState }: { authState: { isAuthenticated: boolean; u
         </RequireAdmin>
       </Route>
 
-      {/* Payslip Demo - Role-Based Views */}
       <Route path="/payslip-demo">
         <DesktopLayout>
           <RouteLoader>
@@ -370,7 +318,6 @@ function DesktopRouter({ authState }: { authState: { isAuthenticated: boolean; u
         </DesktopLayout>
       </Route>
 
-      {/* 404 */}
       <Route>
         <DesktopLayout>
           <RouteLoader>
@@ -382,10 +329,14 @@ function DesktopRouter({ authState }: { authState: { isAuthenticated: boolean; u
   );
 }
 
-// Mobile Router (Employee only - Port 5001)
+// Mobile Router (Employee namespace)
 function MobileRouter({ authState }: { authState: { isAuthenticated: boolean; user: any } }) {
   const { isAuthenticated, user } = authState;
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  const [, setLocation] = useLocation();
 
+  // Defensive redirect: if not authenticated, send user to login immediately
+  // If not authenticated, show the login route (avoid premature null return)
   if (!isAuthenticated) {
     return (
       <RouteLoader>
@@ -394,63 +345,29 @@ function MobileRouter({ authState }: { authState: { isAuthenticated: boolean; us
     );
   }
 
-  // Allow employees to access mobile portal
-  // Block manager/admin and show them a message to use desktop
   if (user?.role === "manager" || user?.role === "admin") {
     const handleLogout = async () => {
       try {
         await apiRequest("POST", "/api/auth/logout");
       } catch (e) {
-        // Ignore logout errors
+        // ignore
       }
       setAuthState({ user: null, isAuthenticated: false });
     };
 
     return (
-      <Box
-        sx={{
-          minHeight: "100vh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          bgcolor: "background.default",
-          p: 3,
-        }}
-      >
+      <Box sx={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", bgcolor: "background.default", p: 3 }}>
         <Box sx={{ textAlign: "center", maxWidth: 400 }}>
-          <Box
-            sx={{
-              width: 64,
-              height: 64,
-              borderRadius: 3,
-              bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1),
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              mx: "auto",
-              mb: 2,
-            }}
-          >
+          <Box sx={{ width: 64, height: 64, borderRadius: 3, bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1), display: "flex", alignItems: "center", justifyContent: "center", mx: "auto", mb: 2 }}>
             <CoffeeIcon sx={{ fontSize: 32, color: "primary.main" }} />
           </Box>
           <Typography variant="h5" fontWeight={700} gutterBottom>
             Manager Portal
           </Typography>
           <Typography color="text.secondary" sx={{ mb: 3 }}>
-            You're logged in as a {user.role}. This mobile app is designed for employees. Please
-            use the desktop portal for full management features.
+            You're logged in as a {user.role}. This mobile app is designed for employees. Please use the desktop portal for full management features.
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            Desktop Portal:{" "}
-            <Typography component="span" sx={{ fontFamily: "monospace", color: "primary.main" }}>
-              port 5000
-            </Typography>
-          </Typography>
-          <Button
-            variant="outlined"
-            onClick={handleLogout}
-            sx={{ borderRadius: 2 }}
-          >
+          <Button variant="outlined" onClick={handleLogout} sx={{ borderRadius: 2 }}>
             Logout & Switch Account
           </Button>
         </Box>
@@ -458,156 +375,172 @@ function MobileRouter({ authState }: { authState: { isAuthenticated: boolean; us
     );
   }
 
-  // Employee role or any other role - allow access to mobile dashboard
   return (
     <Switch>
-      {/* Mobile Dashboard */}
-      <Route path="/">
-        <RouteLoader>
-          <ErrorBoundary>
-            <MobileDashboard />
-          </ErrorBoundary>
-        </RouteLoader>
-      </Route>
-      <Route path="/mobile-dashboard">
-        <RouteLoader>
-          <ErrorBoundary>
-            <MobileDashboard />
-          </ErrorBoundary>
-        </RouteLoader>
-      </Route>
-
-      {/* Mobile Clock */}
-      <Route path="/clock">
-        <RouteLoader>
-          <ErrorBoundary>
-            <MobileClock />
-          </ErrorBoundary>
-        </RouteLoader>
-      </Route>
-      <Route path="/mobile-clock">
-        <RouteLoader>
-          <ErrorBoundary>
-            <MobileClock />
-          </ErrorBoundary>
-        </RouteLoader>
+      <Route path="/employee">
+        {isMobile ? (
+          <RouteLoader>
+            <ErrorBoundary>
+              <MobileDashboard />
+            </ErrorBoundary>
+          </RouteLoader>
+        ) : (
+          <DesktopLayout>
+            <RouteLoader>
+              <MuiDashboard />
+            </RouteLoader>
+          </DesktopLayout>
+        )}
       </Route>
 
-      {/* Mobile Schedule */}
-      <Route path="/schedule">
-        <RouteLoader>
-          <ErrorBoundary>
-            <MobileSchedule />
-          </ErrorBoundary>
-        </RouteLoader>
-      </Route>
-      <Route path="/mobile-schedule">
-        <RouteLoader>
-          <ErrorBoundary>
-            <MobileSchedule />
-          </ErrorBoundary>
-        </RouteLoader>
-      </Route>
-
-      {/* Mobile Payroll */}
-      <Route path="/payroll">
-        <RouteLoader>
-          <ErrorBoundary>
-            <MobilePayroll />
-          </ErrorBoundary>
-        </RouteLoader>
-      </Route>
-      <Route path="/mobile-payroll">
-        <RouteLoader>
-          <ErrorBoundary>
-            <MobilePayroll />
-          </ErrorBoundary>
-        </RouteLoader>
+      <Route path="/employee/dashboard">
+        {isMobile ? (
+          <RouteLoader>
+            <ErrorBoundary>
+              <MobileDashboard />
+            </ErrorBoundary>
+          </RouteLoader>
+        ) : (
+          <DesktopLayout>
+            <RouteLoader>
+              <MuiDashboard />
+            </RouteLoader>
+          </DesktopLayout>
+        )}
       </Route>
 
-      {/* Mobile Notifications */}
-      <Route path="/notifications">
-        <RouteLoader>
-          <ErrorBoundary>
-            <MobileNotifications />
-          </ErrorBoundary>
-        </RouteLoader>
-      </Route>
-      <Route path="/mobile-notifications">
-        <RouteLoader>
-          <ErrorBoundary>
-            <MobileNotifications />
-          </ErrorBoundary>
-        </RouteLoader>
-      </Route>
-
-      {/* Mobile Time Off */}
-      <Route path="/time-off">
-        <RouteLoader>
-          <ErrorBoundary>
-            <MobileTimeOff />
-          </ErrorBoundary>
-        </RouteLoader>
-      </Route>
-      <Route path="/mobile-time-off">
-        <RouteLoader>
-          <ErrorBoundary>
-            <MobileTimeOff />
-          </ErrorBoundary>
-        </RouteLoader>
+      <Route path="/employee/clock">
+        {isMobile ? (
+          <RouteLoader>
+            <ErrorBoundary>
+              <MobileClock />
+            </ErrorBoundary>
+          </RouteLoader>
+        ) : (
+          <DesktopLayout>
+            <RouteLoader>
+              <MuiDashboard />
+            </RouteLoader>
+          </DesktopLayout>
+        )}
       </Route>
 
-      {/* Mobile Shift Trading */}
-      <Route path="/shift-trading">
-        <RouteLoader>
-          <ErrorBoundary>
-            <MobileShiftTrading />
-          </ErrorBoundary>
-        </RouteLoader>
-      </Route>
-      <Route path="/mobile-shift-trading">
-        <RouteLoader>
-          <ErrorBoundary>
-            <MobileShiftTrading />
-          </ErrorBoundary>
-        </RouteLoader>
-      </Route>
-
-      {/* Mobile Profile */}
-      <Route path="/profile">
-        <RouteLoader>
-          <ErrorBoundary>
-            <MobileProfile />
-          </ErrorBoundary>
-        </RouteLoader>
-      </Route>
-      <Route path="/mobile-profile">
-        <RouteLoader>
-          <ErrorBoundary>
-            <MobileProfile />
-          </ErrorBoundary>
-        </RouteLoader>
+      <Route path="/employee/schedule">
+        {isMobile ? (
+          <RouteLoader>
+            <ErrorBoundary>
+              <MobileSchedule />
+            </ErrorBoundary>
+          </RouteLoader>
+        ) : (
+          <DesktopLayout>
+            <RouteLoader>
+              <MuiSchedule />
+            </RouteLoader>
+          </DesktopLayout>
+        )}
       </Route>
 
-      {/* Mobile More */}
-      <Route path="/more">
-        <RouteLoader>
-          <ErrorBoundary>
-            <MobileMore />
-          </ErrorBoundary>
-        </RouteLoader>
-      </Route>
-      <Route path="/mobile-more">
-        <RouteLoader>
-          <ErrorBoundary>
-            <MobileMore />
-          </ErrorBoundary>
-        </RouteLoader>
+      <Route path="/employee/payroll">
+        {isMobile ? (
+          <RouteLoader>
+            <ErrorBoundary>
+              <MobilePayroll />
+            </ErrorBoundary>
+          </RouteLoader>
+        ) : (
+          <DesktopLayout>
+            <RouteLoader>
+              <MuiPayroll />
+            </RouteLoader>
+          </DesktopLayout>
+        )}
       </Route>
 
-      {/* Catch all - redirect to dashboard */}
+      <Route path="/employee/notifications">
+        {isMobile ? (
+          <RouteLoader>
+            <ErrorBoundary>
+              <MobileNotifications />
+            </ErrorBoundary>
+          </RouteLoader>
+        ) : (
+          <DesktopLayout>
+            <RouteLoader>
+              <MuiNotifications />
+            </RouteLoader>
+          </DesktopLayout>
+        )}
+      </Route>
+
+      <Route path="/employee/time-off">
+        {isMobile ? (
+          <RouteLoader>
+            <ErrorBoundary>
+              <MobileTimeOff />
+            </ErrorBoundary>
+          </RouteLoader>
+        ) : (
+          <DesktopLayout>
+            <RouteLoader>
+              <MuiTimeOff />
+            </RouteLoader>
+          </DesktopLayout>
+        )}
+      </Route>
+
+      <Route path="/employee/shift-trading">
+        {isMobile ? (
+          <RouteLoader>
+            <ErrorBoundary>
+              <MobileShiftTrading />
+            </ErrorBoundary>
+          </RouteLoader>
+        ) : (
+          <DesktopLayout>
+            <RouteLoader>
+              <ErrorBoundary>
+                <MuiShiftTrading />
+              </ErrorBoundary>
+            </RouteLoader>
+          </DesktopLayout>
+        )}
+      </Route>
+
+      <Route path="/employee/profile">
+        {isMobile ? (
+          <RouteLoader>
+            <ErrorBoundary>
+              <MobileProfile />
+            </ErrorBoundary>
+          </RouteLoader>
+        ) : (
+          <DesktopLayout>
+            <RouteLoader>
+              <MuiEmployees />
+            </RouteLoader>
+          </DesktopLayout>
+        )}
+      </Route>
+
+      <Route path="/employee/more">
+        {isMobile ? (
+          <RouteLoader>
+            <ErrorBoundary>
+              <MobileMore />
+            </ErrorBoundary>
+          </RouteLoader>
+        ) : (
+          <DesktopLayout>
+            <RouteLoader>
+              <MuiDashboard />
+            </RouteLoader>
+          </DesktopLayout>
+        )}
+      </Route>
+
       <Route>
-        <Redirect to="/mobile-dashboard" />
+        <Redirect to="/employee/dashboard" />
       </Route>
     </Switch>
   );
@@ -618,22 +551,14 @@ function App() {
   const [authState, setLocalAuthState] = useState(getAuthState());
   const [isLoading, setIsLoading] = useState(true);
   const [setupComplete, setSetupComplete] = useState<boolean | null>(null);
-  const [isMobileServerMode, setIsMobileServerMode] = useState<boolean | null>(null);
 
   const checkAuth = useCallback(async () => {
     setIsLoading(true);
     try {
-      // Check setup status
       const setupResponse = await apiRequest("GET", "/api/setup/status");
       const setupData = await setupResponse.json();
       setSetupComplete(setupData.isSetupComplete);
-      
-      // Store mobile server mode from server (for Render deployment support)
-      if (setupData.isMobileServer !== undefined) {
-        setIsMobileServerMode(setupData.isMobileServer);
-      }
 
-      // If setup complete, verify authentication using status endpoint
       if (setupData.isSetupComplete) {
         try {
           const authResponse = await apiRequest("GET", "/api/auth/status");
@@ -644,12 +569,12 @@ function App() {
             setAuthState({ user: null, isAuthenticated: false });
           }
         } catch (error) {
-          console.warn('Auth status check failed:', error);
+          console.warn("Auth status check failed:", error);
           setAuthState({ user: null, isAuthenticated: false });
         }
       }
     } catch (error) {
-      console.error('Setup check error:', error);
+      console.error("Setup check error:", error);
       setSetupComplete(false);
     } finally {
       setIsLoading(false);
@@ -659,27 +584,31 @@ function App() {
   useEffect(() => {
     checkAuth();
     const unsubscribe = subscribeToAuth(setLocalAuthState);
-    
-    // Poll for user data updates every 5 seconds to keep position/profile in sync
+
     const authPollInterval = setInterval(async () => {
       if (setupComplete) {
         try {
-          const authResponse = await apiRequest("GET", "/api/auth/me");
+          // Use status endpoint which is safe for unauthenticated users
+          const authResponse = await apiRequest("GET", "/api/auth/status");
           const authData = await authResponse.json();
-          setAuthState({ user: authData.user, isAuthenticated: true });
-        } catch {
-          // Silent fail - don't log user out on network blips
+          if (authData.authenticated && authData.user) {
+            setAuthState({ user: authData.user, isAuthenticated: true });
+          } else {
+            setAuthState({ user: null, isAuthenticated: false });
+          }
+        } catch (err) {
+          // If request fails, treat as unauthenticated but don't spam console
+          setAuthState({ user: null, isAuthenticated: false });
         }
       }
     }, 5000);
-    
+
     return () => {
       unsubscribe();
       clearInterval(authPollInterval);
     };
   }, [checkAuth, setupComplete]);
 
-  // Loading state
   if (isLoading) {
     return (
       <ThemeProvider>
@@ -690,7 +619,6 @@ function App() {
     );
   }
 
-  // Setup not complete
   if (setupComplete === false) {
     return (
       <ThemeProvider>
@@ -705,63 +633,63 @@ function App() {
     );
   }
 
-  // Render appropriate router based on server port or server mode (for Render deployment)
-  // Priority: server mode > port detection > user agent
-  const shouldShowMobile = isMobileServerMode !== null 
-    ? isMobileServerMode 
-    : isMobileServer();
-    
-  try {
-    return (
-      <ThemeProvider>
-        <MuiThemeProvider>
-          <QueryClientProvider client={queryClient}>
-            <TooltipProvider>
-              <Toaster />
-              {shouldShowMobile ? (
+  return (
+    <ThemeProvider>
+      <MuiThemeProvider>
+        <QueryClientProvider client={queryClient}>
+          <TooltipProvider>
+            <Toaster />
+            <Switch>
+              {/* Convenience redirect: legacy route */}
+              <Route path="/employee/mobile">
+                <Redirect to="/employee/dashboard" />
+              </Route>
+
+              {/* Legacy mobile paths -> new /employee/* namespace */}
+              <Route path="/mobile-dashboard">
+                <Redirect to="/employee/dashboard" />
+              </Route>
+              <Route path="/mobile-clock">
+                <Redirect to="/employee/clock" />
+              </Route>
+              <Route path="/mobile-schedule">
+                <Redirect to="/employee/schedule" />
+              </Route>
+              <Route path="/mobile-payroll">
+                <Redirect to="/employee/payroll" />
+              </Route>
+              <Route path="/mobile-notifications">
+                <Redirect to="/employee/notifications" />
+              </Route>
+              <Route path="/mobile-time_off">
+                <Redirect to="/employee/time-off" />
+              </Route>
+              <Route path="/mobile-shift-trading">
+                <Redirect to="/employee/shift-trading" />
+              </Route>
+              <Route path="/mobile-profile">
+                <Redirect to="/employee/profile" />
+              </Route>
+              <Route path="/mobile-more">
+                <Redirect to="/employee/more" />
+              </Route>
+
+              {/* Employee namespace - mount MobileRouter */}
+              <Route path="/employee">
                 <MobileRouter authState={authState} />
-              ) : (
+              </Route>
+
+              {/* Desktop root */}
+              <Route path="/">
                 <DesktopRouter authState={authState} />
-              )}
-            </TooltipProvider>
-          </QueryClientProvider>
-        </MuiThemeProvider>
-      </ThemeProvider>
-    );
-  } catch (error) {
-    console.error("App rendering error:", error);
-    // Fallback UI when app crashes
-    return (
-      <Box
-        sx={{
-          minHeight: "100vh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          bgcolor: "#1a1a1a",
-        }}
-      >
-        <Box sx={{ textAlign: "center", color: "#fff", maxWidth: 500 }}>
-          <Typography variant="h5" sx={{ mb: 2 }}>
-            Application Error
-          </Typography>
-          <Typography color="error" sx={{ mb: 2, fontSize: "14px" }}>
-            {(error as Error)?.message || "Unknown error occurred"}
-          </Typography>
-          <Typography sx={{ color: "#999", fontSize: "12px" }}>
-            Please check your browser console for more details. Try refreshing the page.
-          </Typography>
-          <Button
-            sx={{ mt: 3 }}
-            onClick={() => window.location.reload()}
-            variant="contained"
-          >
-            Refresh Page
-          </Button>
-        </Box>
-      </Box>
-    );
-  }
+              </Route>
+            </Switch>
+          </TooltipProvider>
+        </QueryClientProvider>
+      </MuiThemeProvider>
+    </ThemeProvider>
+  );
 }
 
 export default App;
+  // Setup not complete

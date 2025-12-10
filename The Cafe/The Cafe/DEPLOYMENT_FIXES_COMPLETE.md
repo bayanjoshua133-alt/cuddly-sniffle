@@ -296,7 +296,7 @@ Serving Static Files:
 - Admin/Manager/Employee roles work as before
 
 ### ✅ Backward Compatible
-- Mobile app still works (port 5001)
+- Mobile app still works (single origin, port 5000)
 - Desktop portal still works (port 5000)
 - External integrations unchanged
 - Session management unchanged

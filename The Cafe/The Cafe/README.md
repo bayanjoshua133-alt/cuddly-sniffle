@@ -28,9 +28,8 @@ npm install
 npm run dev
 ```
 
-This starts two servers:
-- **Desktop (Manager/Admin)**: http://localhost:5000
-- **Mobile (Employee)**: http://localhost:5001
+This starts a single development server (single origin):
+- **App (Desktop & Mobile responsive)**: http://localhost:5000
 
 ### Default Login Credentials
 
@@ -42,7 +41,7 @@ This starts two servers:
 
 ## 📱 Features
 
-### For Employees (Mobile - Port 5001)
+### For Employees (Mobile - Responsive)
 - View schedule and upcoming shifts
 - Clock in/out
 - Request time off
@@ -60,9 +59,7 @@ This starts two servers:
 
 | Command | Description |
 |---------|-------------|
-| `npm run dev` | Start both desktop and mobile servers |
-| `npm run dev:desktop` | Start only desktop server (port 5000) |
-| `npm run dev:mobile` | Start only mobile server (port 5001) |
+| `npm run dev` | Start the development server (port 5000) |
 | `npm run build` | Build for production |
 | `npm run test` | Run tests |
 | `npm start` | Start production server |

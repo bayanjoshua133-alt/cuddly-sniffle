@@ -130,7 +130,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     name: 'cafe-session', // Custom session cookie name
     proxy: process.env.NODE_ENV === 'production', // Trust X-Forwarded-* headers on Render
     cookie: {
-      secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+      // Allow explicit override via SESSION_COOKIE_SECURE env var.
+      // By default, keep cookies secure in production (HTTPS). For local testing
+      // you can set SESSION_COOKIE_SECURE=false to allow cookies over http://localhost.
+      secure: process.env.SESSION_COOKIE_SECURE
+        ? String(process.env.SESSION_COOKIE_SECURE).toLowerCase() === 'true'
+        : (process.env.NODE_ENV === 'production'), // HTTPS only in production by default
       httpOnly: true, // Prevent JavaScript access for security
       sameSite: 'lax', // CSRF protection
       maxAge: 24 * 60 * 60 * 1000, // 24 hours in milliseconds
@@ -156,10 +161,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/setup/status", async (req: Request, res: Response) => {
     try {
       const isComplete = await storage.isSetupComplete();
-      const isMobileServer = process.env.MOBILE_SERVER === 'true';
       res.json({ 
         isSetupComplete: isComplete,
-        isMobileServer: isMobileServer // Send mobile server info to client for Render deployment
       });
     } catch (error) {
       console.error('Setup status check error:', error);
@@ -306,6 +309,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // In-memory store for client-side debug reports (kept only in memory for local debugging)
+  const clientDebugReports: Array<any> = [];
+
+  // Endpoint to receive client-side debug reports (POSTed by injected script)
+  app.post("/api/client-debug", async (req: Request, res: Response) => {
+    try {
+      const payload = req.body || {};
+      const entry = {
+        receivedAt: new Date().toISOString(),
+        ip: req.ip,
+        ua: req.get('user-agent'),
+        url: payload.url || req.get('referer') || req.originalUrl,
+        payload,
+      };
+
+      // Keep only the most recent 200 reports to avoid memory growth
+      clientDebugReports.unshift(entry);
+      if (clientDebugReports.length > 200) clientDebugReports.pop();
+
+      console.log('📣 Client debug report received:', entry.url, payload.type || payload.message || '(no type)');
+
+      // Accept via beacon/fetch without blocking client
+      res.status(204).end();
+    } catch (error) {
+      console.error('Error receiving client debug report:', error);
+      res.status(500).json({ message: 'Failed to record client debug report' });
+    }
+  });
+
+  // Simple viewer for collected client debug reports (for local debugging only)
+  app.get("/api/client-debug", async (req: Request, res: Response) => {
+    try {
+      // Render a lightweight HTML page showing recent reports
+      const rows = clientDebugReports.slice(0, 100).map((r, idx) => {
+        const p = JSON.stringify(r.payload, null, 2).replace(/</g, '&lt;');
+        return `<section style="border-bottom:1px solid #eee;padding:12px 0"><h3>#${idx+1} - ${r.receivedAt} - ${r.url}</h3><pre style="white-space:pre-wrap;background:#111;color:#fff;padding:8px;border-radius:6px;overflow:auto;max-height:240px">${p}</pre></section>`;
+      }).join('\n');
+
+      const page = `<!doctype html><html><head><meta charset="utf-8"><title>Client Debug Reports</title><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="font-family:Arial,Helvetica,sans-serif;margin:20px"><h1>Client Debug Reports (recent)</h1>${rows||'<p>No reports yet</p>'}</body></html>`;
+      res.setHeader('Content-Type', 'text/html');
+      res.status(200).send(page);
+    } catch (error) {
+      console.error('Error rendering client debug reports:', error);
+      res.status(500).json({ message: 'Failed to render debug reports' });
+    }
+  });
+
   // Auth routes
   app.post("/api/auth/login", async (req: Request, res: Response) => {
     try {
@@ -346,6 +396,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           } else {
             console.log('✅ Session saved for user:', username);
             
+            // Ensure Set-Cookie header is explicitly sent for clients that may
+            // not automatically receive the cookie from the session middleware
+            // (this is a safe redundancy).
+            try {
+              // sessionConfig is defined above in this scope; use its cookie options
+              // to mirror express-session behavior when setting the cookie explicitly.
+              const cookieName = sessionConfig && sessionConfig.name ? sessionConfig.name : 'cafe-session';
+              res.cookie(cookieName, req.sessionID, sessionConfig.cookie || {});
+            } catch (e) {
+              console.warn('Could not explicitly set session cookie:', e);
+            }
+
             // Remove password from response
             const { password: _, ...userWithoutPassword } = user;
             
@@ -755,6 +817,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     for (const user of users) {
       const entries = await storage.getPayrollEntriesByUser(user.id);
       for (const entry of entries) {
+        if (!entry.createdAt) continue;
         const entryDate = new Date(entry.createdAt);
         if (entryDate >= monthStart && entryDate <= monthEnd) {
           totalPayrollThisMonth += parseFloat(entry.grossPay);
@@ -1010,11 +1073,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Get deduction settings for the branch
         const deductionSettings = await storage.getDeductionSettings(branchId);
-        const settings = deductionSettings || {
-          deductSSS: true,
-          deductPhilHealth: false,
-          deductPagibig: false,
-          deductWithholdingTax: false
+        // Coerce nullable booleans to strict booleans expected by deduction calculator
+        const settings = {
+          deductSSS: Boolean(deductionSettings?.deductSSS),
+          deductPhilHealth: Boolean(deductionSettings?.deductPhilHealth),
+          deductPagibig: Boolean(deductionSettings?.deductPagibig),
+          deductWithholdingTax: Boolean(deductionSettings?.deductWithholdingTax),
         };
 
         // Calculate monthly salary for deduction calculations
@@ -1260,7 +1324,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       employeeName: `${user.firstName} ${user.lastName}`,
       employeeId: user.id,
       position: user.position,
-      period: entry.createdAt,
+      period: entry.createdAt!,
       regularHours: entry.regularHours,
       overtimeHours: entry.overtimeHours,
       nightDiffHours: (entry as any).nightDiffHours || 0,
@@ -1534,7 +1598,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               firstName: targetUser.firstName || "",
               lastName: targetUser.lastName || "",
             } : null,
-            createdAt: trade.requestedAt || trade.createdAt || new Date(),
+            createdAt: trade.requestedAt ?? new Date(),
           };
         })
       );
@@ -1923,9 +1987,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Can only cancel pending trades" });
       }
 
-      // Update the trade status to 'cancelled'
+      // Update the trade status to 'rejected' (use schema-allowed value)
       const updatedTrade = await storage.updateShiftTrade(id, {
-        status: "cancelled"
+        status: "rejected"
       });
 
       // Notify target user if one was selected
@@ -2135,6 +2199,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     for (const user of users) {
       const entries = await storage.getPayrollEntriesByUser(user.id);
       for (const entry of entries) {
+        if (!entry.createdAt) continue;
         const entryDate = new Date(entry.createdAt);
         if (entryDate >= monthStart && entryDate <= monthEnd) {
           totalPayroll += parseFloat(entry.grossPay);
@@ -2692,8 +2757,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         id: entry.id,
         employeeId: user.id,
         employeeName: `${user.firstName} ${user.lastName}`,
-        periodStart: entry.createdAt.toISOString(),
-        periodEnd: entry.createdAt.toISOString(),
+        periodStart: entry.createdAt!.toISOString(),
+        periodEnd: entry.createdAt!.toISOString(),
         totalHours: parseFloat(entry.totalHours),
         regularHours: parseFloat(entry.regularHours),
         overtimeHours: parseFloat(entry.overtimeHours || "0"),
@@ -2810,8 +2875,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           id: entry.id,
           employeeId: user.id,
           employeeName: `${user.firstName} ${user.lastName}`,
-          periodStart: entry.createdAt.toISOString(),
-          periodEnd: entry.createdAt.toISOString(),
+          periodStart: entry.createdAt!.toISOString(),
+          periodEnd: entry.createdAt!.toISOString(),
           totalHours: parseFloat(entry.totalHours),
           regularHours: parseFloat(entry.regularHours),
           overtimeHours: parseFloat(entry.overtimeHours || "0"),

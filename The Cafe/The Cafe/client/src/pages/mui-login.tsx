@@ -23,6 +23,7 @@ import {
 } from "@mui/icons-material";
 import { apiRequest } from "@/lib/queryClient";
 import { setAuthState } from "@/lib/auth";
+import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 
 export default function MuiLogin() {
@@ -33,6 +34,7 @@ export default function MuiLogin() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,6 +59,16 @@ export default function MuiLogin() {
 
       const data = await response.json();
       setAuthState({ user: data.user, isAuthenticated: true });
+
+      // Redirect user based on role to single-origin routes
+      if (data.user?.role === 'admin') {
+        setLocation('/admin/dashboard');
+      } else if (data.user?.role === 'manager') {
+        setLocation('/manager/dashboard');
+      } else {
+        // employee -> new namespaced mobile dashboard
+        setLocation('/employee/dashboard');
+      }
 
       toast({
         title: "Welcome back!",

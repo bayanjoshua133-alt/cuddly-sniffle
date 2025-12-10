@@ -36,9 +36,10 @@ const requireRole = (roles: string[]) => (req: Request, res: Response, next: Nex
 router.get('/api/employees', requireAuth, async (req, res) => {
   try {
     const branchId = req.session.user?.branchId;
-    
-    // Return employees from the same branch (for shift trading purposes)
-    const employees = await storage.getUsersByBranch(branchId);
+    if (!branchId) return res.status(400).json({ message: 'Branch ID not found in session' });
+
+    // Return only employee role users from the same branch (for shift trading purposes)
+    const employees = await storage.getEmployees(branchId);
     
     // Filter out sensitive data - return only basic info needed for shift trading
     const sanitizedEmployees = employees

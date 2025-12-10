@@ -347,7 +347,7 @@ export default function MobileDashboard() {
         showBack={false}
         showMenu={false}
         notificationCount={unreadCount}
-        onNotificationClick={() => setLocation('/mobile-notifications')}
+        onNotificationClick={() => setLocation('/employee/notifications')}
       />
 
       {/* Main Content */}
@@ -414,7 +414,7 @@ export default function MobileDashboard() {
         >
           <motion.button
             whileTap={{ scale: 0.95 }}
-            onClick={() => setLocation('/mobile-schedule')}
+            onClick={() => setLocation('/employee/schedule')}
             className="flex flex-col items-center gap-2 sm:gap-3 p-3 sm:p-5 bg-gradient-to-br from-primary/15 to-primary/5 rounded-xl sm:rounded-2xl border-2 border-primary/20"
           >
             <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-lg sm:rounded-xl bg-primary/20 flex items-center justify-center">
@@ -424,7 +424,7 @@ export default function MobileDashboard() {
           </motion.button>
           <motion.button
             whileTap={{ scale: 0.95 }}
-            onClick={() => setLocation('/mobile-shift-trading')}
+            onClick={() => setLocation('/employee/shift-trading')}
             className="flex flex-col items-center gap-2 sm:gap-3 p-3 sm:p-5 bg-gradient-to-br from-blue-500/15 to-blue-500/5 rounded-xl sm:rounded-2xl border-2 border-blue-500/20"
           >
             <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-lg sm:rounded-xl bg-blue-500/20 flex items-center justify-center">
@@ -434,7 +434,7 @@ export default function MobileDashboard() {
           </motion.button>
           <motion.button
             whileTap={{ scale: 0.95 }}
-            onClick={() => setLocation('/mobile-time-off')}
+            onClick={() => setLocation('/employee/time-off')}
             className="flex flex-col items-center gap-2 sm:gap-3 p-3 sm:p-5 bg-gradient-to-br from-violet-500/15 to-violet-500/5 rounded-xl sm:rounded-2xl border-2 border-violet-500/20"
           >
             <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-lg sm:rounded-xl bg-violet-500/20 flex items-center justify-center">
@@ -546,7 +546,7 @@ export default function MobileDashboard() {
                   variant="ghost"
                   size="sm"
                   className="text-primary text-sm sm:text-base h-8 sm:h-10 px-2 sm:px-4 rounded-lg sm:rounded-xl"
-                  onClick={() => setLocation('/mobile-schedule')}
+                  onClick={() => setLocation('/employee/schedule')}
                 >
                   View All <ChevronRight className="w-4 h-4 ml-1" />
                 </Button>
@@ -634,7 +634,7 @@ export default function MobileDashboard() {
                   variant="ghost"
                   size="sm"
                   className="text-sm sm:text-base h-8 sm:h-10 px-2 sm:px-3 rounded-lg sm:rounded-xl"
-                  onClick={() => setLocation('/mobile-notifications')}
+                  onClick={() => setLocation('/employee/notifications')}
                 >
                   All <ChevronRight className="w-4 h-4 ml-1" />
                 </Button>
@@ -730,7 +730,7 @@ export default function MobileDashboard() {
                 </div>
                 <Button
                   className="w-full mt-3 sm:mt-5 h-10 sm:h-14 text-sm sm:text-lg font-semibold rounded-lg sm:rounded-xl bg-white/20 hover:bg-white/30 text-white border-0"
-                  onClick={() => setLocation('/mobile-payroll')}
+                  onClick={() => setLocation('/employee/payroll')}
                 >
                   View History <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 ml-1 sm:ml-2" />
                 </Button>

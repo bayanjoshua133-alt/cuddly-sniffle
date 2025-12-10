@@ -137,6 +137,12 @@ export class DatabaseStorage implements IStorage {
     return db.select().from(users).where(eq(users.branchId, branchId));
   }
 
+  // Convenience: return only employees (role === 'employee') for a branch
+  async getEmployees(branchId: string): Promise<User[]> {
+    const all = await this.getUsersByBranch(branchId);
+    return all.filter(u => u.role === 'employee');
+  }
+
   // Branches
   async getBranch(id: string): Promise<Branch | undefined> {
     const result = await db.select().from(branches).where(eq(branches.id, id)).limit(1);
@@ -378,6 +384,11 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(payrollPeriods.createdAt));
   }
 
+  // Convenience alias used by some routes
+  async getPayrollPeriods(branchId: string): Promise<PayrollPeriod[]> {
+    return this.getPayrollPeriodsByBranch(branchId);
+  }
+
   async updatePayrollPeriod(id: string, period: Partial<InsertPayrollPeriod>): Promise<PayrollPeriod | undefined> {
     await db.update(payrollPeriods).set(period).where(eq(payrollPeriods.id, id));
     return this.getPayrollPeriod(id);
@@ -425,6 +436,11 @@ export class DatabaseStorage implements IStorage {
   async getPayrollEntry(id: string): Promise<PayrollEntry | undefined> {
     const result = await db.select().from(payrollEntries).where(eq(payrollEntries.id, id)).limit(1);
     return result[0];
+  }
+
+  // Get payroll entries by payroll period id
+  async getPayrollEntriesByPeriod(periodId: string): Promise<PayrollEntry[]> {
+    return db.select().from(payrollEntries).where(eq(payrollEntries.payrollPeriodId, periodId)).orderBy(desc(payrollEntries.createdAt));
   }
 
   async updatePayrollEntry(id: string, entry: Partial<InsertPayrollEntry>): Promise<PayrollEntry | undefined> {

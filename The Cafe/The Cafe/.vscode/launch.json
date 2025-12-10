@@ -1,0 +1,37 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Launch Chrome (Vite)",
+      "type": "pwa-chrome",
+      "request": "launch",
+      "url": "http://localhost:5173",
+      "webRoot": "${workspaceFolder}/The Cafe/The Cafe/client",
+      "preLaunchTask": "start vite",
+      "runtimeExecutable": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+      "runtimeArgs": [
+        "--disable-extensions",
+        "--disable-component-extensions-with-background-pages",
+        "--no-default-browser-check",
+        "--user-data-dir=${workspaceFolder}/.vscode/.chrome-temp"
+      ],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "Launch Chrome (Production)",
+      "type": "pwa-chrome",
+      "request": "launch",
+      "url": "http://localhost:5000",
+      "webRoot": "${workspaceFolder}/The Cafe/The Cafe/client",
+      "preLaunchTask": "start prod",
+      "runtimeExecutable": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+      "runtimeArgs": [
+        "--disable-extensions",
+        "--disable-component-extensions-with-background-pages",
+        "--no-default-browser-check",
+        "--user-data-dir=${workspaceFolder}/.vscode/.chrome-temp-prod"
+      ],
+      "cwd": "${workspaceFolder}"
+    }
+  ]
+}

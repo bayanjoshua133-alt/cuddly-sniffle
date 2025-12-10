@@ -1,5 +1,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -40,8 +42,22 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     port: 5000,
+    proxy: {
+      // Proxy frontend API requests to the backend dev server.
+      // Start the backend with `npm run dev` (it listens on port 5000).
+      "/api": {
+        target: "http://localhost:5000",
+        changeOrigin: true,
+        secure: false,
+      },
+    },
     fs: {
+      // Keep strict but allow access to the project root (parent of `client`)
+      // so Vite can serve optimized deps from the repository `node_modules`.
       strict: true,
+      // Allow the repo root (The Cafe folder) so `node_modules/.vite` can be read
+      // when the Vite root is set to `client`.
+      allow: [path.resolve(__dirname)],
       deny: ["**/.*"],
     },
   },

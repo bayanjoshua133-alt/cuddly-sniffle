@@ -23,7 +23,7 @@ export function setAuthState(newState: Partial<AuthState>) {
 
 export function subscribeToAuth(listener: (state: AuthState) => void) {
   listeners.add(listener);
-  return () => listeners.delete(listener);
+  return () => { listeners.delete(listener); };
 }
 
 export function isManager(): boolean {

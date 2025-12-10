@@ -27,21 +27,21 @@ export default function MuiMobileBottomNav({ notificationCount = 0 }: MuiMobileB
 
   // Map current location to nav value
   const getNavValue = () => {
-    if (location === "/" || location === "/mobile-dashboard") return 0;
-    if (location === "/schedule" || location === "/mobile-schedule") return 1;
-    if (location === "/payroll" || location === "/mobile-payroll") return 2;
-    if (location === "/profile" || location === "/mobile-profile") return 3;
-    if (location === "/more" || location === "/mobile-more") return 4;
+    if (location === "/employee" || location === "/employee/dashboard") return 0;
+    if (location === "/employee/schedule") return 1;
+    if (location === "/employee/payroll") return 2;
+    if (location === "/employee/profile") return 3;
+    if (location === "/employee/more") return 4;
     return 0;
   };
 
   const handleNavChange = (_event: React.SyntheticEvent, newValue: number) => {
     const paths = [
-      "/mobile-dashboard",
-      "/mobile-schedule",
-      "/mobile-payroll",
-      "/mobile-profile",
-      "/mobile-more",
+      "/employee/dashboard",
+      "/employee/schedule",
+      "/employee/payroll",
+      "/employee/profile",
+      "/employee/more",
     ];
     setLocation(paths[newValue]);
   };

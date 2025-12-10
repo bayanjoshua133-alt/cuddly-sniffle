@@ -416,7 +416,7 @@ export default function MobilePayroll() {
         title="Payroll"
         subtitle="Payment history"
         showBack={true}
-        onBack={() => setLocation('/mobile-dashboard')}
+        onBack={() => setLocation('/employee/dashboard')}
       />
 
       {/* Main Content */}

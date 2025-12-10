@@ -113,13 +113,13 @@ function AppRoutes() {
             user: data.user,
           });
         } else {
-          setAuthState(null);
+          setAuthState({ user: null, isAuthenticated: false });
           setAuthStateLocal({
             authenticated: false,
           });
         }
       } catch {
-        setAuthState(null);
+        setAuthState({ user: null, isAuthenticated: false });
         setAuthStateLocal({
           authenticated: false,
         });
@@ -138,6 +138,14 @@ function AppRoutes() {
   const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
   const isLoginPage = location === "/login" || location === "/setup";
 
+  // Defensive redirect: if not authenticated, send user to login immediately
+  if (!authState.authenticated && !isLoginPage) {
+    // useLocation setter is available via hook
+    const [, setLocation] = useLocation();
+    setTimeout(() => setLocation('/login'), 0);
+    return <LoadingFallback />;
+  }
+
   return (
     <ErrorBoundary>
       <Suspense fallback={<LoadingFallback />}>
@@ -152,41 +160,75 @@ function AppRoutes() {
           // Authenticated Routes with Modern Layout
           <ModernLayout>
             <Switch>
+              {/* Legacy mobile paths -> new /employee/* namespace */}
+              <Route path="/mobile-dashboard" component={() => <Redirect to="/employee/dashboard" />} />
+              <Route path="/mobile-clock" component={() => <Redirect to="/employee/clock" />} />
+              <Route path="/mobile-schedule" component={() => <Redirect to="/employee/schedule" />} />
+              <Route path="/mobile-payroll" component={() => <Redirect to="/employee/payroll" />} />
+              <Route path="/mobile-notifications" component={() => <Redirect to="/employee/notifications" />} />
+              <Route path="/mobile-time_off" component={() => <Redirect to="/employee/time-off" />} />
+              <Route path="/mobile-shift-trading" component={() => <Redirect to="/employee/shift-trading" />} />
+              <Route path="/mobile-profile" component={() => <Redirect to="/employee/profile" />} />
+              <Route path="/mobile-more" component={() => <Redirect to="/employee/more" />} />
               {/* Desktop Routes */}
-              {!isMobile ? (
-                <>
-                  <Route path="/dashboard" component={() => <MuiDashboard />} />
-                  <Route path="/shift-trading" component={() => <ShiftTradingPanel />} />
-                  <Route path="/schedule" component={() => <MuiSchedule />} />
-                  <Route path="/time-off" component={() => <MuiTimeOff />} />
-                  <Route path="/employees" component={() => <MuiEmployees />} />
-                  <Route path="/payroll" component={() => <MuiPayroll />} />
-                  <Route path="/payroll-management" component={() => <MuiPayrollManagement />} />
-                  <Route path="/notifications" component={() => <MuiNotifications />} />
-                  <Route path="/branches" component={() => <MuiBranches />} />
-                  <Route path="/reports" component={() => <MuiReports />} />
-                  <Route path="/deduction-settings" component={() => <MuiDeductionSettings />} />
-                  <Route path="/deduction-rates" component={() => <MuiAdminDeductionRates />} />
-                  <Route path="/payslip" component={() => <PayslipDemo />} />
-                  <Route path="/" component={() => <Redirect to="/dashboard" />} />
-                  <Route component={() => <NotFound />} />
-                </>
-              ) : (
-                // Mobile Routes (without ModernLayout sidebar - use mobile-specific navs)
-                <>
-                  <Route path="/dashboard" component={() => <MobileDashboard />} />
-                  <Route path="/shift-trading" component={() => <ShiftTradingPanel />} />
-                  <Route path="/schedule" component={() => <MobileSchedule />} />
-                  <Route path="/time-off" component={() => <MobileTimeOff />} />
-                  <Route path="/payroll" component={() => <MobilePayroll />} />
-                  <Route path="/clock" component={() => <MobileClock />} />
-                  <Route path="/notifications" component={() => <MobileNotifications />} />
-                  <Route path="/profile" component={() => <MobileProfile />} />
-                  <Route path="/more" component={() => <MobileMore />} />
-                  <Route path="/" component={() => <Redirect to="/dashboard" />} />
-                  <Route component={() => <NotFound />} />
-                </>
-              )}
+              {/* Desktop / Admin Routes (always available) */}
+              <>
+                <Route path="/dashboard" component={() => <MuiDashboard />} />
+                <Route path="/shift-trading" component={() => <ShiftTradingPanel />} />
+                <Route path="/schedule" component={() => <MuiSchedule />} />
+                <Route path="/time-off" component={() => <MuiTimeOff />} />
+                <Route path="/employees" component={() => <MuiEmployees />} />
+                <Route path="/payroll" component={() => <MuiPayroll />} />
+                <Route path="/payroll-management" component={() => <MuiPayrollManagement />} />
+                <Route path="/notifications" component={() => <MuiNotifications />} />
+                <Route path="/branches" component={() => <MuiBranches />} />
+                <Route path="/reports" component={() => <MuiReports />} />
+                <Route path="/deduction-settings" component={() => <MuiDeductionSettings />} />
+                <Route path="/deduction-rates" component={() => <MuiAdminDeductionRates />} />
+                <Route path="/payslip" component={() => <PayslipDemo />} />
+                <Route path="/" component={() => <Redirect to="/dashboard" />} />
+
+                {/* Employee routes: always register `/employee/*` but render mobile components on mobile devices, otherwise render desktop equivalents */}
+                <Route
+                  path="/employee/dashboard"
+                  component={() => (isMobile ? <MobileDashboard /> : <MuiDashboard />)}
+                />
+                <Route
+                  path="/employee/shift-trading"
+                  component={() => <ShiftTradingPanel />}
+                />
+                <Route
+                  path="/employee/schedule"
+                  component={() => (isMobile ? <MobileSchedule /> : <MuiSchedule />)}
+                />
+                <Route
+                  path="/employee/time-off"
+                  component={() => (isMobile ? <MobileTimeOff /> : <MuiTimeOff />)}
+                />
+                <Route
+                  path="/employee/payroll"
+                  component={() => (isMobile ? <MobilePayroll /> : <MuiPayroll />)}
+                />
+                <Route
+                  path="/employee/clock"
+                  component={() => (isMobile ? <MobileClock /> : <MuiDashboard />)}
+                />
+                <Route
+                  path="/employee/notifications"
+                  component={() => (isMobile ? <MobileNotifications /> : <MuiNotifications />)}
+                />
+                <Route
+                  path="/employee/profile"
+                  component={() => (isMobile ? <MobileProfile /> : <MuiEmployees />)}
+                />
+                <Route
+                  path="/employee/more"
+                  component={() => (isMobile ? <MobileMore /> : <MuiDashboard />)}
+                />
+                <Route path="/employee" component={() => <Redirect to="/employee/dashboard" />} />
+
+                <Route component={() => <NotFound />} />
+              </>
             </Switch>
 
             {/* Real-time status indicator (optional) */}

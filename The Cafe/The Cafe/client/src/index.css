@@ -125,7 +125,7 @@
 
 @layer base {
   * {
-    @apply border-border;
+    border: 1px solid hsl(var(--border));
   }
 
   html {

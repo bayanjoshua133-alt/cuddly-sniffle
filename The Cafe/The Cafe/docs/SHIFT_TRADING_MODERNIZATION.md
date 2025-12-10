@@ -38,9 +38,9 @@ function TabPanel(props: TabPanelProps)
 const TradeCard = ({ trade, showActions, actionType })
 ```
 
-**What Was Removed:**
-- ❌ `/pages/mui-shift-trading.tsx` (now handled by consolidated component)
-- ❌ `/pages/mobile-shift-trading.tsx` (now handled by consolidated component)
+**What Changed / Compatibility Note:**
+- ✅ `/pages/mui-shift-trading.tsx` is functionally replaced by the consolidated `shift-trading-panel.tsx` component. The legacy file remains in the repo for a safety window.
+- ✅ `/pages/mobile-shift-trading.tsx` is now served by the consolidated component under the unified `/employee/*` namespace (for example `/employee/shift-trading`). The legacy file remains available for rollback or incremental testing and can be removed later if desired.
 - ❌ Duplicate API calls and query logic
 - ❌ Duplicate state management
 - ❌ Separate mobile/desktop code paths
@@ -409,8 +409,8 @@ The Cafe/
 │   ├── hooks/
 │   │   └── use-realtime.ts ✅ NEW
 │   └── pages/
-│       ├── mui-shift-trading.tsx (OLD - delete after testing)
-│       └── mobile-shift-trading.tsx (OLD - delete after testing)
+│       ├── mui-shift-trading.tsx (legacy — consolidated into `shift-trading-panel.tsx`)
+│       └── mobile-shift-trading.tsx (legacy — now served under `/employee/shift-trading`; optional removal)
 │
 └── server/
     ├── index.ts (needs RealTimeManager integration)
@@ -454,16 +454,14 @@ The esbuild bundle will:
 ### Option 1: Direct Replacement (Recommended)
 
 ```bash
-# Delete old files
-rm client/src/pages/mui-shift-trading.tsx
-rm client/src/pages/mobile-shift-trading.tsx
-
-# Update App.tsx route from:
-# <Route path="/shift-trading" component={() => <MuiShiftTrading />} />
-# To:
-# <Route path="/shift-trading" component={() => <ShiftTradingPanel />} />
-
-# Add real-time hook to App.tsx
+# NOTE: You may remove legacy page files *after* verifying the consolidated UI in production.
+# Recommended migration steps:
+# 1) Update `App.tsx` route from the old page to the new consolidated component:
+#    Before:
+#      <Route path="/shift-trading" component={() => <MuiShiftTrading />} />
+#    After:
+#      <Route path="/shift-trading" component={() => <ShiftTradingPanel />} />
+# 2) Add the real-time hook to the app (see `client/src/hooks/use-realtime.ts`).
 import { useRealtime } from "@/hooks/use-realtime";
 
 // In main component:
@@ -471,6 +469,10 @@ const { isConnected } = useRealtime({
   enabled: authState.authenticated,
   queryKeys: ["shift-trades", "employee-shifts"],
 });
+
+# 3) Keep legacy pages for a safety window (optional). Remove them only after testing:
+#    rm client/src/pages/mui-shift-trading.tsx # OPTIONAL
+#    rm client/src/pages/mobile-shift-trading.tsx # OPTIONAL
 ```
 
 ### Option 2: Gradual Migration

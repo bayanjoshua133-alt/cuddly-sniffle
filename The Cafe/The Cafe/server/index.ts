@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import express, { type Request, Response, NextFunction } from "express";
 import cors from "cors";
 import { registerRoutes } from "./routes";
@@ -18,10 +19,8 @@ if (process.env.NODE_ENV === 'production') {
 const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:5000', 
-  'http://localhost:5001',
   'http://127.0.0.1:3000',
   'http://127.0.0.1:5000',
-  'http://127.0.0.1:5001',
   'https://donmacchiatos.onrender.com',
   process.env.RENDER_EXTERNAL_URL,
 ].filter(Boolean);
@@ -215,9 +214,6 @@ app.use((req, res, next) => {
   // It is the only port that is not firewalled.
   const port = parseInt(process.env.PORT || '5000', 10);
 
-  // Check if this is the mobile server instance
-  const isMobileServer = process.env.MOBILE_SERVER === 'true';
-
   server.listen({
     port,
     host: "0.0.0.0",  // Bind to all interfaces for Codespaces/Docker
@@ -226,36 +222,20 @@ app.use((req, res, next) => {
     const localIP = getLocalNetworkIP();
 
     console.log('\n' + '='.repeat(70));
-    if (isMobileServer) {
-      console.log('📱 Mobile Employee Dashboard Server');
-    } else {
-      console.log('🖥️ Desktop Manager Dashboard Server');
-    }
+    console.log('🖥️ The Café Server (single origin)');
     console.log('='.repeat(70));
     console.log('\n📍 Server URLs:');
     console.log(`  ➜ Local:    http://localhost:${port}`);
     if (localIP) {
       console.log(`  ➜ Network:  http://${localIP}:${port}`);
     }
-
-    if (isMobileServer) {
-      console.log('\n👥 Employee Access:');
-      console.log(`  ➜ Mobile Dashboard: http://localhost:${port}`);
-      if (localIP) {
-        console.log(`  ➜ Network Mobile:  http://${localIP}:${port}`);
-        console.log('\n💡 Share the Network URL with employees on the same WiFi');
-      }
-    } else {
-      console.log('\n👔 Manager Access:');
-      console.log(`  ➜ Desktop Dashboard: http://localhost:${port}`);
-      console.log(`  ➜ Mobile Server:     http://localhost:5001`);
-      if (localIP) {
-        console.log(`  ➜ Network Desktop:  http://${localIP}:${port}`);
-        console.log('\n💡 Desktop access for managers and administrators');
-      }
+    console.log('\n👥 Access:');
+    console.log(`  ➜ App URL: http://localhost:${port}`);
+    if (localIP) {
+      console.log(`  ➜ Network:  http://${localIP}:${port}`);
     }
     console.log('\n' + '='.repeat(70) + '\n');
 
-    log(`Server ready on port ${port} (${isMobileServer ? 'Mobile' : 'Desktop'})`);
+    log(`Server ready on port ${port}`);
   });
 })();
