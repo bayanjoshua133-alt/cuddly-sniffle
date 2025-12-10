@@ -1301,3 +1301,51 @@ table, thead, tbody, tfoot, tr, th, td {
   border-color: transparent !important; /* Hide internal dividers too if 'all over' means these */
 }
 
+
+/* =========================================
+   USER-REQUESTED FULLCALENDAR OVERRIDES (AGGRESSIVE)
+   Fix for remaining grid lines in FullCalendar
+   ========================================= */
+
+/* Remove all visible borders and backgrounds in the time grid and headers */
+.fc .fc-timegrid-slot,
+.fc .fc-timegrid-slot-lane,
+.fc .fc-col,
+.fc .fc-scrollgrid-section,
+.fc .fc-scrollgrid-section table,
+.fc .fc-scrollgrid-section > td,
+.fc td, 
+.fc th,
+.fc .fc-col-header-cell,
+.fc .fc-timegrid-axis {
+  border: none !important;
+  border-color: transparent !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Remove the 'today' highlight if needed */
+.fc .fc-day-today {
+  background: transparent !important;
+}
+
+/* Remove vertical lines/dividers */
+.fc .fc-timegrid-divider {
+  display: none !important;
+}
+
+/* Suppress pseudo-elements that might create lines */
+.fc .fc-timegrid-slot::before,
+.fc .fc-timegrid-slot-lane::before,
+.fc .fc-timegrid-slot::after,
+.fc .fc-timegrid-slot-lane::after {
+  display: none !important;
+  content: none !important;
+  border: none !important;
+}
+
+/* Ensure the main scrollgrid frame is also borderless */
+.fc-theme-standard .fc-scrollgrid {
+  border: none !important;
+}
+
