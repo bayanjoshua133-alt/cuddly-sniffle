@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from "react";
-import StableScheduler from "@/components/StableScheduler";
+import { Scheduler } from "@daypilot/daypilot-lite-react";
 import SchedulerErrorBoundary from "@/components/SchedulerErrorBoundary";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
