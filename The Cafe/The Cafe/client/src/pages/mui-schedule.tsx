@@ -31,8 +31,9 @@ import {
   ViewDay as DayViewIcon,
   Add as AddIcon
 } from "@mui/icons-material";
-import { DndProvider } from "react-dnd";
-import { HTML5Backend } from "react-dnd-html5-backend";
+// DndProvider and Backend removed
+// import { DndProvider } from "react-dnd";
+// import { HTML5Backend } from "react-dnd-html5-backend";
 import dayjs from "dayjs";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -339,7 +340,6 @@ const SchedulerPage = () => {
       <Box sx={schedulerStyles}>
           <CustomToolbar schedulerData={viewModel} onDataChange={setViewModel} />
           <Box sx={{ flexGrow: 1, position: 'relative', bgcolor: '#fff' }}>
-             <DndProvider backend={HTML5Backend}>
                  <Scheduler 
                     schedulerData={viewModel}
                     prevClick={()=>{}}
@@ -366,9 +366,7 @@ const SchedulerPage = () => {
                     conflictOccurred={() => setSnackbar({open:true,message:"Conflict detected"})}
                     slotItemTemplateResolver={slotItemTemplateResolver}
                     eventItemTemplateResolver={eventItemTemplateResolver}
-                    nonAgendaCellHeaderTemplateResolver={nonAgendaCellHeaderTemplateResolver}
                  />
-             </DndProvider>
           </Box>
 
           {/* Dialogs */}
