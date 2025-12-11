@@ -180,7 +180,7 @@ export default function MuiDeductionSettings() {
         elevation={0}
         sx={{
           borderRadius: 4,
-          border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+          border: `1px solid ${'rgba(255, 255, 255, 0.02)'}`,
           overflow: "hidden",
         }}
       >
@@ -197,7 +197,7 @@ export default function MuiDeductionSettings() {
           }
           sx={{
             bgcolor: alpha(theme.palette.primary.main, 0.03),
-            borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+            borderBottom: `1px solid ${'rgba(255, 255, 255, 0.02)'}`,
           }}
         />
         <CardContent sx={{ p: 3 }}>

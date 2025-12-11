@@ -261,7 +261,7 @@ export default function MuiAdminDeductionRates() {
               elevation={0}
               sx={{
                 borderRadius: 3,
-                border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+                border: `1px solid ${'rgba(255, 255, 255, 0.02)'}`,
                 "&:before": { display: "none" },
                 overflow: "hidden",
               }}

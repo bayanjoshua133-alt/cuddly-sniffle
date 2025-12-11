@@ -315,7 +315,7 @@ export default function MuiPayrollManagement() {
       elevation={0}
       sx={{
         borderRadius: 4,
-        border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+        border: `1px solid ${'rgba(255, 255, 255, 0.02)'}`,
         transition: "all 0.3s ease",
         "&:hover": {
           transform: "translateY(-4px)",
@@ -529,7 +529,7 @@ export default function MuiPayrollManagement() {
                 elevation={0}
                 sx={{
                   borderRadius: 4,
-                  border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+                  border: `1px solid ${'rgba(255, 255, 255, 0.02)'}`,
                   p: 6,
                   textAlign: "center",
                 }}
@@ -576,7 +576,7 @@ export default function MuiPayrollManagement() {
                       border: `1px solid ${
                         selectedPeriod?.id === period.id
                           ? theme.palette.primary.main
-                          : alpha(theme.palette.divider, 0.1)
+                          : 'rgba(255, 255, 255, 0.02)'
                       }`,
                       transition: "all 0.2s",
                       cursor: "pointer",
@@ -695,7 +695,7 @@ export default function MuiPayrollManagement() {
               elevation={0}
               sx={{
                 borderRadius: 3,
-                border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+                border: `1px solid ${'rgba(255, 255, 255, 0.02)'}`,
                 p: 3,
               }}
             >
@@ -722,7 +722,7 @@ export default function MuiPayrollManagement() {
                       py: 1.5,
                       textTransform: "none",
                       justifyContent: "flex-start",
-                      borderColor: alpha(theme.palette.divider, 0.2),
+                      borderColor: 'rgba(255, 255, 255, 0.04)',
                       "&:hover": {
                         borderColor: theme.palette.primary.main,
                         bgcolor: alpha(theme.palette.primary.main, 0.05),
@@ -749,7 +749,7 @@ export default function MuiPayrollManagement() {
           elevation={0}
           sx={{
             borderRadius: 3,
-            border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+            border: `1px solid ${'rgba(255, 255, 255, 0.02)'}`,
             overflow: "hidden",
           }}
         >
@@ -796,7 +796,7 @@ export default function MuiPayrollManagement() {
                 sx={{
                   p: 2,
                   bgcolor: alpha(theme.palette.action.hover, 0.3),
-                  borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+                  borderBottom: `1px solid ${'rgba(255, 255, 255, 0.02)'}`,
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",

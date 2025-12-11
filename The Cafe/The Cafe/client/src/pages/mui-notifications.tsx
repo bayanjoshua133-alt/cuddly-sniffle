@@ -263,7 +263,7 @@ export default function MuiNotifications() {
           bgcolor: notification.isRead ? "transparent" : alpha(theme.palette.primary.main, 0.05),
           borderRadius: 3,
           mb: 1.5,
-          border: `1px solid ${notification.isRead ? alpha(theme.palette.divider, 0.5) : alpha(theme.palette.primary.main, 0.2)}`,
+          border: `1px solid ${notification.isRead ? 'rgba(255, 255, 255, 0.08)' : alpha(theme.palette.primary.main, 0.2)}`,
           transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
           cursor: "pointer",
           p: 2,

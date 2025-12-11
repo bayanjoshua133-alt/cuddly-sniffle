@@ -288,7 +288,7 @@ export default function MuiShiftTrading() {
       sx={{
         p: 3,
         borderRadius: 2,
-        border: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
+        border: `1px solid ${'rgba(255, 255, 255, 0.08)'}`,
         mb: 2,
       }}
     >

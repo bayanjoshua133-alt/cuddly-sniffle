@@ -82,7 +82,7 @@ export default function ModernLayout({ children }: ModernLayoutProps) {
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+          borderBottom: `1px solid ${'rgba(255, 255, 255, 0.02)'}`,
         }}
       >
         <Typography variant="h6" fontWeight={700} sx={{ background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`, backgroundClip: "text", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
@@ -159,7 +159,7 @@ export default function ModernLayout({ children }: ModernLayoutProps) {
       <Box
         sx={{
           p: 1.5,
-          borderTop: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+          borderTop: `1px solid ${'rgba(255, 255, 255, 0.02)'}`,
         }}
       >
         <Stack spacing={0.5}>
@@ -204,7 +204,7 @@ export default function ModernLayout({ children }: ModernLayoutProps) {
           position: "sticky",
           top: 0,
           overflow: "hidden",
-          borderRight: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+          borderRight: `1px solid ${'rgba(255, 255, 255, 0.02)'}`,
           transition: `width ${DRAWER_OPEN_DURATION}ms cubic-bezier(0.4, 0, 0.2, 1)`,
         }}
       >
@@ -235,7 +235,7 @@ export default function ModernLayout({ children }: ModernLayoutProps) {
           elevation={0}
           sx={{
             bgcolor: theme.palette.background.paper,
-            borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+            borderBottom: `1px solid ${'rgba(255, 255, 255, 0.02)'}`,
             backdropFilter: "blur(10px)",
             backgroundColor: alpha(theme.palette.background.paper, 0.8),
           }}
@@ -260,7 +260,7 @@ export default function ModernLayout({ children }: ModernLayoutProps) {
                 onClick={(e) => setMenuAnchor(e.currentTarget)}
                 sx={{
                   borderRadius: 1,
-                  border: `1px solid ${alpha(theme.palette.divider, 0.2)}`,
+                  border: `1px solid ${'rgba(255, 255, 255, 0.04)'}`,
                 }}
               >
                 <Avatar sx={{ width: 32, height: 32, bgcolor: "primary.main", fontSize: "0.875rem" }}>

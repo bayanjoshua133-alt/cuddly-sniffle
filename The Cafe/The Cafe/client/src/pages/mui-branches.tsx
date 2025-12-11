@@ -323,7 +323,7 @@ export default function MuiBranches() {
                 sx={{
                   p: 3,
                   borderRadius: 3,
-                  border: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
+                  border: `1px solid ${'rgba(255, 255, 255, 0.08)'}`,
                   transition: "all 0.2s",
                   "&:hover": {
                     transform: "translateY(-4px)",

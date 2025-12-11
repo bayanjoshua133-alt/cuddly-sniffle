@@ -36,7 +36,7 @@ const Search = styled("div")(({ theme }) => ({
   position: "relative",
   borderRadius: theme.shape.borderRadius * 1.5,
   backgroundColor: alpha(theme.palette.action.hover, 0.08),
-  border: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
+  border: `1px solid rgba(255, 255, 255, 0.08)`,
   "&:hover": {
     backgroundColor: alpha(theme.palette.action.hover, 0.12),
   },
@@ -225,7 +225,7 @@ export default function MuiHeader() {
           sx={{
             display: { xs: "none", lg: "flex" },
             mr: 1.5,
-            borderColor: alpha(theme.palette.divider, 0.5),
+            borderColor: `rgba(255, 255, 255, 0.08)`,
             "& .MuiChip-icon": {
               color: "text.secondary",
             },
