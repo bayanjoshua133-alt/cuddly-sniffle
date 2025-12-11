@@ -1349,3 +1349,196 @@ table, thead, tbody, tfoot, tr, th, td {
   border: none !important;
 }
 
+
+/* =========================================
+   NUCLEAR OPTION: COMPLETE BORDER REMOVAL 2025
+   Maximum specificity CSS to remove ALL borders
+   ========================================= */
+
+/* 1. GLOBAL HTML TABLE ELEMENTS - Remove ALL borders */
+* {
+  box-sizing: border-box;
+}
+
+table,
+thead,
+tbody,
+tfoot,
+tr,
+th,
+td {
+  border: none !important;
+  border-style: none !important;
+  border-width: 0 !important;
+  border-color: transparent !important;
+  border-collapse: collapse !important;
+}
+
+/* 2. MUI COMPONENTS - Comprehensive border removal */
+/* MUI Table Components */
+.MuiTable-root,
+.MuiTableContainer-root,
+.MuiTableHead-root,
+.MuiTableBody-root,
+.MuiTableRow-root,
+.MuiTableCell-root,
+.MuiTableCell-head,
+.MuiTableCell-body {
+  border: none !important;
+  border-bottom: none !important;
+  border-top: none !important;
+  border-left: none !important;
+  border-right: none !important;
+}
+
+/* MUI DataGrid Components */
+.MuiDataGrid-root,
+.MuiDataGrid-main,
+.MuiDataGrid-viewport,
+.MuiDataGrid-virtualScroller,
+.MuiDataGrid-row,
+.MuiDataGrid-cell,
+.MuiDataGrid-columnHeader,
+.MuiDataGrid-columnHeaders,
+.MuiDataGrid-columnSeparator,
+.MuiDataGrid-iconSeparator,
+.MuiDataGrid-footerContainer,
+.MuiDataGrid-virtualScrollerRenderZone {
+  border: none !important;
+  border-bottom: none !important;
+  border-top: none !important;
+  border-left: none !important;
+  border-right: none !important;
+}
+
+/* Hide MUI DataGrid separators */
+.MuiDataGrid-columnSeparator,
+.MuiDataGrid-iconSeparator {
+  display: none !important;
+}
+
+/* MUI Paper, Card, and Container Components */
+.MuiPaper-root,
+.MuiCard-root,
+.MuiDrawer-paper,
+.MuiDialog-paper,
+.MuiMenu-paper,
+.MuiPopover-paper,
+.MuiContainer-root {
+  border: none !important;
+}
+
+/* MUI Divider Components */
+.MuiDivider-root {
+  display: none !important;
+}
+
+/* 3. TAILWIND & CUSTOM CLASSES - Border removal */
+.border,
+.border-t,
+.border-b,
+.border-l,
+.border-r,
+.divide-y > *,
+.divide-x > * {
+  border: none !important;
+  border-color: transparent !important;
+}
+
+/* 4. FULLCALENDAR - Maximum specificity override */
+.fc *,
+.fc table,
+.fc thead,
+.fc tbody,
+.fc tr,
+.fc th,
+.fc td {
+  border: none !important;
+  border-style: none !important;
+  border-width: 0 !important;
+  border-color: transparent !important;
+}
+
+/* Remove all FullCalendar grid elements */
+.fc-scrollgrid *,
+.fc-theme-standard *,
+.fc-timegrid *,
+.fc-daygrid *,
+.fc-col-header * {
+  border: none !important;
+}
+
+/* 5. PREVENT PSEUDO-ELEMENT BORDERS */
+*::before,
+*::after {
+  border: inherit !important;
+}
+
+table::before,
+table::after,
+tr::before,
+tr::after,
+th::before,
+th::after,
+td::before,
+td::after,
+.MuiDataGrid-root::before,
+.MuiDataGrid-root::after,
+.fc *::before,
+.fc *::after {
+  content: none !important;
+  display: none !important;
+  border: none !important;
+}
+
+/* 6. OUTLINE REMOVAL (sometimes mistaken for borders) */
+.MuiDataGrid-cell:focus,
+.MuiDataGrid-cell:focus-within,
+.MuiTableCell-root:focus,
+.MuiTableCell-root:focus-within {
+  outline: none !important;
+}
+
+/* 7. BOX-SHADOW REMOVAL (can look like borders) */
+.MuiPaper-elevation,
+.MuiPaper-elevation1,
+.MuiCard-root {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12) !important; /* Minimal shadow instead of borders */
+}
+
+/* 8. SPECIFIC COMPONENT OVERRIDES */
+/* Remove borders from custom card classes */
+.card,
+.card-glass,
+.card-glow,
+.metric-card,
+.stat-card,
+.mobile-card,
+.mobile-stat {
+  border: none !important;
+}
+
+/* 9. BACKGROUND DIVIDERS (remove visual separators) */
+.fc-scrollgrid-sync-table,
+.fc-timegrid-divider,
+.fc-scrollgrid-section-header,
+.fc-scrollgrid-section-body,
+.fc-scrollgrid-section-footer {
+  border: none !important;
+  background: transparent !important;
+}
+
+/* 10. ENSURE NO BORDER ON HOVER/ACTIVE STATES */
+*:hover,
+*:active,
+*:focus {
+  border-color: transparent !important;
+}
+
+.MuiTableRow-root:hover,
+.MuiDataGrid-row:hover,
+.table-row:hover {
+  border: none !important;
+  border-bottom: none !important;
+}
+
