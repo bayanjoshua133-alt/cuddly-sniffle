@@ -77,12 +77,11 @@ export function EmployeeShiftModal({
   const [editingShiftId, setEditingShiftId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  if (!employee) return null;
-
-  // Fetch shifts for the week
+  // Fetch shifts for the week - MUST be called unconditionally (Rules of Hooks)
   const { data: shiftsData, isLoading } = useQuery({
-    queryKey: ["employee-shifts", employee.id, weekStart.toISOString()],
+    queryKey: ["employee-shifts", employee?.id ?? 'none', weekStart.toISOString()],
     queryFn: async () => {
+      if (!employee) return { shifts: [] };
       const endDate = addDays(weekStart, 6);
       const response = await apiRequest("GET", `/api/shifts?userId=${employee.id}&startDate=${weekStart.toISOString()}&endDate=${endDate.toISOString()}`);
       return response.json();
@@ -92,7 +91,7 @@ export function EmployeeShiftModal({
 
   const shifts: Shift[] = shiftsData?.shifts || [];
 
-  // Delete shift mutation
+  // Delete shift mutation - MUST be called unconditionally (Rules of Hooks)
   const deleteShiftMutation = useMutation({
     mutationFn: async (shiftId: string) => {
       const response = await apiRequest("DELETE", `/api/shifts/${shiftId}`);
@@ -111,6 +110,9 @@ export function EmployeeShiftModal({
       setError(error.message);
     },
   });
+
+  // Early return AFTER all hooks have been called
+  if (!employee) return null;
 
   const handleDeleteShift = (shiftId: string) => {
     if (window.confirm("Are you sure you want to delete this shift?")) {
