@@ -274,7 +274,10 @@ export default function MuiEmployees() {
       return response.json();
     },
     onSuccess: () => {
+      // Invalidate all employee-related queries for real-time sync
       queryClient.invalidateQueries({ queryKey: ["/api/hours/all-employees"] });
+      queryClient.invalidateQueries({ queryKey: ["employees"] }); // Schedule page roster
+      queryClient.invalidateQueries({ queryKey: ["/api/employees"] });
       toast({ title: "Success", description: "Employee created successfully" });
       handleCloseFormDialog();
     },
@@ -293,7 +296,10 @@ export default function MuiEmployees() {
       return response.json();
     },
     onSuccess: () => {
+      // Invalidate all employee-related queries for real-time sync
       queryClient.invalidateQueries({ queryKey: ["/api/hours/all-employees"] });
+      queryClient.invalidateQueries({ queryKey: ["employees"] }); // Schedule page roster
+      queryClient.invalidateQueries({ queryKey: ["/api/employees"] });
       toast({ title: "Success", description: "Employee updated successfully" });
       handleCloseFormDialog();
     },
@@ -312,7 +318,10 @@ export default function MuiEmployees() {
       return response.json();
     },
     onSuccess: () => {
+      // Invalidate all employee-related queries for real-time sync
       queryClient.invalidateQueries({ queryKey: ["/api/hours/all-employees"] });
+      queryClient.invalidateQueries({ queryKey: ["employees"] }); // Schedule page roster
+      queryClient.invalidateQueries({ queryKey: ["/api/employees"] });
       toast({ title: "Success", description: "Employee deleted successfully" });
       setDeleteDialogOpen(false);
       setCurrentEmployee(null);

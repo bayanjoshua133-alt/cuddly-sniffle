@@ -195,8 +195,10 @@ export const invalidateQueries = {
     queryClient.invalidateQueries({ queryKey: ['/api/shifts/branch'] });
   },
   employees: () => {
+    queryClient.invalidateQueries({ queryKey: ['employees'] }); // Used by schedule page
     queryClient.invalidateQueries({ queryKey: ['/api/employees'] });
     queryClient.invalidateQueries({ queryKey: ['/api/employees/stats'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/hours/all-employees'] }); // Used by employees page
   },
   notifications: () => {
     queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });

@@ -83,6 +83,9 @@ interface Employee {
   id: string;
   firstName: string;
   lastName: string;
+  email?: string;
+  position?: string;
+  branchId?: string;
   role?: string;
   username?: string;
   isActive?: boolean;
@@ -160,13 +163,17 @@ const EnhancedScheduler = () => {
     },
   });
 
-  // Fetch Employees
+  // Fetch Employees with real-time updates
   const { data: employeesData, isLoading: employeesLoading } = useQuery<{ employees: Employee[] }>({
     queryKey: ['employees'],
     queryFn: async () => {
       const res = await apiRequest('GET', '/api/employees');
       return res.json();
     },
+    refetchInterval: 5000, // Poll every 5 seconds for real-time employee updates
+    refetchOnWindowFocus: true,
+    refetchIntervalInBackground: true,
+    staleTime: 0, // Always consider data stale for immediate updates
   });
 
   // Robustly handle API response format (array or object)
@@ -482,7 +489,7 @@ const EnhancedScheduler = () => {
     }
   }, [isPublished]);
 
-  // Initialize external draggable for employee roster
+  // Initialize external draggable for employee roster with premium 2025 styling
   useEffect(() => {
     if (rosterRef.current && rosterOpen) {
       const draggable = new Draggable(rosterRef.current, {
@@ -490,13 +497,16 @@ const EnhancedScheduler = () => {
         eventData: (eventEl) => {
           const empData = eventEl.getAttribute('data-employee');
           const emp = empData ? JSON.parse(empData) : null;
+          const displayName = emp ? `${emp.firstName} ${emp.lastName}` : 'New Shift';
+          const position = emp?.position || emp?.role || '';
           return {
-            title: emp ? `${emp.firstName} ${emp.lastName}` : 'New Shift',
-            duration: '08:00', // Feature: 8-hour default
-            create: false, // We stick to false to handle 'drop' manually and show modal
-            backgroundColor: '#10B981', // emerald green while dragging
-            borderColor: '#10B981',
+            title: position ? `${displayName} • ${position}` : displayName,
+            duration: '08:00', // 8-hour default shift
+            create: false, // Handle 'drop' manually to show modal
+            backgroundColor: '#10B981', // Emerald green
+            borderColor: 'rgba(16, 185, 129, 0.6)',
             textColor: '#ffffff',
+            classNames: ['drag-preview-shift'],
           };
         },
       });
@@ -673,11 +683,19 @@ const EnhancedScheduler = () => {
             )}
             {employees.map((employee, index) => {
               const colors = EMPLOYEE_COLORS[index % EMPLOYEE_COLORS.length];
+              const displayRole = employee.position || employee.role || 'employee';
               return (
-                <Tooltip key={employee.id} title="Drag me to the calendar to create a shift" arrow placement="right">
+                <Tooltip 
+                  key={employee.id} 
+                  title={isPublished ? "Drag to calendar to schedule" : "Publish schedule to enable dragging"} 
+                  arrow 
+                  placement="right"
+                >
                   <Box
                     className="draggable-employee"
                     data-employee={JSON.stringify(employee)}
+                    data-name={`${employee.firstName} ${employee.lastName}`}
+                    aria-label="Drag me to the calendar to create a shift"
                     sx={{
                       display: 'flex',
                       alignItems: 'center',
@@ -687,26 +705,31 @@ const EnhancedScheduler = () => {
                       bgcolor: 'background.paper',
                       cursor: isPublished ? 'grab' : 'not-allowed',
                       opacity: isPublished ? 1 : 0.6,
-                      transition: 'all 0.2s',
-                      border: '1px solid transparent', // Placeholder for hover effect
+                      transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                      border: '1px solid',
+                      borderColor: 'divider',
+                      boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
                       '&:hover': isPublished ? {
                         bgcolor: 'action.hover',
-                        transform: 'translateX(4px)',
-                        borderColor: 'primary.main', // Visual feedback
+                        transform: 'translateX(4px) scale(1.01)',
+                        borderColor: 'primary.main',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
                       } : {},
                       '&:active': {
                         cursor: isPublished ? 'grabbing' : 'not-allowed',
+                        transform: isPublished ? 'scale(0.98)' : 'none',
                       },
                     }}
                   >
                     <Avatar
                       sx={{
-                        width: 36,
-                        height: 36,
+                        width: 40,
+                        height: 40,
                         bgcolor: colors.bg,
                         color: colors.text,
                         fontSize: '0.875rem',
                         fontWeight: 600,
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
                       }}
                     >
                       {employee.firstName[0]}{employee.lastName[0]}
@@ -715,18 +738,17 @@ const EnhancedScheduler = () => {
                       <Typography variant="body2" fontWeight={600} noWrap>
                         {employee.firstName} {employee.lastName}
                       </Typography>
-                      {employee.role && (
-                        <Typography variant="caption" color="text.secondary">
-                          {employee.role}
-                        </Typography>
-                      )}
+                      <Typography variant="caption" color="text.secondary">
+                        {displayRole}
+                      </Typography>
                     </Box>
                     <Box
                       sx={{
-                        width: 8,
-                        height: 8,
+                        width: 10,
+                        height: 10,
                         borderRadius: '50%',
                         bgcolor: colors.bg,
+                        boxShadow: `0 0 0 2px ${colors.bg}33`,
                       }}
                     />
                   </Box>
@@ -1142,7 +1164,7 @@ const EnhancedScheduler = () => {
         </Alert>
       </Snackbar>
 
-      {/* Feature 7: Print Styles */}
+      {/* Feature 7: Print Styles + Drag Preview Styling */}
       <style>{`
         @media print {
           body * {
@@ -1168,6 +1190,37 @@ const EnhancedScheduler = () => {
           .fc-view-harness {
             height: auto !important;
           }
+        }
+        
+        /* 2025 Premium Drag Preview Styling */
+        .drag-preview-shift {
+          border: 2px dashed rgba(255, 255, 255, 0.6) !important;
+          border-radius: 8px !important;
+          box-shadow: 0 8px 24px rgba(16, 185, 129, 0.35) !important;
+          backdrop-filter: blur(4px);
+          animation: pulse-glow 1.5s ease-in-out infinite;
+        }
+        
+        @keyframes pulse-glow {
+          0%, 100% {
+            box-shadow: 0 8px 24px rgba(16, 185, 129, 0.35);
+          }
+          50% {
+            box-shadow: 0 8px 32px rgba(16, 185, 129, 0.5);
+          }
+        }
+        
+        /* Dragging state enhancement */
+        .fc-event-dragging {
+          opacity: 0.9 !important;
+          transform: scale(1.02);
+        }
+        
+        /* Mirror element while dragging */
+        .fc-event-mirror {
+          border: 2px dashed rgba(255, 255, 255, 0.8) !important;
+          border-radius: 8px !important;
+          box-shadow: 0 12px 32px rgba(16, 185, 129, 0.4) !important;
         }
       `}</style>
     </Box>
