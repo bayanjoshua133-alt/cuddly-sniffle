@@ -57,6 +57,8 @@ import { format, addDays, startOfWeek, endOfWeek, parseISO, differenceInMillisec
 interface Shift {
   id: string;
   userId: string;
+  branchId: string;
+  position: string;
   startTime: string;
   endTime: string;
   title?: string;
@@ -67,6 +69,8 @@ interface Shift {
     lastName: string;
     role?: string;
     username?: string;
+    position?: string;
+    branchId?: string;
   };
 }
 
@@ -234,7 +238,7 @@ const EnhancedScheduler = () => {
 
   // Mutations
   const createShiftMutation = useMutation({
-    mutationFn: async (payload: { userId: string; startTime: string; endTime: string; notes?: string }) => {
+    mutationFn: async (payload: { userId: string; startTime: string; endTime: string; branchId: string; position: string; notes?: string }) => {
       const res = await apiRequest('POST', '/api/shifts', payload);
       if (!res.ok) {
         const error = await res.json();
@@ -532,6 +536,8 @@ const EnhancedScheduler = () => {
 
     createShiftMutation.mutate({
       userId: clipboardShift.userId,
+      branchId: clipboardShift.branchId,
+      position: clipboardShift.position || 'Staff',
       startTime: newStart.toISOString(),
       endTime: newEnd.toISOString(),
       notes: clipboardShift.notes,
@@ -571,6 +577,8 @@ const EnhancedScheduler = () => {
       
       await createShiftMutation.mutateAsync({
         userId: shift.userId,
+        branchId: shift.branchId,
+        position: shift.position || 'Staff',
         startTime: newStart.toISOString(),
         endTime: newEnd.toISOString(),
         notes: shift.notes,
@@ -1029,12 +1037,17 @@ const EnhancedScheduler = () => {
           <Button onClick={() => { setCreateModalOpen(false); resetNewShiftData(); }}>Cancel</Button>
           <Button
             variant="contained"
-            onClick={() => createShiftMutation.mutate({
-              userId: newShiftData.employeeId,
-              startTime: newShiftData.startTime,
-              endTime: newShiftData.endTime,
-              notes: newShiftData.notes,
-            })}
+            onClick={() => {
+              const selectedEmployee = employees.find(e => e.id === newShiftData.employeeId);
+              createShiftMutation.mutate({
+                userId: newShiftData.employeeId,
+                branchId: selectedEmployee?.branchId || '',
+                position: selectedEmployee?.position || 'Staff',
+                startTime: newShiftData.startTime,
+                endTime: newShiftData.endTime,
+                notes: newShiftData.notes,
+              });
+            }}
             disabled={!newShiftData.employeeId || !newShiftData.startTime || !newShiftData.endTime || createShiftMutation.isPending || !!overlapWarning}
             color={overlapWarning ? 'error' : 'primary'}
           >
