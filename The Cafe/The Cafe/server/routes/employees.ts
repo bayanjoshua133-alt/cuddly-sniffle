@@ -41,17 +41,17 @@ router.get('/api/employees', requireAuth, async (req, res) => {
     // Return only employee role users from the same branch (for shift trading purposes)
     const employees = await storage.getEmployees(branchId);
     
-    // Filter out sensitive data - return only basic info needed for shift trading
-    const sanitizedEmployees = employees
-      .filter(emp => emp.isActive) // Only return active employees
-      .map(emp => ({
+    // Return ALL employees from the same branch with isActive status
+    // Let the frontend handle filtering/display of inactive employees
+    const sanitizedEmployees = employees.map(emp => ({
         id: emp.id,
         firstName: emp.firstName,
         lastName: emp.lastName,
         email: emp.email,
         position: emp.position,
         branchId: emp.branchId,
-        role: emp.role, // Include role so frontend can filter out managers/admins
+        role: emp.role,
+        isActive: emp.isActive ?? true, // Include isActive for client-side filtering
       }));
     
     res.json({ employees: sanitizedEmployees });

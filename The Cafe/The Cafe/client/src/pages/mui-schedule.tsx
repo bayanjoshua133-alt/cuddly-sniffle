@@ -179,7 +179,8 @@ const EnhancedScheduler = () => {
   // Robustly handle API response format (array or object)
   const shifts = Array.isArray(shiftsData) ? shiftsData : (shiftsData?.shifts || []);
   const rawEmployees = Array.isArray(employeesData) ? employeesData : (employeesData?.employees || []);
-  const employees = rawEmployees.filter(e => e.isActive !== false);
+  // Show ALL employees (active and inactive) - inactive ones will be visually distinguished
+  const employees = rawEmployees;
 
   // Feature 2: Overlap Detection
   const checkOverlap = useCallback((employeeId: string, startTime: string, endTime: string, excludeShiftId?: string): boolean => {
@@ -684,16 +685,23 @@ const EnhancedScheduler = () => {
             {employees.map((employee, index) => {
               const colors = EMPLOYEE_COLORS[index % EMPLOYEE_COLORS.length];
               const displayRole = employee.position || employee.role || 'employee';
+              const isInactive = employee.isActive === false;
+              const canDrag = isPublished && !isInactive;
+              
               return (
                 <Tooltip 
                   key={employee.id} 
-                  title={isPublished ? "Drag to calendar to schedule" : "Publish schedule to enable dragging"} 
+                  title={
+                    isInactive 
+                      ? "This employee is inactive" 
+                      : (isPublished ? "Drag to calendar to schedule" : "Publish schedule to enable dragging")
+                  } 
                   arrow 
                   placement="right"
                 >
                   <Box
-                    className="draggable-employee"
-                    data-employee={JSON.stringify(employee)}
+                    className={canDrag ? "draggable-employee" : ""}
+                    data-employee={canDrag ? JSON.stringify(employee) : undefined}
                     data-name={`${employee.firstName} ${employee.lastName}`}
                     aria-label="Drag me to the calendar to create a shift"
                     sx={{
@@ -702,22 +710,22 @@ const EnhancedScheduler = () => {
                       gap: 2,
                       p: 1.5,
                       borderRadius: 2,
-                      bgcolor: 'background.paper',
-                      cursor: isPublished ? 'grab' : 'not-allowed',
-                      opacity: isPublished ? 1 : 0.6,
+                      bgcolor: isInactive ? 'action.disabledBackground' : 'background.paper',
+                      cursor: canDrag ? 'grab' : 'not-allowed',
+                      opacity: isInactive ? 0.5 : (isPublished ? 1 : 0.6),
                       transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                       border: '1px solid',
-                      borderColor: 'divider',
+                      borderColor: isInactive ? 'action.disabled' : 'divider',
                       boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-                      '&:hover': isPublished ? {
+                      '&:hover': canDrag ? {
                         bgcolor: 'action.hover',
                         transform: 'translateX(4px) scale(1.01)',
                         borderColor: 'primary.main',
                         boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
                       } : {},
                       '&:active': {
-                        cursor: isPublished ? 'grabbing' : 'not-allowed',
-                        transform: isPublished ? 'scale(0.98)' : 'none',
+                        cursor: canDrag ? 'grabbing' : 'not-allowed',
+                        transform: canDrag ? 'scale(0.98)' : 'none',
                       },
                     }}
                   >
@@ -725,8 +733,8 @@ const EnhancedScheduler = () => {
                       sx={{
                         width: 40,
                         height: 40,
-                        bgcolor: colors.bg,
-                        color: colors.text,
+                        bgcolor: isInactive ? 'action.disabled' : colors.bg,
+                        color: isInactive ? 'text.disabled' : colors.text,
                         fontSize: '0.875rem',
                         fontWeight: 600,
                         boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
@@ -735,10 +743,16 @@ const EnhancedScheduler = () => {
                       {employee.firstName[0]}{employee.lastName[0]}
                     </Avatar>
                     <Box sx={{ flex: 1, minWidth: 0 }}>
-                      <Typography variant="body2" fontWeight={600} noWrap>
+                      <Typography 
+                        variant="body2" 
+                        fontWeight={600} 
+                        noWrap
+                        sx={{ color: isInactive ? 'text.disabled' : 'text.primary' }}
+                      >
                         {employee.firstName} {employee.lastName}
+                        {isInactive && ' (Inactive)'}
                       </Typography>
-                      <Typography variant="caption" color="text.secondary">
+                      <Typography variant="caption" color={isInactive ? 'text.disabled' : 'text.secondary'}>
                         {displayRole}
                       </Typography>
                     </Box>
@@ -747,8 +761,8 @@ const EnhancedScheduler = () => {
                         width: 10,
                         height: 10,
                         borderRadius: '50%',
-                        bgcolor: colors.bg,
-                        boxShadow: `0 0 0 2px ${colors.bg}33`,
+                        bgcolor: isInactive ? 'action.disabled' : colors.bg,
+                        boxShadow: isInactive ? 'none' : `0 0 0 2px ${colors.bg}33`,
                       }}
                     />
                   </Box>
