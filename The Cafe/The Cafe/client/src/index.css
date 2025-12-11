@@ -1134,3 +1134,30 @@ html {
 .rbc-today {
   background: hsl(var(--primary) / 0.05) !important;
 }
+
+/* ============================================
+   FINAL 2025 GLOBAL BORDER KILLER — DO NOT TOUCH
+   Kills every single "1px solid hsl(var(--border))" in the entire app
+   Works on shadcn + Tailwind + MUI + FullCalendar
+   ============================================ */
+
+*, *::before, *::after {
+  border-width: 0 !important;
+  border-style: none !important;
+}
+
+/* Tailwind's .border utility has higher specificity — we beat it */
+.border,
+.border-t, .border-r, .border-b, .border-l,
+.border-x, .border-y,
+[class*="border-"] {
+  border-width: 0 !important;
+  border-style: none !important;
+  border-color: transparent !important;
+}
+
+/* FullCalendar & MUI leftovers */
+.fc *, .fc-timegrid-slot, .fc-timegrid-col,
+.MuiPaper-root, .MuiCard-root {
+  border: none !important;
+}

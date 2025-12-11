@@ -27,6 +27,11 @@ import {
   Stack,
   Tooltip,
   Divider,
+  Switch,
+  FormControlLabel,
+  ButtonGroup,
+  Card,
+  CardContent,
 } from '@mui/material';
 import {
   ContentCopy as CopyIcon,
@@ -39,10 +44,15 @@ import {
   ChevronLeft as ChevronLeftIcon,
   ChevronRight as ChevronRightIcon,
   FileCopy as CopyWeekIcon,
+  Print as PrintIcon,
+  WbSunny as MorningIcon,
+  LightMode as AfternoonIcon,
+  NightsStay as NightIcon,
+  Schedule as ScheduleIcon,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
-import { format, addDays, startOfWeek, endOfWeek, parseISO, differenceInMilliseconds } from 'date-fns';
+import { format, addDays, startOfWeek, endOfWeek, parseISO, differenceInMilliseconds, differenceInHours, areIntervalsOverlapping, setHours, setMinutes } from 'date-fns';
 
 // --- Types ---
 interface Shift {
@@ -61,6 +71,14 @@ interface Shift {
   };
 }
 
+interface TimeOff {
+  id: string;
+  userId: string;
+  startTime: string;
+  endTime: string;
+  reason?: string;
+}
+
 interface Employee {
   id: string;
   firstName: string;
@@ -69,6 +87,13 @@ interface Employee {
   username?: string;
   isActive?: boolean;
 }
+
+// Shift Templates
+const SHIFT_TEMPLATES = {
+  morning: { start: 7, end: 15, label: 'Morning (7AM-3PM)' },
+  afternoon: { start: 15, end: 23, label: 'Afternoon (3PM-11PM)' },
+  night: { start: 23, end: 7, label: 'Night (11PM-7AM)' },
+};
 
 // Employee color palette - 2025 modern colors
 const EMPLOYEE_COLORS = [
@@ -96,9 +121,17 @@ const EnhancedScheduler = () => {
   const rosterRef = useRef<HTMLDivElement>(null);
 
   // UI State
-  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' | 'info' });
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' | 'info' | 'warning' });
   const [rosterOpen, setRosterOpen] = useState(false);
   const [currentWeekStart, setCurrentWeekStart] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
+
+  // Feature 6: Published Toggle
+  const [isPublished, setIsPublished] = useState(false);
+
+  // Feature 3: Time-Off Blocks (mock data - would come from API in production)
+  const [timeOffBlocks] = useState<TimeOff[]>([
+    // Example time-off blocks - replace with API data
+  ]);
 
   // Clipboard State
   const [clipboardShift, setClipboardShift] = useState<Shift | null>(null);
@@ -110,6 +143,7 @@ const EnhancedScheduler = () => {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
+  const [overlapWarning, setOverlapWarning] = useState<string | null>(null);
   const [newShiftData, setNewShiftData] = useState({
     employeeId: '',
     startTime: '',
@@ -138,6 +172,57 @@ const EnhancedScheduler = () => {
   const shifts = shiftsData?.shifts || [];
   const employees = (employeesData?.employees || []).filter(e => e.isActive !== false);
 
+  // Feature 2: Overlap Detection
+  const checkOverlap = useCallback((employeeId: string, startTime: string, endTime: string, excludeShiftId?: string): boolean => {
+    const newStart = new Date(startTime);
+    const newEnd = new Date(endTime);
+    
+    return shifts.some(shift => {
+      if (shift.userId !== employeeId) return false;
+      if (excludeShiftId && shift.id === excludeShiftId) return false;
+      
+      const existingStart = new Date(shift.startTime);
+      const existingEnd = new Date(shift.endTime);
+      
+      return areIntervalsOverlapping(
+        { start: newStart, end: newEnd },
+        { start: existingStart, end: existingEnd }
+      );
+    });
+  }, [shifts]);
+
+  // Feature 5: Weekly Hours Summary
+  const weeklyHoursSummary = useMemo(() => {
+    const weekEnd = endOfWeek(currentWeekStart, { weekStartsOn: 1 });
+    const weekShifts = shifts.filter(shift => {
+      const shiftDate = new Date(shift.startTime);
+      return shiftDate >= currentWeekStart && shiftDate <= weekEnd;
+    });
+
+    const employeeHours: Record<string, { name: string; hours: number }> = {};
+    let totalHours = 0;
+
+    weekShifts.forEach(shift => {
+      const hours = differenceInHours(new Date(shift.endTime), new Date(shift.startTime));
+      totalHours += hours;
+
+      const empId = shift.userId;
+      if (!employeeHours[empId]) {
+        const emp = employees.find(e => e.id === empId);
+        employeeHours[empId] = {
+          name: emp ? `${emp.firstName}` : 'Unknown',
+          hours: 0,
+        };
+      }
+      employeeHours[empId].hours += hours;
+    });
+
+    return {
+      byEmployee: Object.values(employeeHours).sort((a, b) => b.hours - a.hours).slice(0, 5),
+      total: totalHours,
+    };
+  }, [shifts, employees, currentWeekStart]);
+
   // Mutations
   const createShiftMutation = useMutation({
     mutationFn: async (payload: { userId: string; startTime: string; endTime: string; notes?: string }) => {
@@ -153,6 +238,7 @@ const EnhancedScheduler = () => {
       setSnackbar({ open: true, message: 'Shift created!', severity: 'success' });
       setCreateModalOpen(false);
       resetNewShiftData();
+      setOverlapWarning(null);
     },
     onError: (error: Error) => {
       setSnackbar({ open: true, message: error.message, severity: 'error' });
@@ -202,6 +288,7 @@ const EnhancedScheduler = () => {
   // Helper Functions
   const resetNewShiftData = () => {
     setNewShiftData({ employeeId: '', startTime: '', endTime: '', notes: '' });
+    setOverlapWarning(null);
   };
 
   const getEmployeeName = (userId: string) => {
@@ -214,9 +301,35 @@ const EnhancedScheduler = () => {
     return emp?.role || '';
   };
 
+  // Feature 4: Apply Shift Template
+  const applyShiftTemplate = useCallback((template: keyof typeof SHIFT_TEMPLATES) => {
+    const { start, end } = SHIFT_TEMPLATES[template];
+    const today = new Date();
+    
+    let startDate = setMinutes(setHours(today, start), 0);
+    let endDate = setMinutes(setHours(today, end), 0);
+    
+    // Handle overnight shifts
+    if (end < start) {
+      endDate = addDays(endDate, 1);
+    }
+
+    setNewShiftData(prev => ({
+      ...prev,
+      startTime: startDate.toISOString(),
+      endTime: endDate.toISOString(),
+    }));
+    setCreateModalOpen(true);
+  }, []);
+
+  // Feature 7: Print Handler
+  const handlePrint = useCallback(() => {
+    window.print();
+  }, []);
+
   // Map shifts to FullCalendar events with employee color-coding
   const calendarEvents = useMemo(() => {
-    return shifts.map(shift => {
+    const shiftEvents = shifts.map(shift => {
       const colors = getEmployeeColor(shift.userId, employees);
       const empName = shift.user 
         ? `${shift.user.firstName} ${shift.user.lastName}` 
@@ -231,47 +344,121 @@ const EnhancedScheduler = () => {
         backgroundColor: colors.bg,
         borderColor: colors.bg,
         textColor: colors.text,
-        extendedProps: { shift, employeeId: shift.userId },
+        extendedProps: { shift, employeeId: shift.userId, type: 'shift' },
       };
     });
-  }, [shifts, employees]);
+
+    // Feature 3: Add Time-Off blocks
+    const timeOffEvents = timeOffBlocks.map(to => ({
+      id: `timeoff-${to.id}`,
+      title: `🚫 Time Off${to.reason ? `: ${to.reason}` : ''}`,
+      start: to.startTime,
+      end: to.endTime,
+      backgroundColor: 'rgba(0, 0, 0, 0.6)',
+      borderColor: 'rgba(0, 0, 0, 0.8)',
+      textColor: '#FFFFFF',
+      editable: false,
+      extendedProps: { type: 'timeoff', timeOff: to },
+    }));
+
+    return [...shiftEvents, ...timeOffEvents];
+  }, [shifts, employees, timeOffBlocks]);
 
   // FullCalendar Event Handlers
   const handleEventDrop = useCallback((info: any) => {
+    if (!isPublished) {
+      setSnackbar({ open: true, message: 'Publish the schedule to enable drag & drop', severity: 'warning' });
+      info.revert();
+      return;
+    }
+
     const { event } = info;
+    if (event.extendedProps.type === 'timeoff') {
+      info.revert();
+      return;
+    }
+
+    // Feature 2: Check overlap on drop
+    const employeeId = event.extendedProps.employeeId;
+    if (checkOverlap(employeeId, event.startStr, event.endStr, event.id)) {
+      setSnackbar({ open: true, message: '⚠️ Overlap detected with existing shift!', severity: 'warning' });
+      info.revert();
+      return;
+    }
+
     updateShiftMutation.mutate({
       id: event.id,
       startTime: event.startStr,
       endTime: event.endStr,
     });
-  }, [updateShiftMutation]);
+  }, [updateShiftMutation, checkOverlap, isPublished]);
 
   const handleEventResize = useCallback((info: any) => {
+    if (!isPublished) {
+      setSnackbar({ open: true, message: 'Publish the schedule to enable editing', severity: 'warning' });
+      info.revert();
+      return;
+    }
+
     const { event } = info;
+    if (event.extendedProps.type === 'timeoff') {
+      info.revert();
+      return;
+    }
+
+    // Feature 2: Check overlap on resize
+    const employeeId = event.extendedProps.employeeId;
+    if (checkOverlap(employeeId, event.startStr, event.endStr, event.id)) {
+      setSnackbar({ open: true, message: '⚠️ Overlap detected with existing shift!', severity: 'warning' });
+      info.revert();
+      return;
+    }
+
     updateShiftMutation.mutate({
       id: event.id,
       startTime: event.startStr,
       endTime: event.endStr,
     });
-  }, [updateShiftMutation]);
+  }, [updateShiftMutation, checkOverlap, isPublished]);
 
   const handleEventClick = useCallback((info: any) => {
+    if (info.event.extendedProps.type === 'timeoff') {
+      setSnackbar({ open: true, message: 'Time-off blocks cannot be edited here', severity: 'info' });
+      return;
+    }
+
+    if (!isPublished) {
+      setSnackbar({ open: true, message: 'Publish the schedule to enable editing', severity: 'warning' });
+      return;
+    }
+
     const shift = info.event.extendedProps.shift as Shift;
     setSelectedShift(shift);
     setEditModalOpen(true);
-  }, []);
+  }, [isPublished]);
 
+  // Feature 1: Drag-to-create (using select)
   const handleDateSelect = useCallback((info: any) => {
+    if (!isPublished) {
+      setSnackbar({ open: true, message: 'Publish the schedule to create shifts', severity: 'warning' });
+      return;
+    }
+
     setNewShiftData(prev => ({
       ...prev,
       startTime: info.startStr,
       endTime: info.endStr,
     }));
     setCreateModalOpen(true);
-  }, []);
+  }, [isPublished]);
 
   // External Drop from Employee Roster
   const handleExternalDrop = useCallback((info: any) => {
+    if (!isPublished) {
+      setSnackbar({ open: true, message: 'Publish the schedule to create shifts', severity: 'warning' });
+      return;
+    }
+
     const employeeData = info.draggedEl.getAttribute('data-employee');
     if (!employeeData) return;
     
@@ -280,7 +467,7 @@ const EnhancedScheduler = () => {
     
     if (start) {
       const startDate = new Date(start);
-      const endDate = new Date(startDate.getTime() + 4 * 60 * 60 * 1000); // Default 4 hour shift
+      const endDate = new Date(startDate.getTime() + 4 * 60 * 60 * 1000);
       
       setNewShiftData({
         employeeId: employee.id,
@@ -290,7 +477,7 @@ const EnhancedScheduler = () => {
       });
       setCreateModalOpen(true);
     }
-  }, []);
+  }, [isPublished]);
 
   // Initialize external draggable for employee roster
   useEffect(() => {
@@ -303,7 +490,7 @@ const EnhancedScheduler = () => {
           return {
             title: emp ? `${emp.firstName} ${emp.lastName}` : 'New Shift',
             duration: '04:00',
-            create: false, // We'll handle creation manually
+            create: false,
           };
         },
       });
@@ -377,6 +564,16 @@ const EnhancedScheduler = () => {
     setSnackbar({ open: true, message: 'Week pasted successfully!', severity: 'success' });
   }, [clipboardWeek, clipboardWeekStart, currentWeekStart, createShiftMutation]);
 
+  // Feature 2: Check overlap when creating/editing
+  useEffect(() => {
+    if (newShiftData.employeeId && newShiftData.startTime && newShiftData.endTime) {
+      const hasOverlap = checkOverlap(newShiftData.employeeId, newShiftData.startTime, newShiftData.endTime);
+      setOverlapWarning(hasOverlap ? 'This shift overlaps with an existing shift for this employee!' : null);
+    } else {
+      setOverlapWarning(null);
+    }
+  }, [newShiftData.employeeId, newShiftData.startTime, newShiftData.endTime, checkOverlap]);
+
   // Keyboard Shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -384,11 +581,15 @@ const EnhancedScheduler = () => {
         e.preventDefault();
         handleCopyShift(selectedShift);
       }
+      if (e.ctrlKey && e.key === 'p') {
+        e.preventDefault();
+        handlePrint();
+      }
     };
     
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedShift, handleCopyShift]);
+  }, [selectedShift, handleCopyShift, handlePrint]);
 
   // Track calendar date changes
   const handleDatesSet = useCallback((info: any) => {
@@ -404,13 +605,35 @@ const EnhancedScheduler = () => {
   }
 
   return (
-    <Box sx={{ display: 'flex', height: '100vh', bgcolor: 'background.default' }}>
+    <Box sx={{ display: 'flex', height: '100vh', bgcolor: 'background.default' }} className="print-container">
+      {/* Feature 6: DRAFT Watermark */}
+      {!isPublished && (
+        <Box
+          className="no-print"
+          sx={{
+            position: 'fixed',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%) rotate(-45deg)',
+            fontSize: '8rem',
+            fontWeight: 900,
+            color: 'rgba(255, 0, 0, 0.08)',
+            pointerEvents: 'none',
+            zIndex: 1000,
+            userSelect: 'none',
+          }}
+        >
+          DRAFT
+        </Box>
+      )}
+
       {/* Employee Roster Drawer */}
       <Drawer
         anchor="left"
         open={rosterOpen}
         onClose={() => setRosterOpen(false)}
         variant="persistent"
+        className="no-print"
         sx={{
           width: rosterOpen ? 280 : 0,
           flexShrink: 0,
@@ -451,14 +674,15 @@ const EnhancedScheduler = () => {
                     p: 1.5,
                     borderRadius: 2,
                     bgcolor: 'background.paper',
-                    cursor: 'grab',
+                    cursor: isPublished ? 'grab' : 'not-allowed',
+                    opacity: isPublished ? 1 : 0.6,
                     transition: 'all 0.2s',
-                    '&:hover': {
+                    '&:hover': isPublished ? {
                       bgcolor: 'action.hover',
                       transform: 'translateX(4px)',
-                    },
+                    } : {},
                     '&:active': {
-                      cursor: 'grabbing',
+                      cursor: isPublished ? 'grabbing' : 'not-allowed',
                     },
                   }}
                 >
@@ -510,10 +734,24 @@ const EnhancedScheduler = () => {
         }}
       >
         {/* Toolbar */}
-        <Paper sx={{ p: 2, mb: 2, display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+        <Paper className="no-print" sx={{ p: 2, mb: 2, display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
           <Typography variant="h5" fontWeight={700} sx={{ flexGrow: 1 }}>
             Schedule
           </Typography>
+
+          {/* Feature 6: Published Toggle */}
+          <FormControlLabel
+            control={
+              <Switch
+                checked={isPublished}
+                onChange={(e) => setIsPublished(e.target.checked)}
+                color="success"
+              />
+            }
+            label={isPublished ? '✅ Published' : '📝 Draft'}
+          />
+
+          <Divider orientation="vertical" flexItem />
           
           {/* Roster Toggle */}
           <Tooltip title="Toggle Employee Roster">
@@ -527,32 +765,24 @@ const EnhancedScheduler = () => {
             </Button>
           </Tooltip>
 
-          <Divider orientation="vertical" flexItem />
-
-          {/* Copy/Paste Shift */}
-          <Tooltip title={clipboardShift ? 'Shift in clipboard - select a time to paste' : 'Select a shift first'}>
-            <span>
-              <Button
-                variant="outlined"
-                startIcon={<CopyIcon />}
-                size="small"
-                disabled={!selectedShift}
-                onClick={() => selectedShift && handleCopyShift(selectedShift)}
-              >
-                Copy Shift
+          {/* Feature 4: Shift Templates */}
+          <ButtonGroup variant="outlined" size="small">
+            <Tooltip title="Create Morning Shift (7AM-3PM)">
+              <Button onClick={() => applyShiftTemplate('morning')} disabled={!isPublished}>
+                <MorningIcon />
               </Button>
-            </span>
-          </Tooltip>
-
-          {clipboardShift && (
-            <Chip
-              label={`📋 ${getEmployeeName(clipboardShift.userId)}`}
-              size="small"
-              onDelete={() => setClipboardShift(null)}
-              color="primary"
-              variant="outlined"
-            />
-          )}
+            </Tooltip>
+            <Tooltip title="Create Afternoon Shift (3PM-11PM)">
+              <Button onClick={() => applyShiftTemplate('afternoon')} disabled={!isPublished}>
+                <AfternoonIcon />
+              </Button>
+            </Tooltip>
+            <Tooltip title="Create Night Shift (11PM-7AM)">
+              <Button onClick={() => applyShiftTemplate('night')} disabled={!isPublished}>
+                <NightIcon />
+              </Button>
+            </Tooltip>
+          </ButtonGroup>
 
           <Divider orientation="vertical" flexItem />
 
@@ -586,17 +816,31 @@ const EnhancedScheduler = () => {
                   startIcon={<PasteIcon />}
                   size="small"
                   onClick={handlePasteWeek}
-                  disabled={createShiftMutation.isPending}
+                  disabled={createShiftMutation.isPending || !isPublished}
                 >
                   Paste Week
                 </Button>
               </Tooltip>
             </>
           )}
+
+          <Divider orientation="vertical" flexItem />
+
+          {/* Feature 7: Print Button */}
+          <Tooltip title="Print Schedule (Ctrl+P)">
+            <Button
+              variant="outlined"
+              startIcon={<PrintIcon />}
+              size="small"
+              onClick={handlePrint}
+            >
+              Print
+            </Button>
+          </Tooltip>
         </Paper>
 
         {/* Calendar */}
-        <Paper sx={{ p: 2, height: 'calc(100vh - 180px)', borderRadius: 2 }}>
+        <Paper sx={{ p: 2, height: 'calc(100vh - 180px)', borderRadius: 2, position: 'relative' }} className="print-calendar">
           <FullCalendar
             ref={calendarRef}
             plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
@@ -610,9 +854,9 @@ const EnhancedScheduler = () => {
             slotMaxTime="22:00:00"
             allDaySlot={false}
             height="100%"
-            editable={true}
-            droppable={true}
-            selectable={true}
+            editable={isPublished}
+            droppable={isPublished}
+            selectable={isPublished}
             selectMirror={true}
             events={calendarEvents}
             eventDrop={handleEventDrop}
@@ -636,6 +880,38 @@ const EnhancedScheduler = () => {
             dayMaxEvents={true}
           />
         </Paper>
+
+        {/* Feature 5: Weekly Hours Summary */}
+        <Card
+          className="no-print"
+          sx={{
+            position: 'fixed',
+            bottom: 24,
+            right: 24,
+            width: 280,
+            boxShadow: 6,
+            zIndex: 100,
+          }}
+        >
+          <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+              <ScheduleIcon fontSize="small" color="primary" />
+              <Typography variant="subtitle2" fontWeight={700}>
+                This Week: {weeklyHoursSummary.total}h total
+              </Typography>
+            </Box>
+            <Stack spacing={0.5}>
+              {weeklyHoursSummary.byEmployee.map((emp, idx) => (
+                <Box key={idx} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Typography variant="caption" color="text.secondary">
+                    {emp.name}
+                  </Typography>
+                  <Chip label={`${emp.hours}h`} size="small" variant="outlined" sx={{ height: 20, fontSize: '0.7rem' }} />
+                </Box>
+              ))}
+            </Stack>
+          </CardContent>
+        </Card>
       </Box>
 
       {/* Create Shift Modal */}
@@ -643,7 +919,14 @@ const EnhancedScheduler = () => {
         <DialogTitle>Create Shift</DialogTitle>
         <DialogContent>
           <Stack spacing={3} sx={{ mt: 1 }}>
-            <FormControl fullWidth>
+            {/* Feature 2: Overlap Warning */}
+            {overlapWarning && (
+              <Alert severity="error" sx={{ '& .MuiAlert-icon': { color: '#EF4444' } }}>
+                {overlapWarning}
+              </Alert>
+            )}
+
+            <FormControl fullWidth error={!!overlapWarning}>
               <InputLabel>Employee</InputLabel>
               <Select
                 value={newShiftData.employeeId}
@@ -664,6 +947,7 @@ const EnhancedScheduler = () => {
               onChange={(e) => setNewShiftData(prev => ({ ...prev, startTime: new Date(e.target.value).toISOString() }))}
               slotProps={{ inputLabel: { shrink: true } }}
               fullWidth
+              error={!!overlapWarning}
             />
             <TextField
               label="End Time"
@@ -672,6 +956,7 @@ const EnhancedScheduler = () => {
               onChange={(e) => setNewShiftData(prev => ({ ...prev, endTime: new Date(e.target.value).toISOString() }))}
               slotProps={{ inputLabel: { shrink: true } }}
               fullWidth
+              error={!!overlapWarning}
             />
             <TextField
               label="Notes"
@@ -693,7 +978,8 @@ const EnhancedScheduler = () => {
               endTime: newShiftData.endTime,
               notes: newShiftData.notes,
             })}
-            disabled={!newShiftData.employeeId || !newShiftData.startTime || !newShiftData.endTime || createShiftMutation.isPending}
+            disabled={!newShiftData.employeeId || !newShiftData.startTime || !newShiftData.endTime || createShiftMutation.isPending || !!overlapWarning}
+            color={overlapWarning ? 'error' : 'primary'}
           >
             {createShiftMutation.isPending ? 'Creating...' : 'Create Shift'}
           </Button>
@@ -841,6 +1127,35 @@ const EnhancedScheduler = () => {
           {snackbar.message}
         </Alert>
       </Snackbar>
+
+      {/* Feature 7: Print Styles */}
+      <style>{`
+        @media print {
+          body * {
+            visibility: hidden;
+          }
+          .print-container, .print-container * {
+            visibility: visible;
+          }
+          .no-print {
+            display: none !important;
+          }
+          .print-calendar {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: auto !important;
+            box-shadow: none !important;
+          }
+          .fc-header-toolbar {
+            margin-bottom: 1em !important;
+          }
+          .fc-view-harness {
+            height: auto !important;
+          }
+        }
+      `}</style>
     </Box>
   );
 };
