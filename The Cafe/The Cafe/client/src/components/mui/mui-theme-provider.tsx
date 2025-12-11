@@ -114,6 +114,12 @@ export function MuiThemeProvider({ children }: MuiThemeProviderProps) {
         components: {
           MuiCssBaseline: {
             styleOverrides: `
+              /* NUCLEAR RESET: Force remove the pesky global border from Tailwind/Shadcn */
+              *, *::before, *::after {
+                border-width: 0;
+                border-style: none;
+              }
+
               body {
                 scrollbar-width: thin;
               }

@@ -10,6 +10,23 @@
 @tailwind utilities;
 
 /* ============================================
+   🔥 CRITICAL: BORDER RESET - 2025 PROVEN METHOD
+   
+   This MUST come AFTER @tailwind utilities to override
+   Tailwind's preflight which sets:
+   *, ::before, ::after { border-color: hsl(var(--border)); }
+   
+   The @layer base rules DON'T work because layered styles
+   have LOWER specificity than unlayered Tailwind preflight.
+   ============================================ */
+
+*,
+*::before,
+*::after {
+  border-color: transparent !important;
+}
+
+/* ============================================
    CSS VARIABLES - DARK THEME (DEFAULT - 2025 Modern)
    Premium SaaS design like Rippling, Gusto, Linear
    ============================================ */
@@ -23,7 +40,7 @@
   --popover: 222 47% 8%;
   --popover-foreground: 210 40% 98%;
   
-  /* Primary: Teal/Emerald for a modern café feel (replaces harsh orange) */
+  /* Primary: Teal/Emerald for a modern café feel */
   --primary: 160 84% 39%;
   --primary-foreground: 0 0% 100%;
   
@@ -42,7 +59,8 @@
   --destructive: 0 72% 51%;
   --destructive-foreground: 0 0% 100%;
   
-  --border: 0 0% 100% / 0; /* Transparent - no visible borders */
+  /* CRITICAL: Border is TRANSPARENT by design */
+  --border: 0 0% 0% / 0;
   --input: 217 33% 12%;
   --ring: 160 84% 39%;
   
@@ -53,28 +71,33 @@
   --chart-4: 280 65% 60%;
   --chart-5: 12 76% 61%;
   
-  /* Sidebar - slightly elevated */
+  /* Sidebar */
   --sidebar-background: 222 47% 6%;
   --sidebar-foreground: 210 40% 98%;
   --sidebar-primary: 160 84% 39%;
   --sidebar-primary-foreground: 0 0% 100%;
   --sidebar-accent: 217 33% 14%;
   --sidebar-accent-foreground: 210 40% 98%;
-  --sidebar-border: 0 0% 100% / 0; /* Transparent - no visible borders */
+  --sidebar-border: 0 0% 0% / 0;
   --sidebar-ring: 160 84% 39%;
   
   --radius: 0.75rem;
   
   /* Premium glassmorphism effects */
   --glass-bg: rgba(30, 41, 59, 0.7);
-  --glass-border: transparent; /* No visible borders */
+  --glass-border: transparent;
   --glow-emerald: 0 0 40px rgba(16, 185, 129, 0.15);
   --glow-indigo: 0 0 40px rgba(99, 102, 241, 0.15);
+  
+  /* FullCalendar Variables - TRANSPARENT */
+  --fc-border-color: transparent;
+  --fc-page-bg-color: transparent;
+  --fc-neutral-bg-color: transparent;
+  --fc-list-event-hover-bg-color: transparent;
 }
 
 /* ============================================
    CSS VARIABLES - LIGHT THEME (Toggle-able)
-   Warm, clean, café-inspired
    ============================================ */
 
 .light {
@@ -85,7 +108,6 @@
   --popover: 0 0% 100%;
   --popover-foreground: 222 47% 11%;
   
-  /* Primary: Deep teal */
   --primary: 160 84% 35%;
   --primary-foreground: 0 0% 100%;
   
@@ -94,13 +116,12 @@
   --muted: 40 20% 94%;
   --muted-foreground: 220 9% 46%;
   
-  /* Accent: Indigo */
   --accent: 234 89% 60%;
   --accent-foreground: 0 0% 100%;
   
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 100%;
-  --border: 0 0% 100% / 0; /* Transparent - no visible borders */
+  --border: 0 0% 0% / 0;
   --input: 40 15% 88%;
   --ring: 160 84% 35%;
   
@@ -110,11 +131,11 @@
   --sidebar-primary-foreground: 0 0% 100%;
   --sidebar-accent: 40 20% 94%;
   --sidebar-accent-foreground: 222 47% 11%;
-  --sidebar-border: 0 0% 100% / 0; /* Transparent - no visible borders */
+  --sidebar-border: 0 0% 0% / 0;
   --sidebar-ring: 160 84% 35%;
   
-  --glass-bg: rgba(255, 255, 255, 0.8);
-  --glass-border: transparent; /* No visible borders */
+  --glass-bg: rgb(255, 255, 255);
+  --glass-border: transparent;
   --glow-emerald: 0 0 40px rgba(16, 185, 129, 0.1);
   --glow-indigo: 0 0 40px rgba(99, 102, 241, 0.1);
 }
@@ -123,21 +144,7 @@
    BASE STYLES
    ============================================ */
 
-
 @layer base {
-  /* CRITICAL: Override shadcn/ui's default border on all elements */
-  /* This removes the * { border: 1px solid hsl(var(--border)); } that shadcn/ui adds */
-  *,
-  *::before,
-  *::after {
-    border-width: 0 !important;
-    border: none !important;
-    border-color: transparent !important;
-  }
-
-  /* All borders removed globally - 2025 clean UI */
-  /* Previous universal selector with border-color has been removed */
-
   html {
     scroll-behavior: smooth;
   }
@@ -158,7 +165,7 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background: hsl(var(--border));
+    background: hsl(var(--muted-foreground) / 0.2);
     border-radius: 3px;
   }
 
@@ -174,15 +181,16 @@
 @layer components {
   /* Premium Card with Glassmorphism */
   .card-glass {
-    @apply relative overflow-hidden rounded-2xl; /* border removed */
+    @apply relative overflow-hidden rounded-2xl;
     background: var(--glass-bg);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
   }
   
   /* Premium Card with Glow Effect */
   .card-glow {
-    @apply relative overflow-hidden rounded-2xl transition-all duration-300; /* border removed */
+    @apply relative overflow-hidden rounded-2xl transition-all duration-300;
   }
   
   .card-glow:hover {
@@ -196,11 +204,11 @@
   
   /* Hero Metric Card - 2025 SaaS Style */
   .metric-card {
-    @apply relative overflow-hidden rounded-2xl bg-card p-6 transition-all duration-300; /* border removed */
+    @apply relative overflow-hidden rounded-2xl bg-card p-6 transition-all duration-300;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   }
   
   .metric-card:hover {
-    /* border-primary removed */
     transform: translateY(-4px);
     box-shadow: 0 20px 40px -20px rgba(0, 0, 0, 0.3), var(--glow-emerald);
   }
@@ -224,7 +232,7 @@
   /* Active Sidebar Glow */
   .sidebar-active {
     @apply relative bg-gradient-to-r from-primary to-primary/90 text-primary-foreground;
-    box-shadow: 0 0 20px hsl(var(--primary) / 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    box-shadow: 0 0 20px hsl(var(--primary) / 0.3), inset 0 0px 0 rgba(255, 255, 255, 0);
   }
   
   .sidebar-active::before {
@@ -258,7 +266,7 @@
     left: -100%;
     width: 100%;
     height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    background: linear-gradient(90deg, transparent, rgb(255, 251, 251), transparent);
     transition: left 0.5s;
   }
   
@@ -278,11 +286,12 @@
 
   /* Stat Card */
   .stat-card {
-    @apply bg-card rounded-xl p-5 transition-all duration-200; /* border removed */
+    @apply bg-card rounded-xl p-5 transition-all duration-200;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
   }
   
   .stat-card:hover {
-    @apply shadow-md;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   }
 
   /* Navigation Item */
@@ -300,7 +309,7 @@
 
   /* Table Styles */
   .table-row {
-    @apply transition-colors; /* border-b border-border removed */
+    @apply transition-colors;
   }
   
   .table-row:hover {
@@ -345,11 +354,12 @@
 
   /* Floating Action Button */
   .fab {
-    @apply fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center transition-all;
+    @apply fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-primary text-primary-foreground flex items-center justify-center transition-all;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
   }
   
   .fab:hover {
-    @apply shadow-xl;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
     transform: scale(1.05);
   }
 
@@ -423,7 +433,6 @@
    ============================================ */
 
 @layer utilities {
-  /* Safe Area Insets for Mobile */
   .safe-area-inset-bottom {
     padding-bottom: env(safe-area-inset-bottom, 0);
   }
@@ -451,21 +460,18 @@
    MOBILE EMPLOYEE STYLES - FULLY RESPONSIVE
    ============================================ */
 
-/* Base mobile responsive settings */
 html {
   -webkit-text-size-adjust: 100%;
   -ms-text-size-adjust: 100%;
   touch-action: manipulation;
 }
 
-/* Prevent zoom on input focus for iOS */
 @media screen and (max-width: 768px) {
   input, select, textarea {
     font-size: 16px !important;
   }
 }
 
-/* Mobile-specific larger typography */
 @media (max-width: 768px) {
   .mobile-app {
     font-size: 16px;
@@ -477,7 +483,6 @@ html {
     min-height: -webkit-fill-available;
   }
 
-  /* Fix for mobile viewport height */
   html, body {
     height: 100%;
     overflow-x: hidden;
@@ -516,35 +521,14 @@ html {
     line-height: 1.7;
   }
 
-  .mobile-app .text-sm {
-    font-size: 0.875rem !important;
-  }
+  .mobile-app .text-sm { font-size: 0.875rem !important; }
+  .mobile-app .text-xs { font-size: 0.75rem !important; }
+  .mobile-app .text-lg { font-size: 1.125rem !important; }
+  .mobile-app .text-xl { font-size: 1.25rem !important; }
+  .mobile-app .text-2xl { font-size: 1.5rem !important; }
+  .mobile-app .text-3xl { font-size: 1.75rem !important; }
+  .mobile-app .text-4xl { font-size: 2rem !important; }
 
-  .mobile-app .text-xs {
-    font-size: 0.75rem !important;
-  }
-
-  .mobile-app .text-lg {
-    font-size: 1.125rem !important;
-  }
-
-  .mobile-app .text-xl {
-    font-size: 1.25rem !important;
-  }
-
-  .mobile-app .text-2xl {
-    font-size: 1.5rem !important;
-  }
-
-  .mobile-app .text-3xl {
-    font-size: 1.75rem !important;
-  }
-
-  .mobile-app .text-4xl {
-    font-size: 2rem !important;
-  }
-
-  /* Mobile buttons with larger touch targets */
   .mobile-app button,
   .mobile-app .btn {
     min-height: 44px;
@@ -558,40 +542,34 @@ html {
     padding: 8px 16px;
   }
 
-  /* Mobile inputs with larger touch targets */
   .mobile-app input,
   .mobile-app select,
   .mobile-app textarea {
     min-height: 48px;
-    font-size: 16px !important; /* Prevents iOS zoom */
+    font-size: 16px !important;
     padding: 12px 16px;
   }
 
-  /* Mobile cards with better spacing */
   .mobile-app .card {
     padding: 16px;
     border-radius: 16px;
   }
 
-  /* Mobile navigation items */
   .mobile-app .nav-item {
     padding: 14px 16px;
     font-size: 1rem;
     min-height: 48px;
   }
 
-  /* Mobile list items */
   .mobile-app li {
     padding: 12px 0;
   }
 
-  /* Mobile badges */
   .mobile-app .badge {
     font-size: 0.8125rem;
     padding: 4px 10px;
   }
 
-  /* Bottom navigation */
   .mobile-app .bottom-nav {
     padding-bottom: calc(env(safe-area-inset-bottom, 0) + 8px);
   }
@@ -601,7 +579,6 @@ html {
     padding: 8px 0;
   }
 
-  /* Responsive grid for mobile */
   .mobile-app .grid-cols-2 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
@@ -612,57 +589,23 @@ html {
     gap: 12px;
   }
 
-  /* Responsive padding */
-  .mobile-app .p-5 {
-    padding: 16px;
-  }
-
-  .mobile-app .p-6 {
-    padding: 16px;
-  }
-
-  .mobile-app .space-y-6 > * + * {
-    margin-top: 16px;
-  }
-
-  /* Responsive icon sizes */
-  .mobile-app .w-14 {
-    width: 48px;
-    height: 48px;
-  }
-
-  .mobile-app .w-16 {
-    width: 56px;
-    height: 56px;
-  }
-
-  /* Responsive gap */
-  .mobile-app .gap-4 {
-    gap: 12px;
-  }
-
-  .mobile-app .gap-3 {
-    gap: 10px;
-  }
+  .mobile-app .p-5 { padding: 16px; }
+  .mobile-app .p-6 { padding: 16px; }
+  .mobile-app .space-y-6 > * + * { margin-top: 16px; }
+  .mobile-app .w-14 { width: 48px; height: 48px; }
+  .mobile-app .w-16 { width: 56px; height: 56px; }
+  .mobile-app .gap-4 { gap: 12px; }
+  .mobile-app .gap-3 { gap: 10px; }
 }
 
-/* Small mobile screens (< 375px) */
 @media (max-width: 375px) {
   .mobile-app {
     font-size: 14px;
   }
 
-  .mobile-app h1 {
-    font-size: 1.25rem;
-  }
-
-  .mobile-app h2 {
-    font-size: 1.125rem;
-  }
-
-  .mobile-app h3 {
-    font-size: 1rem;
-  }
+  .mobile-app h1 { font-size: 1.25rem; }
+  .mobile-app h2 { font-size: 1.125rem; }
+  .mobile-app h3 { font-size: 1rem; }
 
   .mobile-app .p-5,
   .mobile-app .p-6 {
@@ -673,23 +616,16 @@ html {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .mobile-app .text-4xl {
-    font-size: 1.5rem !important;
-  }
-
-  .mobile-app .text-3xl {
-    font-size: 1.25rem !important;
-  }
-
-  .mobile-app .text-2xl {
-    font-size: 1.125rem !important;
-  }
+  .mobile-app .text-4xl { font-size: 1.5rem !important; }
+  .mobile-app .text-3xl { font-size: 1.25rem !important; }
+  .mobile-app .text-2xl { font-size: 1.125rem !important; }
 }
 
 /* Mobile card components */
 .mobile-card {
-  @apply bg-card rounded-2xl p-5 shadow-sm; /* border-2 border-border/50 removed */
+  @apply bg-card rounded-2xl p-5;
   transition: all 0.2s ease;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
 }
 
 .mobile-card:active {
@@ -705,7 +641,7 @@ html {
 
 /* Mobile header */
 .mobile-header {
-  @apply sticky top-0 z-40 backdrop-blur-xl bg-background/80 px-5 py-4; /* border-b removed */
+  @apply sticky top-0 z-40 backdrop-blur-xl bg-background/80 px-5 py-4;
 }
 
 .mobile-header-title {
@@ -723,7 +659,8 @@ html {
 
 /* Mobile stat card */
 .mobile-stat {
-  @apply bg-gradient-to-br from-card to-muted/30 rounded-2xl p-5; /* border removed */
+  @apply bg-gradient-to-br from-card to-muted/30 rounded-2xl p-5;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
 }
 
 .mobile-stat-label {
@@ -736,7 +673,8 @@ html {
 
 /* Mobile list */
 .mobile-list {
-  @apply rounded-2xl overflow-hidden bg-card; /* divide-y divide-border border removed */
+  @apply rounded-2xl overflow-hidden bg-card;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
 }
 
 .mobile-list-item {
@@ -773,13 +711,14 @@ html {
 }
 
 .mobile-btn-outline {
-  @apply text-primary bg-transparent hover:bg-primary/5; /* border-2 border-primary removed */
+  @apply text-primary bg-transparent hover:bg-primary/5;
 }
 
 /* Mobile bottom sheet */
 .mobile-sheet {
-  @apply fixed inset-x-0 bottom-0 z-50 bg-background rounded-t-3xl border-t shadow-2xl;
+  @apply fixed inset-x-0 bottom-0 z-50 bg-background rounded-t-3xl;
   padding-bottom: env(safe-area-inset-bottom, 20px);
+  box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.2);
 }
 
 .mobile-sheet-handle {
@@ -788,8 +727,8 @@ html {
 
 /* Modern input styling for mobile */
 .mobile-input {
-  @apply w-full bg-secondary/50 border-2 border-transparent rounded-xl px-5 py-4 text-lg;
-  @apply focus:border-primary focus:bg-background transition-all;
+  @apply w-full bg-secondary/50 rounded-xl px-5 py-4 text-lg;
+  @apply focus:bg-background transition-all;
   @apply placeholder:text-muted-foreground/60;
 }
 
@@ -804,29 +743,27 @@ html {
 
 /* Glass Morphism Effects */
 .glass {
-  background: rgba(255, 255, 255, 0.7);
+  background: rgb(255, 255, 255);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 0px solid rgba(255, 255, 255, 0.966);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
 }
 
 .dark .glass {
   background: rgba(30, 30, 50, 0.7);
-  border: 0px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
 .glass-card {
   @apply rounded-2xl;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.7) 100%);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgb(255, 255, 255) 100%);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 0px solid rgba(255, 255, 255, 0.979);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
 }
 
 .dark .glass-card {
   background: linear-gradient(135deg, rgba(30, 30, 50, 0.9) 0%, rgba(20, 20, 40, 0.7) 100%);
-  border: 0px solid rgba(255, 255, 255, 0.08);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
@@ -870,7 +807,7 @@ html {
 
 /* Modern Card Variants */
 .card-modern {
-  @apply rounded-2xl bg-card p-6; /* border removed */
+  @apply rounded-2xl bg-card p-6;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
 }
@@ -881,12 +818,12 @@ html {
 }
 
 .card-elevated {
-  @apply rounded-2xl bg-card; /* border removed */
+  @apply rounded-2xl bg-card;
   box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.1);
 }
 
 .card-floating {
-  @apply rounded-3xl border-0 bg-card;
+  @apply rounded-3xl bg-card;
   box-shadow: 
     0 0 0 1px rgba(0, 0, 0, 0.03),
     0 2px 4px rgba(0, 0, 0, 0.03),
@@ -897,7 +834,7 @@ html {
 .stat-modern {
   @apply relative overflow-hidden rounded-2xl p-6;
   background: linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--muted)) 100%);
-  /* All borders removed globally - 2025 clean UI */
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
 }
 
 .stat-modern::before {
@@ -913,33 +850,37 @@ html {
 }
 
 .stat-violet {
-  @apply relative overflow-hidden rounded-2xl p-6; /* border removed */
+  @apply relative overflow-hidden rounded-2xl p-6;
   background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(139, 92, 246, 0.05) 100%);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
 
 .stat-blue {
-  @apply relative overflow-hidden rounded-2xl p-6; /* border removed */
+  @apply relative overflow-hidden rounded-2xl p-6;
   background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
 
 .stat-emerald {
-  @apply relative overflow-hidden rounded-2xl p-6; /* border removed */
+  @apply relative overflow-hidden rounded-2xl p-6;
   background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
 
 .stat-amber {
-  @apply relative overflow-hidden rounded-2xl p-6; /* border removed */
+  @apply relative overflow-hidden rounded-2xl p-6;
   background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(245, 158, 11, 0.05) 100%);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
 
 /* Modern Calendar Styles */
 .calendar-modern {
-  @apply rounded-2xl bg-card overflow-hidden; /* border removed */
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  @apply rounded-2xl bg-card overflow-hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
 
 .calendar-header {
-  @apply flex items-center justify-between p-4 bg-muted/30; /* border-b removed */
+  @apply flex items-center justify-between p-4 bg-muted/30;
 }
 
 .calendar-day-header {
@@ -947,7 +888,7 @@ html {
 }
 
 .calendar-cell {
-  @apply min-h-28 p-2 transition-all duration-200; /* border-r border-b removed */
+  @apply min-h-28 p-2 transition-all duration-200;
   background: hsl(var(--card));
 }
 
@@ -973,30 +914,6 @@ html {
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12);
 }
 
-.calendar-event-shift {
-  @apply bg-gradient-to-r from-blue-500/20 to-blue-400/10 text-blue-900 border-l-4 border-blue-500;
-}
-
-.dark .calendar-event-shift {
-  @apply bg-gradient-to-r from-blue-500/30 to-blue-400/10 text-blue-200;
-}
-
-.calendar-event-timeoff {
-  @apply bg-gradient-to-r from-emerald-500/20 to-emerald-400/10 text-emerald-900 border-l-4 border-emerald-500;
-}
-
-.dark .calendar-event-timeoff {
-  @apply bg-gradient-to-r from-emerald-500/30 to-emerald-400/10 text-emerald-200;
-}
-
-.calendar-event-pending {
-  @apply bg-gradient-to-r from-amber-500/20 to-amber-400/10 text-amber-900 border-l-4 border-amber-500;
-}
-
-.dark .calendar-event-pending {
-  @apply bg-gradient-to-r from-amber-500/30 to-amber-400/10 text-amber-200;
-}
-
 /* Modern Tab Styles */
 .tabs-modern {
   @apply inline-flex items-center rounded-xl bg-muted/50 p-1;
@@ -1009,7 +926,8 @@ html {
 }
 
 .tab-modern[data-state="active"] {
-  @apply bg-background text-foreground shadow-sm;
+  @apply bg-background text-foreground;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 /* Modern Button Variants */
@@ -1020,7 +938,10 @@ html {
 
 .btn-modern-primary {
   @apply bg-gradient-to-r from-primary to-primary/90 text-primary-foreground;
-  @apply hover:shadow-lg hover:shadow-primary/25;
+}
+
+.btn-modern-primary:hover {
+  box-shadow: 0 4px 20px hsl(var(--primary) / 0.25);
 }
 
 .btn-modern-ghost {
@@ -1028,8 +949,11 @@ html {
 }
 
 .btn-modern-outline {
-  @apply border-2 border-primary/20 text-primary bg-primary/5;
-  @apply hover:bg-primary/10 hover:border-primary/40;
+  @apply text-primary bg-primary/5;
+}
+
+.btn-modern-outline:hover {
+  @apply bg-primary/10;
 }
 
 /* Modern Badge Styles */
@@ -1080,7 +1004,7 @@ html {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, transparent 0%, rgba(255, 255, 255, 0.2) 100%);
+  background: linear-gradient(135deg, transparent 0%, rgb(255, 255, 255) 100%);
 }
 
 /* Modern List Item */
@@ -1113,12 +1037,8 @@ html {
 
 /* Modern Animations */
 @keyframes shimmer {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
 }
 
 .animate-shimmer {
@@ -1128,12 +1048,8 @@ html {
 }
 
 @keyframes float {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-5px);
-  }
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
 }
 
 .animate-float {
@@ -1141,12 +1057,8 @@ html {
 }
 
 @keyframes pulse-glow {
-  0%, 100% {
-    box-shadow: 0 0 0 0 hsl(var(--primary) / 0.4);
-  }
-  50% {
-    box-shadow: 0 0 20px 10px hsl(var(--primary) / 0);
-  }
+  0%, 100% { box-shadow: 0 0 0 0 hsl(var(--primary) / 0.4); }
+  50% { box-shadow: 0 0 20px 10px hsl(var(--primary) / 0); }
 }
 
 .animate-pulse-glow {
@@ -1171,9 +1083,10 @@ html {
   @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2;
 }
 
-/* Divider Modern */
+/* Divider Modern - Uses gradient for visual separation without borders */
 .divider-modern {
-  @apply h-px bg-gradient-to-r from-transparent via-border to-transparent;
+  @apply h-px;
+  background: linear-gradient(90deg, transparent, hsl(var(--muted-foreground) / 0.2), transparent);
 }
 
 /* Empty State Modern */
@@ -1193,640 +1106,31 @@ html {
   @apply text-muted-foreground max-w-sm;
 }
 
-
 /* =========================================
-   GLOBAL NO-BORDER OVERRIDES
-   Targets: HTML Tables, MUI DataGrid, FullCalendar
-   Safe for Dark Mode
+   COMPONENT-SPECIFIC BORDER OVERRIDES
+   For third-party libraries that inject borders
    ========================================= */
 
-/* --- 1. Standard HTML Tables --- */
-table, thead, tbody, tfoot, tr, th, td {
-  border: none !important;
-  border-collapse: collapse !important;
-  outline: none !important;
-}
-
-/* --- 2. MUI DataGrid (v5+) --- */
+/* MUI DataGrid - Clean borderless design */
 .MuiDataGrid-root {
-  border: none !important;
-}
-
-.MuiDataGrid-root .MuiDataGrid-main,
-.MuiDataGrid-root .MuiDataGrid-columnHeaders,
-.MuiDataGrid-root .MuiDataGrid-columnHeader,
-.MuiDataGrid-root .MuiDataGrid-row,
-.MuiDataGrid-root .MuiDataGrid-cell,
-.MuiDataGrid-root .MuiDataGrid-footerContainer,
-.MuiDataGrid-root .MuiDataGrid-virtualScrollerContent,
-.MuiDataGrid-root .MuiDataGrid-withBorderColor {
-  border: none !important;
-  border-bottom: none !important;
-  border-top: none !important;
-  border-left: none !important;
-  border-right: none !important;
-  outline: none !important;
-  box-shadow: none !important;
-}
-
-/* Remove Vertical Column Separators */
-.MuiDataGrid-columnSeparator {
-  display: none !important;
-  visibility: hidden !important;
-}
-
-/* --- 3. FullCalendar (v6.1.19) --- */
-/* Override CSS Variables for Borders */
-:root {
-  --fc-border-color: transparent !important;
-  --fc-page-bg-color: transparent !important;
-  --fc-neutral-bg-color: transparent !important;
-  --fc-list-event-hover-bg-color: transparent !important;
-}
-
-/* Theme Standard & ScrollGrid Reset */
-.fc-theme-standard,
-.fc-theme-standard .fc-scrollgrid,
-.fc-theme-standard td,
-.fc-theme-standard th {
-  border: none !important;
-  border-color: transparent !important;
-}
-
-/* Detailed Grid Line Removal (DayGrid & TimeGrid) */
-.fc .fc-scrollgrid-section,
-.fc .fc-scrollgrid-section table,
-.fc .fc-scrollgrid-section > td,
-.fc .fc-daygrid-day,
-.fc .fc-daygrid-day-frame,
-.fc .fc-col-header-cell,
-.fc .fc-timegrid-slot,
-.fc .fc-timegrid-slot-lane,
-.fc .fc-timegrid-axis,
-.fc .fc-timegrid-col,
-.fc .fc-timegrid-divider,
-.fc .fc-day-today {
-  border: none !important;
-  border-style: none !important;
-  box-shadow: none !important;
-  outline: none !important;
-}
-
-/* Remove specific border on time slots */
-.fc-timegrid-slot {
-  border-bottom: none !important;
-}
-
-/* Ensure background colors don't create fake borders */
-.fc .fc-cell-shaded, 
-.fc .fc-day-other .fc-daygrid-day-top {
   background: transparent !important;
 }
 
-
-/* =========================================
-   DASHBOARD & CARD BORDER REMOVAL
-   Targets: Dashboard cards, metrics, and lists
-   ========================================= */
-
-/* Remove borders from dashboard components */
-.card, .card-glass, .card-glow, .metric-card, .stat-card,
-.mobile-card, .mobile-stat, .mobile-list {
-  border: none !important;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2); /* Subtle shadow instead */
-}
-
-/* Ensure no borders on list items */
-.mobile-list, .mobile-list-item {
-  border: none !important;
-  border-bottom: none !important;
-}
-
-/* Remove dividers in lists if desired, or keep them minimal */
-.divide-y > :not([hidden]) ~ :not([hidden]) {
-  border-color: transparent !important; /* Hide internal dividers too if 'all over' means these */
-}
-
-
-/* =========================================
-   USER-REQUESTED FULLCALENDAR OVERRIDES (AGGRESSIVE)
-   Fix for remaining grid lines in FullCalendar
-   FullCalendar hardcodes its own borders - must override
-   ========================================= */
-
-/* CRITICAL: Override FullCalendar's hardcoded borders */
-.fc .fc-timegrid-slot,
-.fc .fc-timegrid-slot-lane,
-.fc .fc-col,
-.fc .fc-timegrid-col,
-.fc .fc-scrollgrid-section,
-.fc .fc-scrollgrid-section table,
-.fc .fc-scrollgrid-section > td,
-.fc td, 
-.fc th,
-.fc .fc-col-header-cell,
-.fc .fc-timegrid-axis,
-.fc .fc-timegrid-divider,
-.fc .fc-daygrid-day,
-.fc .fc-daygrid-day-frame,
-.fc .fc-scrollgrid-sync-table,
-.fc .fc-scrollgrid-sync-inner {
-  border: none !important;
-  border-top: none !important;
-  border-bottom: none !important;
-  border-left: none !important;
-  border-right: none !important;
-  border-color: transparent !important;
-  border-style: none !important;
-  border-width: 0 !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  outline: none !important;
-}
-
-/* Remove the 'today' highlight if needed */
-.fc .fc-day-today {
-  background: transparent !important;
-}
-
-/* Remove vertical lines/dividers */
-.fc .fc-timegrid-divider {
-  display: none !important;
-}
-
-/* Suppress pseudo-elements that might create lines */
-.fc .fc-timegrid-slot::before,
-.fc .fc-timegrid-slot-lane::before,
-.fc .fc-timegrid-slot::after,
-.fc .fc-timegrid-slot-lane::after,
-.fc *::before,
-.fc *::after {
-  border: none !important;
-  box-shadow: none !important;
-}
-
-/* Ensure the main scrollgrid frame is also borderless */
-.fc-theme-standard .fc-scrollgrid,
-.fc-theme-standard .fc-scrollgrid-section,
-.fc-theme-standard td,
-.fc-theme-standard th {
-  border: none !important;
-  border-color: transparent !important;
-}
-
-
-/* =========================================
-   NUCLEAR OPTION: COMPLETE BORDER REMOVAL 2025
-   Maximum specificity CSS to remove ALL borders
-   ========================================= */
-
-/* 1. GLOBAL HTML TABLE ELEMENTS - Remove ALL borders */
-* {
-  box-sizing: border-box;
-}
-
-table,
-thead,
-tbody,
-tfoot,
-tr,
-th,
-td {
-  border: none !important;
-  border-style: none !important;
-  border-width: 0 !important;
-  border-color: transparent !important;
-  border-collapse: collapse !important;
-}
-
-/* 2. MUI COMPONENTS - Comprehensive border removal */
-/* MUI Table Components */
-.MuiTable-root,
-.MuiTableContainer-root,
-.MuiTableHead-root,
-.MuiTableBody-root,
-.MuiTableRow-root,
-.MuiTableCell-root,
-.MuiTableCell-head,
-.MuiTableCell-body {
-  border: none !important;
-  border-bottom: none !important;
-  border-top: none !important;
-  border-left: none !important;
-  border-right: none !important;
-}
-
-/* MUI DataGrid Components */
-.MuiDataGrid-root,
-.MuiDataGrid-main,
-.MuiDataGrid-viewport,
-.MuiDataGrid-virtualScroller,
-.MuiDataGrid-row,
-.MuiDataGrid-cell,
-.MuiDataGrid-columnHeader,
-.MuiDataGrid-columnHeaders,
-.MuiDataGrid-columnSeparator,
-.MuiDataGrid-iconSeparator,
-.MuiDataGrid-footerContainer,
-.MuiDataGrid-virtualScrollerRenderZone {
-  border: none !important;
-  border-bottom: none !important;
-  border-top: none !important;
-  border-left: none !important;
-  border-right: none !important;
-}
-
-/* Hide MUI DataGrid separators */
 .MuiDataGrid-columnSeparator,
 .MuiDataGrid-iconSeparator {
   display: none !important;
 }
 
-/* MUI Paper, Card, and Container Components */
-.MuiPaper-root,
-.MuiCard-root,
-.MuiDrawer-paper,
-.MuiDialog-paper,
-.MuiMenu-paper,
-.MuiPopover-paper,
-.MuiContainer-root {
-  border: none !important;
+/* FullCalendar - Borderless grid with visual separation via background */
+.fc .fc-day-today {
+  background: hsl(var(--primary) / 0.05) !important;
 }
 
-/* MUI Divider Components */
-.MuiDivider-root {
+.fc .fc-timegrid-divider {
   display: none !important;
 }
 
-/* 3. TAILWIND & CUSTOM CLASSES - Border removal */
-.border,
-.border-t,
-.border-b,
-.border-l,
-.border-r,
-.divide-y > *,
-.divide-x > * {
-  border: none !important;
-  border-color: transparent !important;
-}
-
-/* 4. FULLCALENDAR - Maximum specificity override */
-.fc *,
-.fc table,
-.fc thead,
-.fc tbody,
-.fc tr,
-.fc th,
-.fc td {
-  border: none !important;
-  border-style: none !important;
-  border-width: 0 !important;
-  border-color: transparent !important;
-}
-
-/* Remove all FullCalendar grid elements */
-.fc-scrollgrid *,
-.fc-theme-standard *,
-.fc-timegrid *,
-.fc-daygrid *,
-.fc-col-header * {
-  border: none !important;
-}
-
-/* 5. PREVENT PSEUDO-ELEMENT BORDERS */
-*::before,
-*::after {
-  border: inherit !important;
-}
-
-table::before,
-table::after,
-tr::before,
-tr::after,
-th::before,
-th::after,
-td::before,
-td::after,
-.MuiDataGrid-root::before,
-.MuiDataGrid-root::after,
-.fc *::before,
-.fc *::after {
-  content: none !important;
-  display: none !important;
-  border: none !important;
-}
-
-/* 6. OUTLINE REMOVAL (sometimes mistaken for borders) */
-.MuiDataGrid-cell:focus,
-.MuiDataGrid-cell:focus-within,
-.MuiTableCell-root:focus,
-.MuiTableCell-root:focus-within {
-  outline: none !important;
-}
-
-/* 7. BOX-SHADOW REMOVAL (can look like borders) */
-.MuiPaper-elevation,
-.MuiPaper-elevation1,
-.MuiCard-root {
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12) !important; /* Minimal shadow instead of borders */
-}
-
-/* 8. SPECIFIC COMPONENT OVERRIDES */
-/* Remove borders from custom card classes */
-.card,
-.card-glass,
-.card-glow,
-.metric-card,
-.stat-card,
-.mobile-card,
-.mobile-stat {
-  border: none !important;
-}
-
-/* 9. BACKGROUND DIVIDERS (remove visual separators) */
-.fc-scrollgrid-sync-table,
-.fc-timegrid-divider,
-.fc-scrollgrid-section-header,
-.fc-scrollgrid-section-body,
-.fc-scrollgrid-section-footer {
-  border: none !important;
-  background: transparent !important;
-}
-
-/* 10. ENSURE NO BORDER ON HOVER/ACTIVE STATES */
-*:hover,
-*:active,
-*:focus {
-  border-color: transparent !important;
-}
-
-.MuiTableRow-root:hover,
-.MuiDataGrid-row:hover,
-.table-row:hover {
-  border: none !important;
-  border-bottom: none !important;
-}
-
-
-/* ===========================
-   FINAL: FORCE-REMOVE ALL VISIBLE BORDERS/LINE ARTIFACTS
-   Must be loaded AFTER FullCalendar/Tailwind vendor CSS
-   =========================== */
-
-:root {
-  /* ensure FullCalendar vars are transparent */
-  --fc-border-color: transparent !important;
-  --fc-neutral-bg-color: transparent !important;
-}
-
-/* Nuke remaining borders/backgrounds on key elements */
-.calendar-modern,
-.calendar-modern *,
-.card-glass,
-.card-glass *,
-.glass,
-.glass *,
-.metric-card,
-.metric-card *,
-.stat-card,
-.stat-card *,
-.mobile-card,
-.mobile-card *,
-.mobile-list,
-.mobile-list *,
-.table-row,
-.table-row * {
-  border: none !important;
-  border-style: none !important;
-  border-width: 0 !important;
-  border-color: transparent !important;
-  box-shadow: none !important;
-  outline: none !important;
-}
-
-/* Remove Tailwind-applied border utilities */
-.calendar-cell,
-.calendar-cell *,
-.calendar-header,
-.calendar-header * {
-  border: none !important;
-  background: transparent !important;
-  box-shadow: none !important;
-}
-
-/* Aggressive FullCalendar overrides (timegrid, daygrid, headers, scrollgrid) */
-.fc,
-.fc *,
-.fc table,
-.fc thead,
-.fc tbody,
-.fc tr,
-.fc th,
-.fc td,
-.fc .fc-timegrid-slot,
-.fc .fc-timegrid-slot-lane,
-.fc .fc-col,
-.fc .fc-timegrid-col,
-.fc .fc-scrollgrid-section,
-.fc .fc-scrollgrid-section table,
-.fc .fc-scrollgrid-section > td,
-.fc .fc-col-header-cell,
-.fc .fc-timegrid-axis,
-.fc .fc-timegrid-divider,
-.fc .fc-daygrid-day,
-.fc .fc-daygrid-day-frame,
-.fc .fc-day-today,
-.fc .fc-scrollgrid-sync-table {
-  border: none !important;
-  border-top: none !important;
-  border-bottom: none !important;
-  border-left: none !important;
-  border-right: none !important;
-  border-color: transparent !important;
-  box-shadow: none !important;
-  outline: none !important;
-}
-
-/* Hide pseudo-elements that sometimes draw lines */
-.fc *::before,
-.fc *::after,
-.card-glass::before,
-.card-glass::after,
-.glass::before,
-.glass::after {
-  display: none !important;
-  content: none !important;
-  border: none !important;
-  box-shadow: none !important;
-  background: transparent !important;
-}
-
-/* Remove subtle border classes still created via Tailwind utilities */
-.border, .border-t, .border-b, .border-r, .border-l, .divide-y > *, .divide-x > * {
-  border: none !important;
-  border-color: transparent !important;
-  box-shadow: none !important;
-}
-
-/* Ensure DataGrid separators hidden (defensive) */
-.MuiDataGrid-root,
-.MuiDataGrid-root * {
-  border: none !important;
-  border-color: transparent !important;
-  box-shadow: none !important;
-}
-.MuiDataGrid-columnSeparator,
-.MuiDataGrid-iconSeparator { display: none !important; }
-
-/* Finally, neutralize glass borders still present */
-.glass, .glass-card {
-  border: none !important;
-  background: rgba(0,0,0,0) !important;
-  box-shadow: none !important;
-}
-
-/* Remove borders from stat variant cards */
-.stat-violet,
-.stat-blue,
-.stat-emerald,
-.stat-amber {
-  border: none !important;
-  border-color: transparent !important;
-}
-
-
-/* ===================================================================
-   🔥 GLOBAL BORDER KILLER – NUCLEAR OPTION
-   removes all grid lines everywhere - MUST BE LAST IN FILE
-   =================================================================== */
-*,
-*::before,
-*::after {
-  border: none !important;
-  box-shadow: none !important;
-}
-
-/* Remove borders from all tables */
-table,
-th,
-td {
-  border: none !important;
-  outline: none !important;
-  border-collapse: collapse !important;
-}
-
-/* Remove borders from Tailwind utility classes */
-[class*="border"],
-[class*="divide"],
-.border,
-.divide-x,
-.divide-y {
-  border: none !important;
-  border-width: 0 !important;
-}
-
-/* Remove MUI DataGrid borders */
-.MuiDataGrid-root,
-.MuiDataGrid-columnHeaders,
-.MuiDataGrid-columnHeader,
-.MuiDataGrid-cell,
-.MuiDataGrid-row {
-  border: none !important;
-  outline: none !important;
-  box-shadow: none !important;
-}
-
-/* Remove FullCalendar borders */
-.fc,
-.fc * {
-  border: none !important;
-  box-shadow: none !important;
-  outline: none !important;
-}
-
-/* Remove react-big-calendar borders */
-.rbc-day-bg,
-.rbc-month-row,
-.rbc-month-view,
-.rbc-time-content,
-.rbc-time-header,
-.rbc-time-slot,
-.rbc-row,
-.rbc-header {
-  border: none !important;
-  box-shadow: none !important;
-}
-
-
-/* ===================================================================
-   🔥 FINAL REACT-BIG-CALENDAR GRID LINE KILLER - 2025
-   Targets all .rbc-* classes - MUST BE LAST IN FILE
-   =================================================================== */
-.rbc-calendar *,
-.rbc-calendar,
-.rbc-month-view,
-.rbc-time-view,
-.rbc-day-bg,
-.rbc-time-slot,
-.rbc-time-header,
-.rbc-time-content,
-.rbc-time-header-cell,
-.rbc-time-header-content,
-.rbc-day-slot,
-.rbc-time-column,
-.rbc-row,
-.rbc-row-bg,
-.rbc-row-content,
-.rbc-header,
-.rbc-date-cell,
-.rbc-off-range-bg,
-.rbc-today,
-.rbc-event,
-.rbc-event-content,
-.rbc-current-time-indicator {
-  border: none !important;
-  border-top: none !important;
-  border-bottom: none !important;
-  border-left: none !important;
-  border-right: none !important;
-  border-color: transparent !important;
-  box-shadow: none !important;
-  outline: none !important;
-}
-
-/* Remove vertical lines between days */
-.rbc-day-slot .rbc-time-slot {
-  border-top: none !important;
-  border-bottom: none !important;
-}
-
-/* Remove horizontal lines */
-.rbc-time-view .rbc-time-slot {
-  border-top: none !important;
-}
-
-/* Remove header borders */
-.rbc-header {
-  border-bottom: none !important;
-}
-
-/* Remove today highlight border */
+/* React Big Calendar - Borderless */
 .rbc-today {
-  background: transparent !important;
+  background: hsl(var(--primary) / 0.05) !important;
 }
-
-/* Hide any pseudo-elements */
-.rbc-calendar *::before,
-.rbc-calendar *::after {
-  border: none !important;
-  box-shadow: none !important;
-  background: transparent !important;
-  content: none !important;
-}
-
-/* Force no background lines */
-.rbc-off-range-bg,
-.rbc-row-bg {
-  background: transparent !important;
-}
-
